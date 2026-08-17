@@ -174,11 +174,24 @@ def check_bedrock_list(sess) -> Check:
 
 
 def _invoke_candidates(preferred: str, available: list[str], contains: str) -> list[str]:
-    """Ordered model ids to try: the configured one first, then anything similar."""
+    """Ordered model ids to try: the configured one first, then anything similar.
+
+    Newer models require cross-region inference profile IDs (us.anthropic.*)
+    rather than foundation model ARNs. The profile ID must NOT have a trailing
+    :0 suffix.
+    """
     out = [preferred]
+    # Add the us. prefix variant if not already present
+    if not preferred.startswith("us.") and "anthropic." in preferred:
+        out.append("us." + preferred.split(":")[0])
     for m in available:
-        if contains in m.lower() and m not in out:
-            out.append(m)
+        base = m.split(":")[0]
+        us_variant = "us." + base
+        if contains in m.lower():
+            if m not in out:
+                out.append(m)
+            if us_variant not in out:
+                out.append(us_variant)
     return out
 
 

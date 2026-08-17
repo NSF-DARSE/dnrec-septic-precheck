@@ -39,7 +39,7 @@ PREFLIGHT_PREFIX = "preflight"
 
 # Bedrock model ids. Overridable because availability differs per account.
 BEDROCK_TEXT_MODEL = os.environ.get(
-    "SEPTIC_BEDROCK_TEXT_MODEL", "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    "SEPTIC_BEDROCK_TEXT_MODEL", "us.anthropic.claude-opus-4-6-v1"
 )
 BEDROCK_EMBED_MODEL = os.environ.get(
     "SEPTIC_BEDROCK_EMBED_MODEL", "amazon.titan-embed-text-v2:0"
