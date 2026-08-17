@@ -1,0 +1,83 @@
+# Rule set for the Delaware on-site wastewater regulation.
+#
+# This file is deliberately almost empty. Candidate thresholds extracted from the
+# regulation live in candidates.md with their section, page, and verbatim quote.
+# A number only moves from candidates.md into this file after a human has read
+# the quoted passage in the PDF and confirmed the value, the units, and the
+# conditions it applies under.
+#
+# Nothing here has been verified, so the engine returns UNKNOWN for every entry
+# and the verdict for any application is CANNOT VERIFY. That is the correct
+# behaviour: a wrong setback distance shown to permitting staff is worse than no
+# answer at all.
+#
+# The three entries below exist to exercise the schema and the engine. They use
+# the present operator, which takes no threshold, so this file contains no
+# numeric regulatory value of any kind. Numeric comparison is covered in
+# tests/test_rules_engine.py using synthetic rules that cite nothing.
+#
+# To promote a candidate:
+#   1. Open docs/regulations/de-onsite-wastewater-2014.pdf at the cited page.
+#   2. Confirm the number, the units, and which systems it applies to.
+#   3. Add the rule with the verbatim quote in citation.quote.
+#   4. Set verified: true and record who checked it in notes.
+
+version: 1
+regulation: "Delaware Regulations Governing On-Site Wastewater Treatment and Disposal Systems"
+regulation_date: "2014-01-11"
+regulation_file: "docs/regulations/de-onsite-wastewater-2014.pdf"
+
+rules:
+  - id: EX001-site-plan-present
+    description: >-
+      A site plan must accompany the application. Placeholder used to exercise
+      the engine, not a verified citation.
+    citation:
+      section: "TBD"
+      page: null
+      quote: null
+    applies_to: {}
+    parameter: site_plan
+    operator: present
+    threshold: null
+    units: null
+    severity: return
+    verified: false
+    remedy: "Attach the site plan sheet before submitting."
+    notes: "Example only. Section number not yet identified."
+
+  - id: EX002-percolation-rate-present
+    description: >-
+      A percolation rate must be recorded for the proposed disposal area.
+      Placeholder used to exercise the engine, not a verified citation.
+    citation:
+      section: "TBD"
+      page: null
+      quote: null
+    applies_to: {}
+    parameter: perc_rate
+    operator: present
+    threshold: null
+    units: null
+    severity: return
+    verified: false
+    remedy: "Record the percolation test result on the application."
+    notes: "Example only. Threshold values remain in candidates.md."
+
+  - id: EX003-lot-area-present
+    description: >-
+      The lot area must be stated on the application. Placeholder used to
+      exercise the engine, not a verified citation.
+    citation:
+      section: "TBD"
+      page: null
+      quote: null
+    applies_to: {}
+    parameter: lot_area
+    operator: present
+    threshold: null
+    units: null
+    severity: advisory
+    verified: false
+    remedy: "State the lot area in square feet."
+    notes: "Example only. Section number not yet identified."

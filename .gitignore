@@ -1,0 +1,47 @@
+# Run artifacts. Everything a script produces goes here.
+out/
+*_out.txt
+*_out.json
+
+# Source data export, 45 MB. Not ours to redistribute and too large to track.
+Permitted_Septic_Systems_20260817.csv
+*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+.venv/
+venv/
+
+# Credentials and local settings
+.env
+.env.*
+*.pem
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Assistant and tooling configuration. Never tracked.
+.kiro/
+.claude/
+.cursor/
+.aider*
+.github/copilot*
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.continue/
+.codeium/
+.windsurf/
+
+# The regulation PDF is the specification and stays tracked, so it is not
+# covered by any pattern above.
