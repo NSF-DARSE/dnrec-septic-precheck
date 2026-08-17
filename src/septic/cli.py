@@ -16,6 +16,9 @@ from . import config
 
 
 def cmd_preflight(argv: list[str]) -> int:
+    import subprocess
+    from datetime import datetime, timezone
+
     from . import preflight
 
     ap = argparse.ArgumentParser(prog="septic preflight")
@@ -24,9 +27,30 @@ def cmd_preflight(argv: list[str]) -> int:
 
     config.ensure_dirs()
     checks, blocked = preflight.run(textract_timeout=args.textract_timeout)
-    report = preflight.render(checks)
-    print(report)
-    (config.OUT_DIR / "preflight_report.txt").write_text(report, encoding="utf-8")
+
+    # Build the header that goes into every output format.
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        sha = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=str(config.ROOT), text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        sha = "unknown"
+    header = f"run: {timestamp}  commit: {sha}"
+
+    # Render and write all formats from the same in-memory result set.
+    report_text = preflight.render(checks, header=header)
+    report_json = json.dumps(
+        {"header": {"timestamp": timestamp, "commit": sha},
+         "checks": [c.__dict__ for c in checks]},
+        indent=2, default=str,
+    )
+
+    print(report_text)
+    (config.OUT_DIR / "preflight_report.txt").write_text(report_text, encoding="utf-8")
+    (config.OUT_DIR / "preflight_report.json").write_text(report_json, encoding="utf-8")
+
     return 2 if blocked else 0
 
 

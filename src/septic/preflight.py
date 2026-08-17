@@ -272,9 +272,13 @@ def run(textract_timeout: int = 300) -> tuple[list[Check], bool]:
     return checks, blocked
 
 
-def render(checks: list[Check]) -> str:
+def render(checks: list[Check], header: str | None = None) -> str:
     width = max(len(c.name) for c in checks) + 2
-    lines = ["PREFLIGHT", "=" * 72, f"{'CHECK'.ljust(width)}{'STATUS':<8}DETAIL", "-" * 72]
+    lines = []
+    if header:
+        lines.append(header)
+        lines.append("")
+    lines += ["PREFLIGHT", "=" * 72, f"{'CHECK'.ljust(width)}{'STATUS':<8}DETAIL", "-" * 72]
     for c in checks:
         lines.append(f"{c.name.ljust(width)}{c.status:<8}{c.detail}")
     lines.append("-" * 72)
