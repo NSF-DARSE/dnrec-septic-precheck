@@ -1,104 +1,168 @@
 # dnrec-septic-precheck
 
-Pre-submission review for Delaware septic permit applications. An applicant runs
-a draft application through it and gets one of three answers: ready to submit,
-likely to be returned with an itemised list of what to fix, or cannot verify
-because required information could not be read.
+Pre-submission review tool for Delaware septic permit applications.
 
-DNREC rarely denies a septic application outright. It returns the application for
-correction, the applicant fixes it, and the application is then accepted. This
-tool predicts the return, before submission, so the correction round trip does not
-happen.
+![Python](https://img.shields.io/badge/python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-S3%20%7C%20Textract%20%7C%20Bedrock-232F3E?style=flat-square&logo=amazonaws&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-72%20passing-28A745?style=flat-square)
+![License](https://img.shields.io/badge/license-internal-555555?style=flat-square)
+![Status](https://img.shields.io/badge/status-prototype-F5A623?style=flat-square)
 
-## How the verdict is decided
+## The problem
 
-    application PDF
-      -> Textract     OCR text, form fields, bounding boxes
-      -> extractor    facts: lot area, setbacks, perc rate, system type, parcel
-      -> rule engine  per rule PASS, FAIL, or UNKNOWN with a regulation citation
-      -> retrieval    similar prior permits and their outcomes, as context
-      -> composer     report
+DNREC's septic permit database holds 117,802 records across 112,613 unique permits. Of those, roughly 253 were ever denied or returned for correction. DNREC rarely denies outright: it returns applications so the applicant can fix deficiencies, then accepts the resubmission. Each return costs weeks of round-trip time. This tool catches the deficiencies before submission.
 
-The verdict comes from rule evaluation and from nothing else. Retrieved permits
-give the report context and concrete wording, and a language model may be used to
-write prose, but the model is handed the verdict as an input and is never asked to
-decide it. The same facts and the same rule set produce the same verdict every
-time.
+## What this tool does not do
 
-Three outcomes per rule rather than two. UNKNOWN covers an unverified threshold, a
-value the extractor could not read, and a value that will not parse as a number.
-All three occur in scanned documents. Treating any of them as a pass would hide a
-problem, and treating them as a failure would invent one.
+It is not an approve/reject classifier. With 253 negative examples in 112,613 permits, training a classifier is not viable and has not been attempted. The tool does not decide anything: rules extracted from the regulation produce the verdict, and retrieved prior cases supply context only. A threshold is never shown to the user unless a human has verified it against the cited page in the regulation PDF.
 
-## Regulation thresholds
+## Architecture
 
-`docs/regulations/de-onsite-wastewater-2014.pdf` is the only authority for
-threshold values. `scripts/extract_rule_candidates.py` scans it and writes
-`src/septic/rules/candidates.md`, listing every passage that states a number with
-a unit, each with its section, page, and the sentence quoted verbatim.
+```mermaid
+flowchart LR
+    PDF["Application PDF"] --> S3["S3 Bucket"]
+    S3 --> TX["Textract"]
+    TX --> EX["Extractor"]
+    EX --> RE["Rule Engine"]
+    RE --> RC["Report Composer"]
 
-Candidates are not rules. A number moves into `src/septic/rules/rules_7101.yaml`
-only after a person opens the cited page and confirms the value, the units, and
-the conditions it applies under. Until then the rule carries `verified: false` and
-the engine returns UNKNOWN for it.
+    CORPUS["Prior permits"] --> EMB["Embeddings"]
+    EMB --> FAISS["FAISS Index"]
+    FAISS --> RET["Retrieval"]
+    RET --> RC
 
-Nothing in the shipped rule set is verified, so every application currently comes
-back as cannot verify. That is intended. A wrong setback distance shown to
-permitting staff is a worse outcome than no answer.
+    RC --> REPORT["Reviewer Report"]
 
-## Layout
+    subgraph "Decision path"
+        TX
+        EX
+        RE
+    end
 
-    docs/                 project documentation and the regulation
-    src/septic/
-      config.py           bucket, region, profile, and paths
-      harvest/            scraping permits and documents into S3
-      ingest/             Textract submission and block parsing
-      rules/              rule schema, engine, rule set, candidates
-      retrieval/          similarity search over prior permits
-      report/             report composition and rendering
-      cli.py              entry point
-    scripts/              runnable wrappers, no logic
-    tests/
-    out/                  run artifacts, not tracked
+    subgraph "Context path"
+        CORPUS
+        EMB
+        FAISS
+        RET
+    end
 
-## Running it
+    style RE fill:#2d6a4f,color:#fff
+    style RET fill:#555,color:#fff
+```
 
-    pip install -r requirements.txt
-    python -m septic preflight
-    python -m septic candidates
-    python -m septic rules
-    python -m septic harvest --status Denied "Application Returned"
-    python -m septic audit
-    python -m septic verify --limit 15
+The rule engine is the decision path. It evaluates each requirement from the regulation against facts extracted from the application and returns PASS, FAIL, or UNKNOWN with a citation. Retrieval finds similar prior permits with their outcomes, but that information only appears as supporting context in the report. A retrieved permit being approved is not evidence that a new application complies.
 
-Scripts under `scripts/` call the same code and exist so a single file can be run
-directly.
+## Three outcomes
 
-## Configuration
+```mermaid
+stateDiagram-v2
+    [*] --> Evaluate
 
-Bucket, region, profile, model ids, and the year cutoff live in
-`src/septic/config.py` and are overridable by environment variable
-(`SEPTIC_S3_BUCKET`, `SEPTIC_AWS_PROFILE`, `AWS_REGION`, `SEPTIC_YEAR_MIN`, and
-others). No other module hardcodes them.
+    Evaluate --> READY: all rules pass
+    Evaluate --> LIKELY_RETURN: any rule fails at return severity
+    Evaluate --> CANNOT_VERIFY: any value unreadable or rule unverified
 
-`python -m septic preflight` checks S3, Textract, and Bedrock against the current
-credentials and prints a pass/fail table. Run it first. Text generation on Bedrock
-is currently denied for the development account; embeddings and Textract work.
+    READY: READY TO SUBMIT
+    LIKELY_RETURN: LIKELY RETURN\n(itemized fixes)
+    CANNOT_VERIFY: CANNOT VERIFY\n(missing information)
 
-## Scope
+    note right of CANNOT_VERIFY
+        Not an error. Missing information
+        on a plan is itself a reason DNREC
+        returns an application.
+    end note
+```
 
-Permits from 2014 onward. That cutoff is not arbitrary: 2014 and later permits
-fall under the current regulation, and earlier ones fall under superseded law, so a
-finding against an older permit would cite a rule that no longer applies.
+CANNOT VERIFY is a real product state, not an error condition. A scanned site plan where the setback distance is illegible, a form field left blank, or a rule whose threshold has not been verified against the regulation all produce this outcome. Missing information on a plan is itself a reason an application gets returned, so reporting it honestly is correct.
 
-## Data handling
+## Data provenance
 
-The permit CSV export is not tracked. It is 45 MB and is not ours to redistribute.
-Harvested documents are FOIA releasable but are stored in a private bucket with
-public access blocked and default encryption on. The permit site's `robots.txt`
-disallows the paths that expose document links, so a full crawl needs written
-DNREC agreement first. The 234 permit prototype run is small enough to be
-reasonable without it.
+| Item | Source | Notes |
+| --- | --- | --- |
+| Permit CSV | data.delaware.gov (Socrata dataset mv7j-tx3u) | 117,802 rows, exported 2026-08-17. Not tracked (45 MB). |
+| Regulation PDF | Given by a DNREC mentor | "Delaware On-Site Septic System Regulations with Exhibits", January 11, 2014 edition. 245 pages. Tracked. |
+| Scope | 2014 onward | Permits from 2014 forward fall under the current regulation. Earlier permits fall under superseded law, so a finding against them would cite a rule that no longer applies. |
+| Harvested corpus | 143 PDFs in S3 | Denied and Application Returned permits, all years. 401.9 MB. |
 
-See `docs/HANDOFF.md` for measured figures, the harvest already completed, and the
-open items.
+## Repository layout
+
+```
+docs/
+  HANDOFF.md                    project state and measured facts
+  regulations/
+    de-onsite-wastewater-2014.pdf   the regulation (source of truth for thresholds)
+    SOURCE.md                       provenance and version history
+src/septic/
+  config.py                     bucket, region, profile, paths (single source of truth)
+  preflight.py                  AWS capability checks
+  cli.py                        entry point with subcommands
+  harvest/                      scraping permits and documents into S3
+  ingest/                       Textract job submission and block parsing
+  rules/                        rule schema, engine, YAML rule set, candidates
+  retrieval/                    similarity search over prior permits (stub)
+  report/                       report composition and rendering (stub)
+scripts/                        thin runnable wrappers, no business logic
+tests/                          72 tests covering parsing, rules, and layout
+out/                            run artifacts (gitignored)
+```
+
+## Quickstart
+
+Prerequisites: Python 3.11, an AWS account with S3, Textract, and Bedrock access, and the `dnrec` profile configured per `docs/HANDOFF.md`.
+
+```bash
+pip install -r requirements.txt
+```
+
+Verify AWS access (takes about 60 seconds, most of it waiting on Textract):
+
+```bash
+python -m septic preflight
+```
+
+Extract rule candidates from the regulation:
+
+```bash
+python -m septic candidates
+```
+
+Evaluate the shipped (unverified) rules against an empty fact set:
+
+```bash
+python -m septic rules
+```
+
+Run the harvester for the denied and returned slice:
+
+```bash
+python -m septic harvest --status Denied "Application Returned"
+```
+
+Reconcile the manifest against S3:
+
+```bash
+python -m septic audit
+```
+
+Recheck permits recorded with zero documents (rate limited, 1 request per second):
+
+```bash
+python -m septic verify --limit 15
+```
+
+## Current status
+
+- [x] S3 bucket provisioned, hardened, and 143 PDFs harvested
+- [x] Document classification from URL markers (0% Other, 100% parcel fill)
+- [x] Textract submission, polling, caching, and block parsing
+- [x] Rule schema with three-valued evaluation (PASS / FAIL / UNKNOWN)
+- [x] Regulation candidate extractor (644 passages across 389 sections)
+- [x] Bedrock text generation working (Opus 4.6 via inference profile)
+- [x] Bedrock embeddings working (Titan v2, 1024 dimensions)
+- [x] Preflight checks all passing (8/8)
+- [ ] No regulation threshold has been human-verified yet
+- [ ] Fact extractor (Textract output to rule parameters) not built
+- [ ] Retrieval module not implemented
+- [ ] Report composer not implemented
+- [ ] Permit Events grid not parsed (the actual return signal)
+- [ ] 134 zero-document permits not yet rechecked
