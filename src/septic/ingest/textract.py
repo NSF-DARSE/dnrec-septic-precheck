@@ -4,12 +4,18 @@ Site plans and permit applications in this corpus are scanned raster PDFs, so
 there is no embedded text or vector geometry to read. Textract is the only route
 to the field values and to where they sit on the page.
 
-Analyses are cached on disk keyed by the S3 object ETag. OCR is the slowest and
-most expensive step in the pipeline and the same document gets read many times
-during development, so a rerun must not resubmit.
+Analyses are cached on disk under two keys. A document hash, which is the SHA256
+of the file bytes, is the primary key: it works for a local PDF, it needs no
+network call to compute, and it means a demo re-run on the same file is instant
+and does not require AWS to be reachable at all. An S3 ETag key is kept as well
+for objects analysed straight out of the bucket.
+
+OCR is the slowest and most expensive step in the pipeline and the same document
+gets read many times during development, so a rerun must not resubmit.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from dataclasses import dataclass, field
@@ -23,6 +29,15 @@ DEFAULT_FEATURES = ("FORMS", "TABLES")
 
 class TextractError(RuntimeError):
     pass
+
+
+def document_hash(data: bytes) -> str:
+    """Stable content key for a document. Same bytes, same key, no network."""
+    return hashlib.sha256(data).hexdigest()[:32]
+
+
+def hash_file(path: Path) -> str:
+    return document_hash(Path(path).read_bytes())
 
 
 @dataclass
@@ -105,6 +120,39 @@ class TextractClient:
         safe = s3_key.replace("/", "__").replace("=", "-")
         return self.cache_dir / f"{safe}.{version}.json"
 
+    def _hash_cache_path(self, doc_hash: str) -> Path:
+        """Cache path keyed by document content.
+
+        This is the key the offline demo depends on. It needs no head_object call,
+        so a cached analysis can be replayed with no credentials and no network.
+        """
+        return self.cache_dir / f"sha256-{doc_hash}.json"
+
+    def cached_by_hash(self, doc_hash: str) -> Analysis | None:
+        path = self._hash_cache_path(doc_hash)
+        if not path.exists():
+            return None
+        try:
+            return Analysis.from_json(json.loads(path.read_text(encoding="utf-8")))
+        except Exception:
+            return None
+
+    def cached_for_file(self, path: Path) -> Analysis | None:
+        """Cached analysis for a local PDF, or None. Never touches the network."""
+        return self.cached_by_hash(hash_file(path))
+
+    def save_to_hash_cache(self, analysis: "Analysis", doc_hash: str) -> Path:
+        """Write an analysis under its content hash.
+
+        Used to seed the offline demo corpus: a document is analysed once with AWS
+        reachable, and every run afterwards reads this file.
+        """
+        target = self._hash_cache_path(doc_hash)
+        payload = analysis.to_json()
+        payload["document_hash"] = doc_hash
+        target.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        return target
+
     def cached(self, s3_key: str) -> Analysis | None:
         path = self._cache_path(s3_key, self._version(s3_key))
         if not path.exists():
@@ -113,6 +161,44 @@ class TextractClient:
             return Analysis.from_json(json.loads(path.read_text(encoding="utf-8")))
         except Exception:
             return None
+
+    def analyze_file(
+        self,
+        path: Path,
+        features: tuple[str, ...] = DEFAULT_FEATURES,
+        timeout: int = 600,
+        poll_interval: float = 5.0,
+        use_cache: bool = True,
+        upload_prefix: str = "review",
+    ) -> Analysis:
+        """Analyse a local PDF, preferring the content hash cache.
+
+        A cache hit returns without constructing an AWS client, which is what lets
+        the demo run with no network. A miss uploads the file to the bucket, since
+        StartDocumentAnalysis is asynchronous and only reads from S3.
+        """
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"document not found: {path}")
+
+        doc_hash = hash_file(path)
+        if use_cache:
+            hit = self.cached_by_hash(doc_hash)
+            if hit is not None:
+                return hit
+
+        s3_key = f"{upload_prefix}/{doc_hash}/{path.name}"
+        self.s3.upload_file(str(path), self.bucket, s3_key)
+        analysis = self.analyze(
+            s3_key,
+            features=features,
+            timeout=timeout,
+            poll_interval=poll_interval,
+            use_cache=False,
+        )
+        if analysis.ok:
+            self.save_to_hash_cache(analysis, doc_hash)
+        return analysis
 
     def analyze(
         self,

@@ -216,6 +216,58 @@ def cmd_graph(argv: list[str]) -> int:
     return 0
 
 
+def cmd_review(argv: list[str]) -> int:
+    from . import review as review_mod
+
+    ap = argparse.ArgumentParser(prog="septic review")
+    source = ap.add_mutually_exclusive_group(required=True)
+    source.add_argument("--pdf", type=Path, help="path to an application PDF")
+    source.add_argument("--permit", help="permit number or detail id already harvested")
+    ap.add_argument("--manifest", type=Path,
+                    default=config.OUT_DIR / "manifest_control.jsonl")
+    ap.add_argument("--offline", action="store_true",
+                    help="refuse any network call, requiring a cached analysis")
+    ap.add_argument("--no-precedents", action="store_true",
+                    help="skip the similar prior permits lookup")
+    ap.add_argument("--rephrase", action="store_true",
+                    help="run the optional Bedrock plain language pass on remedies")
+    ap.add_argument("--out", type=Path, default=config.OUT_DIR,
+                    help="directory for the report files")
+    args = ap.parse_args(argv)
+
+    config.ensure_dirs()
+    result = review_mod.review(
+        pdf=args.pdf,
+        permit=args.permit,
+        manifest=args.manifest,
+        allow_network=not args.offline,
+        with_precedents=not args.no_precedents,
+        rephrase=args.rephrase,
+    )
+
+    print(result.text)
+    for warning in result.warnings:
+        print(f"\nwarning: {warning}")
+
+    stem = args.pdf.stem if args.pdf else f"permit_{args.permit}"
+    args.out.mkdir(parents=True, exist_ok=True)
+    text_path = args.out / f"review_{stem}.txt"
+    html_path = args.out / f"review_{stem}.html"
+    json_path = args.out / f"review_{stem}.json"
+    text_path.write_text(result.text, encoding="utf-8")
+    html_path.write_text(result.html, encoding="utf-8")
+    json_path.write_text(
+        json.dumps(result.composed.to_json(), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    print(f"\nwrote {text_path}")
+    print(f"wrote {html_path}")
+    print(f"wrote {json_path}")
+    if result.offline:
+        print("no network was used: the Textract analysis came from the disk cache")
+    return 0
+
+
 COMMANDS = {
     "preflight": cmd_preflight,
     "harvest": cmd_harvest,
@@ -224,6 +276,7 @@ COMMANDS = {
     "rules": cmd_rules,
     "candidates": cmd_candidates,
     "graph": cmd_graph,
+    "review": cmd_review,
 }
 
 

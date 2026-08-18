@@ -1,0 +1,205 @@
+"""The path from an application packet to a reviewer report.
+
+    PDF or permit number
+      -> Textract StartDocumentAnalysis, async, FORMS and TABLES
+      -> field extraction into the parameters the rules name
+      -> rule evaluation against rules_7101.yaml
+      -> report composition
+      -> text and HTML
+
+Correctness does not depend on the network. Textract output is cached to disk
+keyed by the SHA256 of the document, so a second run on the same file needs no
+AWS at all. The rules produce every verdict and every finding locally. Bedrock is
+optional at two points, embeddings for the precedent list and a plain language
+pass on remedy wording, and both degrade to a complete report that says what was
+unavailable.
+"""
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+from . import config
+from .ingest import layout
+from .ingest.extract import extract_facts
+from .ingest.textract import TextractClient, hash_file
+from .report import compose as compose_mod
+from .report import render as render_mod
+from .rules import engine
+
+
+@dataclass
+class ReviewResult:
+    composed: Any
+    text: str
+    html: str
+    facts: dict[str, Any] = field(default_factory=dict)
+    subject: dict[str, Any] = field(default_factory=dict)
+    offline: bool = True
+    warnings: list[str] = field(default_factory=list)
+
+
+def _load_graph_quietly():
+    """The graph enriches findings with cross references. Absence is not fatal."""
+    try:
+        from .rules.graph import load_graph
+        return load_graph()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def find_local_pdf(permit_or_id: str) -> Path | None:
+    """Look for a cached example PDF for a permit number or detail id."""
+    examples = config.OUT_DIR / "examples"
+    if not examples.exists():
+        return None
+    for pdf in sorted(examples.glob("*.pdf")):
+        if permit_or_id in pdf.stem:
+            return pdf
+    return None
+
+
+def s3_key_for_permit(permit_or_id: str, manifest: Path | None = None) -> str | None:
+    """Find the first harvested document for a permit in the manifest."""
+    manifest = Path(manifest or (config.OUT_DIR / "manifest_control.jsonl"))
+    if not manifest.exists():
+        return None
+    for line in manifest.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if permit_or_id not in (
+            str(record.get("detail_id")), str(record.get("permitNumber"))
+        ):
+            continue
+        documents = record.get("documents") or []
+        for document in documents:
+            key = document.get("s3_key") or document.get("key")
+            if key:
+                return key
+    return None
+
+
+def analyze(
+    pdf: Path | None = None,
+    permit: str | None = None,
+    manifest: Path | None = None,
+    allow_network: bool = True,
+    client: TextractClient | None = None,
+):
+    """Get a read Document plus a description of where it came from.
+
+    Tries the offline cache before anything else, so the common demo path makes no
+    network call and needs no credentials.
+    """
+    client = client or TextractClient()
+    subject: dict[str, Any] = {}
+
+    if permit and pdf is None:
+        pdf = find_local_pdf(permit)
+        if pdf is not None:
+            subject["permit_number"] = permit
+
+    if pdf is not None:
+        pdf = Path(pdf)
+        subject["document"] = pdf.name
+        doc_hash = hash_file(pdf)
+        subject["document_hash"] = doc_hash
+        analysis = client.cached_by_hash(doc_hash)
+        if analysis is not None:
+            subject["source"] = "cached Textract analysis (no network used)"
+            return analysis, subject, True
+        if not allow_network:
+            raise RuntimeError(
+                f"no cached analysis for {pdf.name} and network use was declined. "
+                f"Run once with network access to populate the cache."
+            )
+        analysis = client.analyze_file(pdf)
+        subject["source"] = "Textract StartDocumentAnalysis, FORMS and TABLES"
+        return analysis, subject, False
+
+    if permit:
+        key = s3_key_for_permit(permit, manifest)
+        if key is None:
+            raise RuntimeError(
+                f"permit {permit} has no harvested document. Only 218 of the 1226 "
+                f"approved permits carry one. Pass --pdf with a local file instead."
+            )
+        subject["permit_number"] = permit
+        subject["document"] = key.rsplit("/", 1)[-1]
+        cached = client.cached(key)
+        if cached is not None:
+            subject["source"] = f"cached Textract analysis of s3://{key}"
+            return cached, subject, True
+        if not allow_network:
+            raise RuntimeError(f"no cached analysis for {key} and network declined")
+        analysis = client.analyze(key)
+        subject["source"] = f"Textract analysis of s3://{key}"
+        return analysis, subject, False
+
+    raise ValueError("pass either a pdf path or a permit number")
+
+
+def review(
+    pdf: Path | None = None,
+    permit: str | None = None,
+    manifest: Path | None = None,
+    allow_network: bool = True,
+    with_precedents: bool = True,
+    rephrase: bool = False,
+    client: TextractClient | None = None,
+) -> ReviewResult:
+    """Run the whole chain and return the rendered report."""
+    warnings: list[str] = []
+
+    analysis, subject, offline = analyze(
+        pdf=pdf, permit=permit, manifest=manifest,
+        allow_network=allow_network, client=client,
+    )
+    if not analysis.ok:
+        raise RuntimeError(
+            f"document analysis did not succeed: status {analysis.status} "
+            f"{analysis.message or ''}".strip()
+        )
+
+    document = layout.parse_blocks(analysis.blocks)
+    subject["pages"] = document.pages
+
+    extraction = extract_facts(document)
+
+    # The rules are the only thing that produces a verdict.
+    report = engine.evaluate(extraction.facts)
+
+    precedents = None
+    if with_precedents:
+        try:
+            from .retrieval.search import search_for_facts
+            precedents = search_for_facts(extraction.facts, k=5)
+        except Exception as exc:  # noqa: BLE001
+            warnings.append(f"precedent lookup unavailable: {exc}")
+
+    composed = compose_mod.compose(
+        report,
+        extraction=extraction,
+        graph=_load_graph_quietly(),
+        precedents=precedents,
+        subject=subject,
+    )
+
+    if rephrase:
+        composed = compose_mod.rephrase_remedies(composed)
+
+    return ReviewResult(
+        composed=composed,
+        text=render_mod.render_text(composed),
+        html=render_mod.render_html(composed),
+        facts=extraction.facts,
+        subject=subject,
+        offline=offline,
+        warnings=warnings,
+    )
