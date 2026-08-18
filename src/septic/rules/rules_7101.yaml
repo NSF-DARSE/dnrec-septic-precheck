@@ -369,6 +369,7 @@ rules:
       system_type:
         - conventional
         - gravity
+      construction_type: new construction
     parameter: limiting_zone_depth
     operator: ">="
     threshold: 20
@@ -384,13 +385,15 @@ rules:
       depend on a symbol. The same section carries an explicit exception a reviewer
       must apply: when replacing a failing or malfunctioning system, Section
       5.2.4.2.4.1 is used "without regard for the 20 inch limiting condition", so
-      this rule must not fire on a repair or replacement application. applies_to
-      cannot express that yet because it tests equality against facts and the
-      condition needed is the absence of a replacement flag. Until the extractor
-      supplies a construction type fact, a reviewer should read a failure of this
-      rule on a replacement application as not applicable. This is the clearest
-      case in the set where applies_to is too weak for the regulation, and it
-      should be raised before certification.
+      this rule must not fire on a repair or replacement application. That
+      exception is now expressed in applies_to. The extractor reads the
+      construction type from the ticked box on the construction permit application,
+      where the options are New Construction, Replacement, Component Replacement,
+      Repair to Existing System and Authorization to Use Existing System, so the
+      rule is scoped to new construction and reports UNKNOWN rather than a
+      deficiency when the box cannot be read. Nothing about the threshold, the
+      citation or the direction of the comparison changed when that scope was
+      added.
 
   # ---------------------------------------------------------------------------
   # Design flow.

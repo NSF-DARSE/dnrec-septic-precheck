@@ -62,18 +62,64 @@ FACTS: dict[str, dict[str, Any]] = {
         "allowed": {
             "gravity", "sand mound", "low pressure pipe", "wisconsin at-grade",
             "pressure dosed", "sand-lined", "drip", "conventional",
+            "recirculating sand filter", "gravelless chamber", "holding tank",
         },
-        "patterns": [
-            (r"\b(full\s+depth\s+gravity|capping\s+fill\s+gravity|gravity)\b",
-             "gravity"),
-            (r"\b(elevated\s+sand\s+mound|sand\s+mound)\b", "sand mound"),
-            (r"\b(low\s+pressure\s+pipe|\bLPP\b)\b", "low pressure pipe"),
-            (r"\b(wisconsin\s+at[\s-]?grade)\b", "wisconsin at-grade"),
-            (r"\b(pressure\s+dosed)\b", "pressure dosed"),
-            (r"\b(sand[\s-]?lined)\b", "sand-lined"),
-            (r"\b(micro[\s-]?drip|drip\s+irrigation)\b", "drip"),
-        ],
+        # The construction permit application ticks one of these. Read the tick,
+        # not the printed list: the list is on every form whatever the answer.
+        # (FD) is full depth and (CF) is capping fill, and Section 5.3.12.1 covers
+        # both as gravity, so both normalise to gravity for rule purposes while
+        # the provenance keeps what the form actually said.
+        "checkbox": {
+            "gravity": ["gravity fd", "gravity cf", "full depth gravity",
+                        "capping fill gravity", "gravity"],
+            "sand mound": ["elevated sand mound", "sand mound"],
+            "low pressure pipe": ["low pressure pipe fd", "low pressure pipe cf",
+                                  "low pressure pipe"],
+            "pressure dosed": ["std pressure dose fd", "std pressure dose cf",
+                               "pressure dose fd", "pressure dose cf",
+                               "pressure dose"],
+            "wisconsin at-grade": ["wisconsin at grade"],
+            "recirculating sand filter": ["recirculating sand filter"],
+            "drip": ["subsurface micro irrigation", "micro irrigation"],
+            "gravelless chamber": ["gravelless chamber"],
+            "holding tank": ["permanent holding tank", "holding tank"],
+        },
+        # No text patterns. The brief for this change asked for the printed option
+        # list to stay as a fallback for packets with no box ticked, and the
+        # measurement refused it: across the cached corpus the fallback fired 11
+        # times and was wrong 11 times. Six peat packets matched the printed
+        # regulatory note "for all New and Replacement gravity systems starting
+        # January", two low pressure pipe packets matched a drawing callout for a
+        # "NEW 4in GRAVITY BUILDING SEWER LINE", which is the pipe from the house
+        # and not the disposal system, one matched a note about a future
+        # "SAND-LINED UPGRADE" to the spare area, and the rest matched the option
+        # list itself. A tick is an answer and prose near the word gravity is not,
+        # so a packet with no box ticked now reports this as unread and the three
+        # rules it gates return UNKNOWN.
+        "patterns": [],
         "help": "gravity, sand mound, low pressure pipe and so on",
+    },
+    "construction_type": {
+        "kind": "category",
+        "labels": ["construction type", "type of construction",
+                   "nature of work"],        "allowed": {
+            "new construction", "replacement", "component replacement",
+            "repair", "authorization to use existing system",
+        },
+        # Section 5.2.4.2.4.2 applies the 20 inch limiting zone condition to new
+        # construction and exempts the replacement of a failing system from it, so
+        # SEP-002 needs to know which one this is. The form ticks it.
+        "checkbox": {
+            "new construction": ["new construction"],
+            "component replacement": ["component replacement"],
+            "replacement": ["replacement"],
+            "repair": ["repair to existing system", "repair"],
+            "authorization to use existing system": [
+                "authorization to use existing system",
+            ],
+        },
+        "patterns": [],
+        "help": "new construction, replacement, repair or a component replacement",
     },
     "use_type": {
         "kind": "category",
@@ -103,6 +149,14 @@ FACTS: dict[str, dict[str, Any]] = {
         "kind": "category",
         "labels": ["absorption facility", "absorption type", "disposal type"],
         "allowed": {"trench", "bed"},
+        # Same defect as system_type, same fix. The form prints Trench and Bed
+        # side by side and ticks one, so the printed word Trench was being read as
+        # the answer on every packet: the text patterns found trench on 108 of 109
+        # while the ticked boxes across the same corpus say 75 trench and 24 bed.
+        "checkbox": {
+            "trench": ["trench", "trenches"],
+            "bed": ["bed", "seepage bed"],
+        },
         "patterns": [
             (r"\bseepage\s+bed\b", "bed"),
             (r"\bseepage\s+trench(?:es)?\b", "trench"),
@@ -342,6 +396,8 @@ class Fact:
         """One line a reviewer can read."""
         if self.source == "form_field":
             where = f"form field {self.label!r}"
+        elif self.source == "checkbox":
+            where = f"ticked box {self.label!r}"
         elif self.source == "text_pattern":
             where = "text on the page"
         else:
@@ -660,6 +716,86 @@ def _check_range(name: str, value: float, spec: dict) -> str | None:
     return None
 
 
+def _from_checkboxes(
+    document: Document, name: str, spec: dict, rejected: list[dict]
+) -> Fact | None:
+    """Read a category from the box the applicant actually ticked.
+
+    Textract returns a ticked box as a form field whose value is "[X]", keyed by
+    the option printed beside it. That is the only reliable route to a category on
+    this form, because the form prints every option and a text pattern scanned
+    against the page finds all of them: the first entry in the pattern list won on
+    every packet, so system_type read gravity on 109 of 124 cached documents while
+    the ticked boxes said gravity on 57 of 108.
+
+    Two boxes ticked in one group is a real ambiguity on a real form, and the
+    answer is that nobody knows, so this returns None and records why. Picking the
+    first is what caused the problem this function exists to fix.
+    """
+    groups = spec.get("checkbox") or {}
+    if not groups:
+        return None
+
+    found: dict[str, list[Any]] = {}
+    for form_field in document.fields:
+        if "[X]" not in form_field.value:
+            continue
+        key_tokens = _tokens(form_field.key)
+        if not key_tokens:
+            continue
+        for value, options in groups.items():
+            for option in options:
+                option_tokens = option.split()
+                # Whole word prefix, so a box labelled "Bedrooms" is not the
+                # option "Bed", and "Component Replacement septic tank & 5x5 to be
+                # replaced" is still a component replacement.
+                if key_tokens[:len(option_tokens)] == option_tokens:
+                    found.setdefault(value, []).append(form_field)
+                    break
+
+    if not found:
+        return None
+    if len(found) > 1:
+        ticked = sorted(
+            f"{f.key.strip()!r}" for fields in found.values() for f in fields
+        )
+        rejected.append({
+            "parameter": name,
+            "reason": (
+                f"{len(found)} different {name} boxes are ticked on this form, "
+                f"{', '.join(ticked)}, so which one applies was not established"
+            ),
+            "page": min(f.page for fields in found.values() for f in fields),
+        })
+        return None
+
+    value, fields = next(iter(found.items()))
+    allowed = spec.get("allowed")
+    if allowed and value not in allowed:
+        rejected.append({
+            "parameter": name,
+            "reason": (
+                f"ticked box {fields[0].key.strip()!r} reads as {value!r}, which "
+                f"is not one of {sorted(allowed)}"
+            ),
+            "page": fields[0].page,
+        })
+        return None
+
+    form_field = min(fields, key=lambda f: f.page)
+    return Fact(
+        name=name,
+        value=value,
+        source="checkbox",
+        # The raw string keeps what the form said, so a reviewer opening the page
+        # sees "Pressure Dose (CF)" rather than the normalised "pressure dosed".
+        raw=f"{form_field.key.strip()} [X]",
+        page=form_field.page,
+        confidence=form_field.confidence,
+        label=form_field.key.strip().rstrip(":"),
+    )
+
+
 def _from_form_fields(
     document: Document, name: str, spec: dict, rejected: list[dict]
 ) -> Fact | None:
@@ -843,29 +979,37 @@ def _derive_flow_per_bedroom(extraction: Extraction) -> Fact | None:
 def extract_facts(document: Document) -> Extraction:
     """Read every known parameter off a document.
 
-    Order matters: form fields are preferred over text patterns, because a form
-    field pairs a label with a value while a text pattern only sees proximity.
-    Derived facts run last, once their inputs are known.
+    Order matters. A ticked checkbox comes first, because it is the applicant's
+    answer rather than a phrase near it. Then form fields, which pair a label with
+    a value. Then text patterns, which only see proximity. Derived facts run last,
+    once their inputs are known.
 
-    A value the form field stage refused is not retried against the page text.
-    The packet answered the form's "# of Bedrooms" field with "9 Employees", which
-    the form field stage rejected and the text pattern then read straight back out
-    of the same words, deriving 40 gallons per day per bedroom and failing a rule.
-    A field that exists and cannot be read is unreadable, and looking for the same
-    number in the prose around it is not a second opinion. A blank field is
+    A value an earlier stage refused is not retried by a later one. The packet
+    answered the form's "# of Bedrooms" field with "9 Employees", which the form
+    field stage rejected and the text pattern then read straight back out of the
+    same words, deriving 40 gallons per day per bedroom and failing a rule. A field
+    that exists and cannot be read is unreadable, and looking for the same number
+    in the prose around it is not a second opinion. The same holds for two ticked
+    boxes in one group: the form is ambiguous, and reading the printed option list
+    instead would replace an honest unknown with a guess. A blank field is
     different: nothing was refused there, so the fallback still runs.
     """
     extraction = Extraction()
 
     for name, spec in FACTS.items():
         before = len(extraction.rejected)
-        fact = _from_form_fields(document, name, spec, extraction.rejected)
-        refused = [
-            entry for entry in extraction.rejected[before:]
-            if entry.get("parameter") == name
-            and "present but blank" not in entry.get("reason", "")
-        ]
-        if fact is None and not refused:
+
+        def refused() -> bool:
+            return any(
+                entry.get("parameter") == name
+                and "present but blank" not in entry.get("reason", "")
+                for entry in extraction.rejected[before:]
+            )
+
+        fact = _from_checkboxes(document, name, spec, extraction.rejected)
+        if fact is None and not refused():
+            fact = _from_form_fields(document, name, spec, extraction.rejected)
+        if fact is None and not refused():
             fact = _from_text(document, name, spec, extraction.rejected)
         if fact is None:
             extraction.missing.append(name)

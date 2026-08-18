@@ -351,6 +351,7 @@ class TestShippedRuleSet:
         generous_facts = {
             "system_scale": "small",
             "system_type": "conventional",
+            "construction_type": "new construction",
             "use_type": "residential",
             "absorption_type": "bed",
             "dist_disposal_to_well": 1,

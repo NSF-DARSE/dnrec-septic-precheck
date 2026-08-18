@@ -353,6 +353,232 @@ class TestLabelsFromTheSurveyedCorpus:
         assert extraction.facts["dist_disposal_to_property_line"] == 22.0
 
 
+class TestCheckboxCategories:
+    """The category facts come from the box the applicant ticked.
+
+    The construction permit application prints every option it offers, so a text
+    pattern scanned against the page finds all of them and the first entry in the
+    pattern list wins. That is how system_type read gravity on 109 of 124 cached
+    documents while the ticked boxes across the same corpus said gravity on 56.
+    Permit 281364, which is the packet used to demonstrate the tool, ticks
+    "Pressure Dose (CF)" and was reading as gravity.
+
+    Textract returns a ticked box as a form field whose value is "[X]", keyed by
+    the option printed beside it. These are those keys, as Textract reports them.
+    """
+
+    def _selection_blocks(self, options, page=1, start=900):
+        """KEY_VALUE_SET blocks with SELECTION_ELEMENT values, as Textract emits.
+
+        Built the long way rather than with _kv_blocks, because a ticked box has no
+        WORD child at all: the value block's child is a SELECTION_ELEMENT whose
+        SelectionStatus is SELECTED, and that is what layout.parse_blocks turns
+        into the string "[X]".
+        """
+        blocks = []
+        n = start
+        for label, selected in options:
+            geometry = {"BoundingBox": {"Left": 0.1, "Top": 0.1 + n / 1000,
+                                        "Width": 0.2, "Height": 0.02}}
+            blocks.append({
+                "Id": f"ck{n}", "BlockType": "KEY_VALUE_SET",
+                "EntityTypes": ["KEY"], "Confidence": 93.0, "Page": page,
+                "Geometry": geometry,
+                "Relationships": [
+                    {"Type": "CHILD", "Ids": [f"ckw{n}"]},
+                    {"Type": "VALUE", "Ids": [f"cv{n}"]},
+                ],
+            })
+            blocks.append({
+                "Id": f"ckw{n}", "BlockType": "WORD", "Text": label,
+                "Confidence": 93.0, "Page": page, "Geometry": geometry,
+            })
+            blocks.append({
+                "Id": f"cv{n}", "BlockType": "KEY_VALUE_SET",
+                "EntityTypes": ["VALUE"], "Confidence": 93.0, "Page": page,
+                "Geometry": geometry,
+                "Relationships": [{"Type": "CHILD", "Ids": [f"cs{n}"]}],
+            })
+            blocks.append({
+                "Id": f"cs{n}", "BlockType": "SELECTION_ELEMENT",
+                "SelectionStatus": "SELECTED" if selected else "NOT_SELECTED",
+                "Confidence": 93.0, "Page": page, "Geometry": geometry,
+            })
+            n += 1
+        return blocks
+
+    FORM_OPTIONS = [
+        "Gravity (FD)", "Gravity (CF)", "Std. Pressure Dose (FD)",
+        "Std. Pressure Dose (CF)", "Pressure Dose (FD)", "Pressure Dose (CF)",
+        "Low Pressure Pipe(FD)", "Low Pressure Pipe (CF)",
+        "Elevated Sand Mound", "Wisconsin At-Grade",
+        "Recirculating Sand Filter", "Subsurface Micro Irrigation",
+        "Gravelless Chamber", "Holding Tank",
+    ]
+
+    def _form(self, ticked, extra=()):
+        """The printed option list with one box ticked, as a real form is."""
+        options = [(label, label in ticked) for label in self.FORM_OPTIONS]
+        options += [(label, True) for label in extra]
+        return layout.parse_blocks(self._selection_blocks(options))
+
+    @pytest.mark.parametrize("ticked,expected", [
+        ("Gravity (FD)", "gravity"),
+        ("Gravity (CF)", "gravity"),
+        ("Pressure Dose (FD)", "pressure dosed"),
+        ("Pressure Dose (CF)", "pressure dosed"),
+        ("Std. Pressure Dose (CF)", "pressure dosed"),
+        ("Low Pressure Pipe (CF)", "low pressure pipe"),
+        ("Low Pressure Pipe(FD)", "low pressure pipe"),
+        ("Elevated Sand Mound", "sand mound"),
+        ("Wisconsin At-Grade", "wisconsin at-grade"),
+    ])
+    def test_the_ticked_box_wins_over_the_printed_list(self, ticked, expected):
+        extraction = extract_facts(self._form({ticked}))
+        assert extraction.facts["system_type"] == expected, (
+            f"{ticked} read as {extraction.facts.get('system_type')}"
+        )
+
+    def test_the_demo_packet_reads_pressure_dose_not_gravity(self):
+        """Permit 281364 ticks Pressure Dose (CF) and the record agrees.
+
+        Gravity is the first printed option on the form, so the old pattern list
+        read gravity here, which applied two rules written for gravity trench and
+        bed systems to a pressure dosed one.
+        """
+        extraction = extract_facts(self._form({"Pressure Dose (CF)"}))
+        assert extraction.facts["system_type"] == "pressure dosed"
+        fact = extraction.provenance["system_type"]
+        assert fact.source == "checkbox"
+        assert fact.raw == "Pressure Dose (CF) [X]"
+        assert "ticked box" in fact.describe()
+        assert "Pressure Dose (CF)" in fact.describe()
+
+    def test_full_depth_and_capping_fill_both_normalise_to_gravity(self):
+        """Section 5.3.12.1 covers both, so the rules see one value.
+
+        The provenance still says which one the form ticked, because a reviewer
+        opening the citation needs the form's own words.
+        """
+        for ticked in ("Gravity (FD)", "Gravity (CF)"):
+            extraction = extract_facts(self._form({ticked}))
+            assert extraction.facts["system_type"] == "gravity"
+            assert extraction.provenance["system_type"].raw == f"{ticked} [X]"
+
+    def test_two_ticked_boxes_are_an_unknown_not_a_guess(self):
+        """A form with two system types ticked has not stated one.
+
+        Picking the first is what produced the defect this reader replaces, and
+        seven documents in the cached corpus really do tick two.
+        """
+        extraction = extract_facts(
+            self._form({"Gravity (FD)", "Elevated Sand Mound"})
+        )
+        assert "system_type" not in extraction.facts
+        assert any(
+            r["parameter"] == "system_type" and "different" in r["reason"]
+            for r in extraction.rejected
+        ), extraction.rejected
+
+    def test_an_ambiguous_form_does_not_fall_back_to_the_page_text(self):
+        """The ambiguity has to survive the later stages.
+
+        Falling through to a text pattern would replace an honest unknown with the
+        first option printed on the form, which is where this started.
+        """
+        blocks = self._selection_blocks(
+            [(label, label in ("Gravity (FD)", "Elevated Sand Mound"))
+             for label in self.FORM_OPTIONS]
+        )
+        blocks += _line_blocks(
+            ["Full Depth Gravity system, capping fill gravity"], page=1
+        )
+        extraction = extract_facts(layout.parse_blocks(blocks))
+        assert "system_type" not in extraction.facts
+
+    def test_no_box_ticked_leaves_the_system_type_unread(self):
+        """With nothing ticked there is no answer on the form.
+
+        The printed option list used to serve as a fallback here. It was measured
+        against the cached corpus and was wrong on all 11 packets where it fired,
+        matching a regulatory note about "New and Replacement gravity systems", a
+        drawing callout for a gravity building sewer line, and the option list
+        itself.
+        """
+        blocks = self._selection_blocks(
+            [(label, False) for label in self.FORM_OPTIONS]
+        )
+        blocks += _line_blocks([
+            "This permit is issued for all New and Replacement gravity systems",
+            "NEW 4in GRAVITY BUILDING SEWER LINE",
+        ], page=1)
+        extraction = extract_facts(layout.parse_blocks(blocks))
+        assert "system_type" not in extraction.facts
+        assert "system_type" in extraction.missing
+
+    def test_construction_type_comes_from_the_same_boxes(self):
+        options = [
+            ("New Construction", False), ("Replacement", False),
+            ("Component Replacement", True), ("Repair to Existing System", False),
+            ("Authorization to Use Existing System", False),
+        ]
+        extraction = extract_facts(layout.parse_blocks(
+            self._selection_blocks(options)
+        ))
+        assert extraction.facts["construction_type"] == "component replacement"
+
+    def test_component_replacement_is_not_read_as_a_replacement(self):
+        """One real key absorbed the description written beside it.
+
+        Textract returned the key "Component Replacement septic tank & 5x5 to be
+        replaced with component: citadel tank". Matching on a whole word prefix
+        keeps that a component replacement, and keeps the plain "Replacement" box
+        distinct from it.
+        """
+        extraction = extract_facts(layout.parse_blocks(self._selection_blocks([
+            ("Component Replacement septic tank & 5x5 to be replaced with "
+             "component: citadel tank", True),
+            ("New Construction", False),
+            ("Replacement", False),
+        ])))
+        assert extraction.facts["construction_type"] == "component replacement"
+
+    def test_absorption_type_comes_from_the_ticked_box(self):
+        """Trench and Bed sit side by side on the form and one is ticked.
+
+        The text patterns found trench on 108 of 109 surveyed packets while the
+        ticked boxes across the same documents say 78 trench and 38 bed.
+        """
+        for ticked, expected in (("Trench", "trench"), ("Bed", "bed")):
+            extraction = extract_facts(layout.parse_blocks(
+                self._selection_blocks([("Trench", ticked == "Trench"),
+                                        ("Bed", ticked == "Bed")])
+            ))
+            assert extraction.facts["absorption_type"] == expected
+
+    def test_a_bedrooms_field_is_not_the_bed_option(self):
+        """Whole word prefix matching, not substring.
+
+        "Bedrooms" starts with the letters of "Bed" and is not the Bed option.
+        """
+        blocks = self._selection_blocks([("Bedrooms", True)])
+        extraction = extract_facts(layout.parse_blocks(blocks))
+        assert "absorption_type" not in extraction.facts
+
+    def test_a_pre_treatment_other_box_does_not_claim_the_system_type(self):
+        """The Other box names a pre-treatment unit, not a disposal method.
+
+        Real packets tick "Other EcoPod-N E-100NIM" or "Other: PURA FLOW PEAT"
+        beside a system type box. Those are treatment units, so they must not be
+        read as a system type and must not make the form look ambiguous.
+        """
+        extraction = extract_facts(self._form(
+            {"Low Pressure Pipe (CF)"},
+            extra=("Other EcoPod-N E-100NIM", "Septic Tank", "Stone/Gravel"),
+        ))
+        assert extraction.facts["system_type"] == "low pressure pipe"
+
+
 class TestExtraction:
     def test_reads_labelled_fields(self, clean_document):
         extraction = extract_facts(clean_document)
@@ -366,7 +592,9 @@ class TestExtraction:
         for name in extraction.facts:
             assert name in extraction.provenance, f"{name} has no provenance"
             fact = extraction.provenance[name]
-            assert fact.source in ("form_field", "text_pattern", "derived")
+            assert fact.source in (
+                "checkbox", "form_field", "text_pattern", "derived"
+            )
             assert fact.describe()
 
     def test_derives_flow_per_bedroom(self, clean_document):
