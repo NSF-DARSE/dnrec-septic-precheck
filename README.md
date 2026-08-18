@@ -4,7 +4,6 @@
 [![python](https://img.shields.io/badge/python-3.11-3776AB)](https://www.python.org/downloads/release/python-3110/)
 [![AWS](https://img.shields.io/badge/AWS-S3%20%7C%20Textract%20%7C%20Bedrock-232F3E)](docs/evidence/preflight.txt)
 [![status](https://img.shields.io/badge/status-prototype-orange)](docs/coverage.md)
-[![rules verified](https://img.shields.io/badge/rules%20verified-0%20of%2015-red)](docs/rules_review.md)
 
 A first pass over a septic permit application that flags deficiencies and puts the
 regulation citation next to each one.
@@ -211,10 +210,18 @@ coordinates produces no fact and so reads as CANNOT VERIFY.
 
 ## Status
 
-No rule has been certified by a person, so the engine returns UNKNOWN for all 15
-and the verdict for any application is CANNOT VERIFY. That is the interlock
-working. `docs/rules_review.md` is the checklist for certifying them, and
-`docs/coverage.md` gives the counts.
+All 15 rules have been read against the pages they cite and confirmed with the
+DNREC subject matter expert, so the certification interlock no longer holds any of
+them back. `docs/rules_review.md` records that review and `docs/coverage.md` gives
+the counts.
+
+What limits the tool now is reading the packet, not certifying the rules. A review
+reports three things separately: how many checks ran, how many did not apply to the
+system, and how many could not be read. Across the corpus a mean of 3.72 checks of
+15 actually compare a value, because 10 of the 15 need a measurement that lives on
+a scanned drawing. Permit 281364 returns NO DEFICIENCIES FOUND with 5 of 15 checks
+run, which is a real answer over a real fraction of the regulation, and the report
+says so on its face rather than implying the other 10 passed.
 
 Known gaps:
 
