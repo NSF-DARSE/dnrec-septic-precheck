@@ -1,0 +1,69 @@
+BEDROCK INVOKE SAMPLE
+========================================================================
+Both models this project calls, with the exact request and response.
+
+Neither is ever asked whether an application complies. The text model
+rephrases remedy wording only, and it is handed the verdict as an input.
+The embedding model produces vectors for the precedent list, which is
+context for the reviewer and never a verdict.
+
+------------------------------------------------------------------------
+MODEL  us.anthropic.claude-opus-4-6-v1
+PURPOSE  optional plain language pass on remedy wording
+
+REQUEST
+{
+  "anthropic_version": "bedrock-2023-05-31",
+  "max_tokens": 400,
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Rewrite each numbered remedy below in plainer language for a homeowner. Keep every number, unit, and section reference exactly as written. Do not add, remove, combine, or reorder items. Do not comment on whether the application should be approved. Return the same count of numbered lines and nothing else.\n\n1. Move the disposal area so it is at least 100 feet from every well shown on the site plan, or document the Department approval that permits a lesser distance under Exhibit C note a, e, h or i."
+    }
+  ]
+}
+
+RESPONSE
+{
+  "model": "claude-opus-4-6",
+  "id": "msg_bdrk_01EXzwoFcvKESWedpGCdcPLP",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "1. Relocate the disposal area so it is no less than 100 feet away from every well shown on the site plan, or provide proof that the Department has approved a shorter distance under Exhibit C note a, e, h or i."
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {
+    "input_tokens": 119,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 0
+    },
+    "output_tokens": 56
+  }
+}
+
+EXTRACTED TEXT
+1. Relocate the disposal area so it is no less than 100 feet away from every well shown on the site plan, or provide proof that the Department has approved a shorter distance under Exhibit C note a, e, h or i.
+
+------------------------------------------------------------------------
+MODEL  amazon.titan-embed-text-v2:0
+PURPOSE  embeddings for the local permit index
+
+REQUEST
+{
+  "inputText": "permitStatus Approved; septicSystemType Gravity; constructionType New Construction; propUse 4-bedroom; county Sussex; perkRate 40; flowRate 480; year 2025"
+}
+
+RESPONSE
+  embedding dimensions 1024
+  first 12 values      [-0.038704, 0.045471, 0.031268, 0.025625, -0.058221, 0.011062, -0.0024, -0.00917, 0.013353, -0.032874, 0.038644, 0.059942]
+  inputTextTokenCount  39

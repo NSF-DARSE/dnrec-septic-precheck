@@ -1,0 +1,25 @@
+S3 BUCKET INVENTORY
+========================================================================
+bucket   dnrec-septic-permits-241809646258
+region   us-east-1
+
+total objects  388
+total bytes    1947715494 (1.95 GB)
+
+by top level prefix
+  prefix                     objects           bytes
+  pdfs                           384      1944180755
+  manifest                         3         1449510
+  raw                              1         2085229
+
+representative sample of 10 keys
+     1147186  manifest/manifest_control.jsonl
+     6826025  pdfs/status=Approved/60843934_282181/00_Permit.pdf
+     3431160  pdfs/status=Approved/60847968_283073/00_Permit.pdf
+      168298  pdfs/status=Approved/60848184_283131/00_Permit.pdf
+     6589442  pdfs/status=Approved/60848490_283201/00_Permit.pdf
+     2071655  pdfs/status=Approved/60848842_283265/01_Permit-Application-Request.pdf
+     3367185  pdfs/status=Approved/60849397_283319/00_Permit.pdf
+      219672  pdfs/status=Denied/60683822_226509/03_Other.pdf
+     1115263  pdfs/status=Denied/60729790_235110/00_Other.pdf
+    12042066  pdfs/status=Denied/60760080_240173/00_Other.pdf
