@@ -38,7 +38,7 @@ flowchart TB
     engine["rule engine<br/>rules/engine.py"]
     yaml[("rules_7101.yaml<br/>15 rules, 0 certified")]
     pdf[("Regulation PDF<br/>2014, 245 pages")]
-    graph[("Regulation graph<br/>reg_graph.json")]
+    reggraph[("Regulation graph<br/>reg_graph.json")]
     embed["Bedrock Titan v2<br/>embeddings only"]
     index[("Local vector index<br/>permit_index.json")]
     compose["report composer<br/>report/compose.py"]
@@ -54,8 +54,8 @@ flowchart TB
     layout -->|"lines, form fields, tables"| extract
     extract -->|"facts with provenance"| engine
     yaml -->|"thresholds and citations"| engine
-    pdf -->|"parsed once into"| graph
-    graph -->|"cross references and definitions"| compose
+    pdf -->|"parsed once into"| reggraph
+    reggraph -->|"cross references and definitions"| compose
     engine -->|"PASS, FAIL, UNKNOWN per rule"| compose
     csv -->|"permit summaries"| embed
     embed -->|"vectors"| index
@@ -148,6 +148,7 @@ python -m venv .venv
 .venv\Scripts\activate                # Windows
 source .venv/bin/activate             # macOS and Linux
 pip install -r requirements.txt
+pip install -e .
 pytest
 ```
 

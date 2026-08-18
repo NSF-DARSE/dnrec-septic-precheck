@@ -27,8 +27,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Installs the package itself, so "python -m septic" works from a clean
+      # clone. Without this the only things that import septic are the ones
+      # carrying their own sys.path patch: conftest.py, app.py, and
+      # scripts/_bootstrap.py. pytest passed while the documented command in the
+      # README did not, which is the failure this step exists to prevent.
+      - name: Install the package
+        run: pip install -e .
+
       - name: Show resolved versions
         run: pip list
+
+      - name: Check the documented entry point works
+        run: python -m septic --help
 
       # No secrets and no AWS credentials. No test needs either: the review
       # pipeline tests replace the session factory with one that raises, and the
