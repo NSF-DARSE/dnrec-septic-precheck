@@ -1,0 +1,41 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # No caching. This workflow exists to prove requirements.txt installs from
+      # scratch on a machine that is not the one it was written on, which is how
+      # an unpinned numpy broke the development environment. A warm cache would
+      # hide exactly the failure it is here to catch.
+      - name: Install from requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Show resolved versions
+        run: pip list
+
+      # No secrets and no AWS credentials. No test needs either: the review
+      # pipeline tests replace the session factory with one that raises, and the
+      # console tests skip when streamlit is absent, since streamlit is a demo
+      # dependency and deliberately not in requirements.txt.
+      #
+      # The permit CSV is gitignored and no test reads it. The regulation PDF is
+      # tracked, so the graph tests build their fixture from it.
+      - name: Run tests
+        run: pytest -q

@@ -1,5 +1,11 @@
 # dnrec-septic-precheck
 
+[![tests](https://github.com/NSF-DARSE/dnrec-septic-precheck/actions/workflows/ci.yml/badge.svg)](https://github.com/NSF-DARSE/dnrec-septic-precheck/actions/workflows/ci.yml)
+[![python](https://img.shields.io/badge/python-3.11-3776AB)](https://www.python.org/downloads/release/python-3110/)
+[![AWS](https://img.shields.io/badge/AWS-S3%20%7C%20Textract%20%7C%20Bedrock-232F3E)](docs/evidence/preflight.txt)
+[![status](https://img.shields.io/badge/status-prototype-orange)](docs/coverage.md)
+[![rules verified](https://img.shields.io/badge/rules%20verified-0%20of%2015-red)](docs/rules_review.md)
+
 A first pass over a septic permit application that flags deficiencies and puts the
 regulation citation next to each one.
 
@@ -115,14 +121,20 @@ record their reasons.
 
 ```
 docs/                 handoff notes, decisions, the rule review checklist
+docs/coverage.md      how much of the regulation is checked, in counts
+docs/evidence/        captured AWS output, so the demo does not need credentials
 docs/regulations/     the 2014 regulation PDF, source of every threshold
+data/gis/             Delaware FirstMap hydrography, downloaded once
 src/septic/harvest/   fetching permits and documents into S3
 src/septic/ingest/    Textract, block parsing, field extraction
 src/septic/rules/     rule schema, engine, rule set, regulation graph
 src/septic/retrieval/ embeddings and the local permit index
 src/septic/report/    report composition and rendering
+src/septic/geo.py     coordinate parsing, projection, distance screening
+src/septic/maps.py    the figures
+app.py                the reviewer console
 scripts/              runnable wrappers, no business logic
-tests/                174 tests
+tests/                the suite, run with pytest
 out/                  run artifacts, gitignored
 ```
 
@@ -146,6 +158,16 @@ python -m septic graph build
 python -m septic review --pdf out/examples/permit_281364_60839580.pdf --offline
 ```
 
+The reviewer console, which is what a reviewer would actually be handed:
+
+```bash
+pip install streamlit          # demo only, not a pipeline dependency
+streamlit run app.py
+```
+
+It serves the cached packets with no network and no credentials. Uploading a new
+PDF needs credentials to run Textract, and says so rather than hanging.
+
 Other things that work:
 
 ```bash
@@ -155,19 +177,39 @@ python -m septic graph orphans               # requirements no rule covers yet
 python -m septic preflight                   # check AWS access
 python scripts/verify_rule_quotes.py         # every citation against the PDF
 python scripts/rule_discrimination.py        # denied versus approved
+python scripts/validate_geo.py               # coordinate parsing and distances
+python scripts/make_figures.py               # maps and the comparison figure
+python scripts/coverage_report.py            # regenerate docs/coverage.md
 ```
+
+## Location screening
+
+The regulation is full of isolation distances and Textract cannot measure a scanned
+raster site plan. 105,801 of the CSV rows are geocoded, so distance to mapped
+surface water is computed from coordinates instead, against Delaware FirstMap
+hydrography committed under `data/gis`.
+
+This is a screening prompt, never a determination. The regulation measures from the
+disposal area and a geocoded point is somewhere else on the parcel, so the output
+tells a reviewer what to check on the site plan. `src/septic/geo.py` records all
+four reasons it cannot be a compliance answer, and no rule cites it, because no
+provision of the regulation measures from an address point. A permit with no
+coordinates produces no fact and so reads as CANNOT VERIFY.
 
 ## Status
 
 No rule has been certified by a person, so the engine returns UNKNOWN for all 15
 and the verdict for any application is CANNOT VERIFY. That is the interlock
-working. `docs/rules_review.md` is the checklist for certifying them.
+working. `docs/rules_review.md` is the checklist for certifying them, and
+`docs/coverage.md` gives the counts.
 
 Known gaps:
 
-- 570 sections use obligation language that no rule cites yet.
+- 993 of the 1000 sections that use obligation language are cited by no rule.
 - 12 of the 15 rules need a measurement off a site plan, so the discrimination
   harness cannot test them from the CSV.
+- No public well layer exists, so the well setback cannot be screened from
+  coordinates and has to be read off the plan.
 - `applies_to` cannot express the replacement exemption in Section 5.2.4.2.4.2.
 - Six thresholds were read and rejected, four because PDFium drops the
   less-than-or-equal glyph in this PDF and the direction could not be read.
