@@ -151,22 +151,25 @@ TOKENS: dict[str, dict] = {
     "border": {"hairline": 1, "rule": 3, "accent": 7},
     "font": {"sans": FONT_SANS, "mono": FONT_MONO},
     # The sponsor strip. FSAII is a horizontal wordmark at roughly 1.95 to 1 and
-    # the other three are circular. Four in a row does not fit: at a common height
-    # band of 52 pixels they need 318 pixels and the sidebar has about 300. So the
-    # three circular marks share one row and the wordmark takes its own row
-    # beneath, slightly shorter, which is the conventional lockup for a mixed set
-    # and looks deliberate rather than cramped. The circular marks are given more
-    # height than the wordmark because a circle at a given height carries visibly
-    # less ink than a rectangle at the same height, and the gap is equal so the row
-    # keeps one rhythm.
+    # the other three are circular. They share one height band with width left
+    # free, so the strip has one baseline and one cap line, and the circular marks
+    # are given about 12 percent more height than the wordmark because a circle
+    # carries visibly less ink than a rectangle of the same height. Judged against
+    # a render at the sidebar's real width and again in the footer band.
+    #
+    # max_width is the tight case, the sidebar, where four marks in a row do not
+    # fit: at a common 52 pixels they need 318 and there are about 300. Three
+    # circular marks at 54 with a 20 pixel gap need 202, so the fallback lockup is
+    # the circles on one row with the wordmark centred beneath. In the footer band
+    # there is room for all four on one row, which is what the console uses.
     "sponsor_strip": {
-        "circular_logo_height": 56,
-        "wordmark_height": 44,
+        "circular_logo_height": 64,
+        "wordmark_height": 56,
         "gap": 20,
         "max_width": 300,
         "layout": (
-            "three circular marks on one row, the FSAII wordmark centred on its "
-            "own row beneath"
+            "one row where the width allows it, otherwise three circular marks on "
+            "one row with the FSAII wordmark centred beneath"
         ),
     },
 }
