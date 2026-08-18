@@ -149,6 +149,25 @@ def _dehyphenate(text: str) -> str:
     return re.sub(r"(\w)-\s+(\w)", r"\1\2", text)
 
 
+def _extract_text_pypdfium2(pdf_path: Path) -> list[tuple[int, str]]:
+    """Extract text from each page using pypdfium2.
+
+    Returns a list of (page_number, text) tuples with 1-based page numbers.
+    PDFium resolves embedded fonts correctly where pdfminer emits (cid:NNN)
+    markers, and produces clean text without needing a scrubber. Line endings
+    are normalized from CRLF to LF.
+    """
+    import pypdfium2 as pdfium
+
+    doc = pdfium.PdfDocument(str(pdf_path))
+    pages = []
+    for i in range(len(doc)):
+        raw = doc[i].get_textpage().get_text_range()
+        text = raw.replace("\r\n", "\n").replace("\r", "\n")
+        pages.append((i + 1, text))
+    return pages
+
+
 def extract(pdf_path: Path | None = None,
             require_units: bool = True) -> list[Candidate]:
     """Scan the regulation and return every numeric threshold passage.
@@ -160,8 +179,6 @@ def extract(pdf_path: Path | None = None,
     require_units keeps the output to sentences that state a unit, since a bare
     number is almost always a cross reference.
     """
-    import pdfplumber
-
     pdf_path = Path(pdf_path or config.REGULATION_PDF)
     if not pdf_path.exists():
         raise FileNotFoundError(f"regulation PDF not found at {pdf_path}")
@@ -169,51 +186,51 @@ def extract(pdf_path: Path | None = None,
     candidates: list[Candidate] = []
     current_section = "front matter"
 
-    with pdfplumber.open(str(pdf_path)) as pdf:
-        for page_index, page in enumerate(pdf.pages, start=1):
-            raw = page.extract_text() or ""
-            if not raw.strip():
-                continue
+    pages = _extract_text_pypdfium2(pdf_path)
 
-            lines = [
-                clean(line)
-                for line in raw.splitlines()
-                if line.strip() and not strip_header(clean(line))
-            ]
+    for page_index, raw in pages:
+        if not raw.strip():
+            continue
 
-            # Group consecutive lines under the section heading they follow.
-            blocks: list[tuple[str, list[str]]] = []
-            for line in lines:
-                heading = SECTION_RE.match(line)
-                if heading:
-                    current_section = heading.group(1)
-                    blocks.append((current_section, [line]))
-                elif blocks and blocks[-1][0] == current_section:
-                    blocks[-1][1].append(line)
-                else:
-                    blocks.append((current_section, [line]))
+        lines = [
+            clean(line)
+            for line in raw.splitlines()
+            if line.strip() and not strip_header(clean(line))
+        ]
 
-            for section, block_lines in blocks:
-                block = _dehyphenate(" ".join(block_lines))
-                for sentence in _sentences(block):
-                    units = _units_in(sentence)
-                    numbers = _numbers_in(sentence)
-                    if not numbers:
-                        continue
-                    if require_units and not units:
-                        continue
+        # Group consecutive lines under the section heading they follow.
+        blocks: list[tuple[str, list[str]]] = []
+        for line in lines:
+            heading = SECTION_RE.match(line)
+            if heading:
+                current_section = heading.group(1)
+                blocks.append((current_section, [line]))
+            elif blocks and blocks[-1][0] == current_section:
+                blocks[-1][1].append(line)
+            else:
+                blocks.append((current_section, [line]))
 
-                    candidates.append(
-                        Candidate(
-                            section=section,
-                            page=page_index,
-                            quote=sentence,
-                            units=units,
-                            numbers=numbers[:8],
-                            obligation=bool(OBLIGATION_RE.search(sentence)),
-                            setback=bool(SETBACK_RE.search(sentence)),
-                        )
+        for section, block_lines in blocks:
+            block = _dehyphenate(" ".join(block_lines))
+            for sentence in _sentences(block):
+                units = _units_in(sentence)
+                numbers = _numbers_in(sentence)
+                if not numbers:
+                    continue
+                if require_units and not units:
+                    continue
+
+                candidates.append(
+                    Candidate(
+                        section=section,
+                        page=page_index,
+                        quote=sentence,
+                        units=units,
+                        numbers=numbers[:24],
+                        obligation=bool(OBLIGATION_RE.search(sentence)),
+                        setback=bool(SETBACK_RE.search(sentence)),
                     )
+                )
 
     return candidates
 

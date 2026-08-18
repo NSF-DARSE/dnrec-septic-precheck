@@ -13,30 +13,29 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ## Totals
 
-- candidate passages: 644
-- sections represented: 389
-- passages using obligation language (shall, must, minimum): 411
-- passages mentioning setback or separation: 69
+- candidate passages: 642
+- sections represented: 387
+- passages using obligation language (shall, must, minimum): 410
+- passages mentioning setback or separation: 71
 
 ### By unit family
 
 | unit family | passages |
 | --- | --- |
 | distance | 259 |
-| time | 229 |
-| depth | 81 |
-| slope | 75 |
-| volume | 52 |
+| time | 228 |
+| depth | 80 |
+| slope | 77 |
 | percolation | 52 |
-| area | 25 |
-| concentration | 22 |
+| volume | 51 |
+| concentration | 23 |
+| area | 23 |
 
 ### By section
 
 | section | passages |
 | --- | --- |
-| 1 | 26 |
-| 2 | 2 |
+| 1 | 38 |
 | 2.1 | 32 |
 | 3.23.2 | 1 |
 | 3.23.5 | 1 |
@@ -139,7 +138,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 | 5.3.2.2 | 2 |
 | 5.3.2.3 | 2 |
 | 5.3.2.4 | 1 |
-| 5.3.2.5 | 2 |
+| 5.3.2.5 | 1 |
 | 5.3.2.6 | 1 |
 | 5.3.2.6.2 | 2 |
 | 5.3.2.6.3 | 1 |
@@ -171,17 +170,17 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 | 5.3.12.2.4 | 1 |
 | 5.3.12.2.9 | 2 |
 | 5.3.12.3.2 | 1 |
-| 5.3.12.3.3 | 4 |
+| 5.3.12.3.3 | 3 |
 | 5.3.12.3.4 | 2 |
 | 5.3.12.4.2 | 1 |
 | 5.3.12.4.3 | 1 |
 | 5.3.12.4.4 | 2 |
 | 5.3.12.5 | 1 |
 | 5.3.12.5.2 | 3 |
-| 5.3.12.5.3 | 2 |
+| 5.3.12.5.3 | 1 |
 | 5.3.12.5.4 | 2 |
 | 5.3.12.6.2 | 2 |
-| 5.3.12.6.3 | 3 |
+| 5.3.12.6.3 | 2 |
 | 5.3.12.6.4 | 2 |
 | 5.3.13.2.1 | 1 |
 | 5.3.13.2.2 | 2 |
@@ -403,7 +402,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 | 6.8.1.8 | 1 |
 | 6.8.1.10 | 2 |
 | 6.8.2.3 | 1 |
-| 6.8.2.4.1 | 1 |
+| 6.8.2.4.1 | 3 |
 | 6.8.3.1 | 2 |
 | 6.8.5.1 | 1 |
 | 6.9.1 | 1 |
@@ -417,24 +416,29 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 | 6.10.4.1 | 1 |
 | 6.10.4.2 | 1 |
 | 6.11.4.4.1 | 1 |
-| 6.11.6.1 | 1 |
-| 6.11.6.2 | 2 |
+| 6.11.6.1 | 2 |
+| 6.11.6.2 | 1 |
 | 6.11.6.2.3 | 1 |
-| 6.11.7.1.1 | 1 |
 | 6.11.8.1.3 | 1 |
-| 8.0 | 27 |
+| 8.0 | 18 |
 | 40 | 1 |
 
 ## Passages
 
 ### Section 1
 
-- p.229 units=percolation,slope,distance numbers=100,100,70,50,50,85,70,60 [obligation, setback]
-  > Modified Isolation Distances (in feet) from Shellfish Waters Type of System Soil Textures Gravity(a) LPP(a) PD(a) ESM Sandy (s, ls) 100(b) 100 70 50 Sand or loamy sand that contain < 50% very fine sand Coarse and fine loamy (sl, l, scl) 85 70 60 50 Loamy very fine sand, very fine sand or finer but < 35% clay Coarse and fine silty (sil, cl, sicl) 70 60(c) 60 50 Loamy very fine sand, very fine sand or finer but < 35% clay and < 15% fine sand Clayey (sc, sic, c) NA NA 50 50 Clay content > 34% (a) The isolation distance reduction will be dependent upon the clay percentage of the particle size class of the soil, i.e. control section (as defined by Soil Taxonomy) (b) Permeability rate less than 6 mpi will require pressurization (c) Design limits above a percolation rate of 45 mpi may necessitate the use of an ESM 2(cid:3)
-- p.244 units=time numbers=3,3,3,3,3,3,3,3 [obligation, setback]
-  > The(cid:3)vacuum(cid:3)for(cid:3)the(cid:3)"new"(cid:3)water(cid:3)must(cid:3)be(cid:3)applied(cid:3)within(cid:3)one(cid:3)(1)(cid:3)day,(cid:3)minimum,(cid:3)of(cid:3)the scheduled(cid:3)groundwater(cid:3)monitor(cid:3)well(cid:3)sampling,(cid:3)to(cid:3)ensure(cid:3)sampling(cid:3)of(cid:3)the(cid:3)lysimeter(s) and(cid:3)monitor(cid:3)well(s)(cid:3)will(cid:3)be(cid:3)completed(cid:3)on(cid:3)the(cid:3)same(cid:3)day.
+- p.229 units=percolation,slope,distance numbers=100,100,70,50,50,85,70,60,50,35,70,60,60,50,35,15,50,50,34,6,45 [obligation, setback]
+  > Modified Isolation Distances (in feet) from Shellfish Waters Type of System Soil Textures Gravity(a) LPP(a) PD(a) ESM Sandy (s, ls) 100(b) 100 70 50 Sand or loamy sand that contain < 50% very fine sand Coarse and fine loamy (sl, l, scl) 85 70 60 50 Loamy very fine sand, very fine sand or finer but < 35% clay Coarse and fine silty (sil, cl, sicl) 70 60(c) 60 50 Loamy very fine sand, very fine sand or finer but < 35% clay and < 15% fine sand Clayey (sc, sic, c) NA NA 50 50 Clay content > 34% (a) The isolation distance reduction will be dependent upon the clay percentage of the particle size class of the soil, i.e. control section (as defined by Soil Taxonomy) (b) Permeability rate less than 6 mpi will require pressurization (c) Design limits above a percolation rate of 45 mpi may necessitate the use of an ESM
+- p.244 units=time numbers=1,7 [obligation, setback]
+  > The vacuum for the "new" water must be applied within one (1) day, minimum, of the scheduled groundwater monitor well sampling, to ensure sampling of the lysimeter(s) and monitor well(s) will be completed on the same day. x If the volume of sample collected after the period of applied vacuum established during testing is not representative of the manufacturer's specifications, the lysimeter must be checked for potential vacuum leaks.Once it has been established that the lysimeter is able to maintain a vacuum, a new vacuum must be established and additional sampling performed. 7.
+- p.202 units=volume numbers=500 [obligation]
+  > In this instance, converting a residential use to a commercial use the maximum allowable daily flow is 500 gpd.
+- p.206 units=time numbers=10 [obligation]
+  > THIS FORM MUST BE SUBMITTED WITHIN 10 DAYS OF COMPLETION REASON FOR ABANDONMENT:
 - p.215 units=area numbers=6.5 [obligation]
   > Soil must be maintained at pH 6.5 or above whenever food chain crops are grown unless plant nutrient needs and soil chemistry preclude such values without excessive lime addition, based not on cost but on unrealistic tonnage of lime/acre.
+- p.219 units=slope numbers=2,766,1,1,78,1,1,6,3 [obligation]
+  > Minimum Treatment Requirements for Large Systems * 5DSLG 3DUDPHWHU 6ORZ5DWH/DQG7UHDWPHQW ,QILOWUDWLRQ%DVLQV 6XE6XUIDFH /LPLWHG 8QOLPLWHG $FFHVV $FFHVV %LRFKHPLFDO 2[\JHQ PJO PJO PJO PJO 'HPDQG 7RWDO  PJO 6XVSHQGHG PJO PJO PJO 6ROLGV 766 )HFDO&ROLIRUP&ROPO&ROPO &ROPO 1$ 7XUELGLW\ 1$ 78 1$ 1$ 7KHVHOLPLWVPD\EHVXSHUVHGHGE\D3ROOXWLRQ&RQWURO6WUDWHJ\IRUVSHFLILFZDWHUVKHGV )RUPHFKDQLFDOWUHDWPHQWPJODQG PJOIRUODJRRQWUHDWPHQW +"/6"3:
 - p.229 units=distance numbers=100,8,1984 [obligation]
   > If 100 feet cannot be maintained between an absorption facility and shellfish waters, and the lot was created by plat or deed prior to April 8, 1984, then the maximum distance shall be maintained but in no case be less than shown in the following table.
 - p.232 units=distance numbers=100,6 [obligation]
@@ -443,22 +447,40 @@ the cited page is how a wrong regulatory number reaches a reviewer.
   > Pressure compensating emitters shall be spaced uniformly along the drip line on a maximum of two (2) foot centers and designed to deliver a predetermined flow rate per hour per emitter. 2.
 - p.238 units=distance numbers=2 [obligation]
   > All drip systems must be designed to maintain flushing velocities of at least two (2) feet per second at the distal of each drip line during field flushing.
-- p.244 units=distance numbers=3,3,3,3,3,3,3,3 [obligation]
-  > The(cid:3)bottom(cid:3)of(cid:3)the(cid:3)lysimeter(s)(cid:3)must(cid:3)be(cid:3)placed(cid:3)1.5(cid:3)feet(cid:3)below(cid:3)the(cid:3)point(cid:3)of(cid:3)compliance for(cid:3)each(cid:3)disposal(cid:3)method(cid:3)as(cid:3)referenced(cid:3)in(cid:3)Exhibit(cid:3)W(cid:3)of(cid:3)the(cid:3)Regulations(cid:3)Governing(cid:3)the Design,(cid:3)Installation(cid:3)and(cid:3)Operation(cid:3)of(cid:3)On(cid:882)Site(cid:3)Wastewater(cid:3)Treatment(cid:3)and(cid:3)Disposal Systems. 4.
-- p.245 units=time numbers=3,3,3,3,3,3,3,3 [obligation]
-  > All(cid:3)sampling(cid:3)results(cid:3)must(cid:3)be(cid:3)submitted(cid:3)to(cid:3)the(cid:3)Department(cid:3)with(cid:3)the(cid:3)corresponding(cid:3)field sheets.(cid:3)(cid:3)The(cid:3)field(cid:3)sheets(cid:3)must(cid:3)include(cid:3)the(cid:3)following:(cid:3)(cid:3)DNREC(cid:3)permit(cid:3)number,(cid:3)applied vacuum(cid:3)(cid:3)in(cid:3)centibars,(cid:3)duration(cid:3)of(cid:3)applied(cid:3)vacuum,(cid:3)date(cid:3)of(cid:3)the(cid:3)last(cid:3)day(cid:3)wastewater(cid:3)was applied(cid:3)in(cid:3)the(cid:3)zone(cid:3)of(cid:3)the(cid:3)lysimeter(s),(cid:3)date(cid:3)and(cid:3)time(cid:3)the(cid:3)sample(cid:3)was(cid:3)obtained,(cid:3)and sample(cid:3)volume(cid:3)collected(cid:3)in(cid:3)milliliters. 10.Holding(cid:3)times(cid:3)for(cid:3)the(cid:3)sample(cid:3)begin(cid:3)when(cid:3)the(cid:3)sample(cid:3)is(cid:3)removed(cid:3)from(cid:3)the(cid:3)lysimeter(s). 3(cid:3)
+- p.244 units=distance numbers=1.5,4 [obligation]
+  > The bottom of the lysimeter(s) must be placed 1.5 feet below the point of compliance for each disposal method as referenced in Exhibit W of the Regulations Governing the Design, Installation and Operation of OnͲSite Wastewater Treatment and Disposal Systems. 4.
+- p.245 units=time numbers=10 [obligation]
+  > All sampling results must be submitted to the Department with the corresponding field sheets.The field sheets must include the following:DNREC permit number, applied vacuumin centibars, duration of applied vacuum, date of the last day wastewater was applied in the zone of the lysimeter(s), date and time the sample was obtained, and sample volume collected in milliliters. 10.
+- p.202 units=slope,distance,depth numbers=0,11,11,18,18,18,18,0,6,12,12,12,20,26,36,36,24,26,24,24,27,35,18,18 [setback]
+  > SEPARATION REQUIREMENTS SYSTEM TYPE DEPTH TO THE LIMITING ZONE (LZ) SMALL SYSTEM LARGE SYSTEM1 POINT OF COMPLIANCE TRENCH DEPTH Denial 0 - <11 inches N/A N/A N/A N/A Alternative Technologies 11 - 18 inches * * * * Micro-Irrigation (Drip) >18 inches 18 inches 18 inches Tubing 0 - 6 inches Peat Biofilters >12 inches 12 inches 12 inches Aggregate N/A Elevated Sand Mound 20 - 26 inches 36 inches 36 inches Aggregate/Chamber N/A Wisconsin At-Grade 24 - 26 inches 24 inches 24 inches Land Surface N/A Low Pressure Pipe (CF) 27 - 35 inches 18 inches 18 inches Aggregate/Chamber Varies, min. 9 inches Low Pressure Pipe (FD) 36 - 47 inches 18 inches 18 inches Aggregate/Chamber 18 inches Gravity Capping Fill 48 - 59 inches 36 inches N/A Aggregate/Chamber Varies, min. 12 inches Pressure-Dosed (CF) 48 - 59 inches 36 inches 36 inches Aggregate/Chamber Varies, min. 12 inches Full Depth Gravity >60 inches 36 inches N/A Aggregate/Chamber 24 inches Pressure-Dosed (FD) >60 inches 36 inches 36 inches Aggregate/Chamber 24 inches Rapid Infiltration Basin (RIB) >48 inches N/A 24 inches Basin Bottom N/A Spray Irrigation >24 inches N/A 24 inches %HQHDWK5RRW=RQH N/A +"/6"3:
 - p.224 units=volume numbers=500,14 [setback]
   > Verify electrical connections inside the dosing tank are waterproof, corrosion resistant and, if > 500 gpd flow, explosion proof as well. 14.
 - p.229 units=distance numbers=100,3 [setback]
   > The isolation distance between an on-site wastewater treatment and disposal system and designated shellfish waters' is to be 100 feet. 3.
 - p.229 units=distance numbers=50,8,1984,6 [setback]
   > For the Delaware Bay shellfish area, approval of a lesser isolation distance of 50 feet may be approved by the Department if the lot was created before April 8, 1984. 6.
+- p.204 units=percolation numbers=5,10,20,30,30,50,50,75,75,120,120,120
+  > PERCOLATION RATES BASED UPON USDA SOIL TEXTURES USDA TEXTURE DNREC ASSIGNED PERMEABILITY RATE (MPI)* Sands 5 Loamy Sand 10 Sandy Loam 20 Sandy Clay Loam 30 Loam 30 Silt Loam 50 Silt 50 Clay Loam 75 Silty Clay Loam 75 Sandy Clay 120 Silty Clay 120 Clay 120 * Other soil properties such as high bulk density, structure, total porosity, and size and continuity of the pores may significantly affect these permeability rates.
+- p.204 units=percolation numbers=120,50,120,25,49,10,25,6,10,6,6,3
+  > Permeability Class Permeability Rate (mpi) Very Slow > 120 Slow 50 - 120 Moderate 25 - 49 Moderately Rapid 10 - 25 Rapid 6 - 10 Very Rapid < 6 +"/6"3:
+- p.207 units=percolation,volume numbers=5,2.033,1.597,10,1.437,1.129,15,1.174,20,1.016,25,30,35,40,45,50,55,60,65,70,75,80,85,90
+  > Peat System Design Loading Rates Soil Type Permeability Rate (mpi) Hydraulic Loading Rate (gpd/ft2) Trench Hydraulic Loading Rate (gpd/ft2 ) Bed S 5 2.033 1.597 LS 10 1.437 1.129 15 1.174 .922 SL 20 1.016 .799 25 .909 .714 SCL, L 30 .803 .652 35 .768 .604 40 .719 .565 45 .678 .532 Si, SiL 50 .643 .505 55 .613 .482 60 .587 .461 65 .564 .443 70 .543 .427 CL, SiCL 75 .525 .412 80 .508 .399 85 .493 .387 90 .479 .376 95 .466 .366 100 .455 .357 105 .444 .349 110 .433 .341 115 .424 .333 SC, SiC, C 120 .415 .326 Notes: 1.
+- p.213 units=distance numbers=24
+  > Initial Replacement x Selected Observable Features Indicative of Soil Compaction (upper 24 inches only):
+- p.213 units=depth numbers=2
+  > Depth Observed ______ Platy Soil Structure [2]:
+- p.213 units=depth numbers=3
+  > Depth Observed ______ Redoximorphic Concentrations [3]:
+- p.213 units=distance numbers=9,5
+  > Yes No N/A Soil Horizons Mixed (> 9 inches from surface) [5]:
 - p.218 units=time numbers=5
   > CLIMATOLOGICAL NORMAL PRECIPITATION (P) AND 5-YEAR RETURN PERIOD MONTHLY PRECIPITATION DATA (P5) FOR THE LONG-TERM U.S.
-- p.218 units=distance numbers=5,5,5,5,5,5,5,5
-  > WEATHER SERVICE STATIONS IN DELAWARE ______________________________________________________________________________________________________________________________________________________________________________________________________________ January February March April May June July August September October November December Station P P P P P P P P P P P P P P P P P P P P P P P P 5 5 5 5 5 5 5 5 5 5 5 5 ___________________________________________________________________________________________________________________________ ------------------------------------------------------------------- inches ------------------------------------------------------------------------- Northern Region Newark University Farm 2.6 4.4 2.8 4.0 3.4 4.9 3.6 5.0 3.7 5.2 3.9 5.4 4.4 6.4 4.1 6.4 3.8 5.5 3.3 4.7 3.1 4.5 3.6 5.4 Wilmington WSO AP 2.9 4.3 3.1 4.7 3.7 5.1 3.4 4.8 3.6 5.1 3.6 5.0 4.0 5.7 3.6 5.7 3.7 5.6 2.9 4.1 3.2 4.9 3.5 5.2 Wilmington Porter Resvr 3.2 4.7 3.2 4.5 4.0 5.5 4.0 5.6 3.9 5.7 4.2 5.8 4.2 6.3 4.1 6.3 4.0 6.0 3.4 4.7 3.7 5.7 3.8 5.8 Middletown 2.8 4.1 2.9 4.1 3.5 4.9 3.5 4.8 3.4 5.0 3.6 5.3 3.7 5.3 3.4 5.1 3.6 5.5 3.3 4.8 3.2 4.6 3.3 4.9 Southern Region Bridgeville 4 NW 3.4 4.7 3.3 4.5 3.8 5.2 3.3 4.5 3.6 5.2 3.7 5.2 4.1 6.4 4.7 8.0 3.7 5.3 3.3 5.1 3.1 4.5 3.6 5.4 Dover 3.1 4.6 3.0 4.3 3.7 5.3 3.4 4.9 3.6 5.2 3.7 5.2 4.4 7.0 4.5 7.4 4.5 6.8 3.4 5.0 3.3 4.9 3.5 5.2 Georgetown 5 SW 3.3 4.7 3.2 4.4 4.1 5.6 3.2 4.5 3.4 5.0 3.6 5.1 3.9 6.3 5.3 8.2 3.6 5.2 3.5 5.4 3.1 4.6 3.6 5.2 Lewes 3.4 4.8 3.4 4.7 4.2 5.7 3.6 5.1 3.7 5.4 3.7 5.2 4.2 6.3 5.3 8.2 3.3 4.8 3.4 5.0 3.4 4.9 3.8 5.4 Milford 4 SE 3.3 4.7 3.3 4.6 4.0 5.5 3.4 4.8 3.7 5.2 3.7 5.1 4.1 6.6 4.4 7.1 3.9 5.5 3.4 5.1 3.6 4.8 3.7 5.4 ___________________________________________________________________________________________________________________________ NOTE:
-- p.218 units=time numbers=5,5,43,34,47,54,34,51
-  > P = Climatological normal precipitation P = 5-year return period precipitation 5 (cid:43)(cid:34)(cid:47)(cid:54)(cid:34)(cid:51)(cid:58)(cid:1)(cid:19)(cid:17)(cid:18)(cid:21)
+- p.218 units=distance numbers=2.6,4.4,2.8,4.0,3.4,4.9,3.6,5.0,3.7,5.2,3.9,5.4,4.4,6.4,4.1,6.4,3.8,5.5,3.3,4.7,3.1,4.5,3.6,5.4
+  > WEATHER SERVICE STATIONS IN DELAWARE ______________________________________________________________________________________________________________________________________________________________________________________________________________ January February March April May June July August September October November December Station P P5 P P5 P P5 P P5 P P5 P P5 P P5 P P5 P P5 P P5 P P5 P P5 ___________________________________________________________________________________________________________________________ ------------------------------------------------------------------- inches ------------------------------------------------------------------------- Northern Region Newark University Farm 2.6 4.4 2.8 4.0 3.4 4.9 3.6 5.0 3.7 5.2 3.9 5.4 4.4 6.4 4.1 6.4 3.8 5.5 3.3 4.7 3.1 4.5 3.6 5.4 Wilmington WSO AP 2.9 4.3 3.1 4.7 3.7 5.1 3.4 4.8 3.6 5.1 3.6 5.0 4.0 5.7 3.6 5.7 3.7 5.6 2.9 4.1 3.2 4.9 3.5 5.2 Wilmington Porter Resvr 3.2 4.7 3.2 4.5 4.0 5.5 4.0 5.6 3.9 5.7 4.2 5.8 4.2 6.3 4.1 6.3 4.0 6.0 3.4 4.7 3.7 5.7 3.8 5.8 Middletown 2.8 4.1 2.9 4.1 3.5 4.9 3.5 4.8 3.4 5.0 3.6 5.3 3.7 5.3 3.4 5.1 3.6 5.5 3.3 4.8 3.2 4.6 3.3 4.9 Southern Region Bridgeville 4 NW 3.4 4.7 3.3 4.5 3.8 5.2 3.3 4.5 3.6 5.2 3.7 5.2 4.1 6.4 4.7 8.0 3.7 5.3 3.3 5.1 3.1 4.5 3.6 5.4 Dover 3.1 4.6 3.0 4.3 3.7 5.3 3.4 4.9 3.6 5.2 3.7 5.2 4.4 7.0 4.5 7.4 4.5 6.8 3.4 5.0 3.3 4.9 3.5 5.2 Georgetown 5 SW 3.3 4.7 3.2 4.4 4.1 5.6 3.2 4.5 3.4 5.0 3.6 5.1 3.9 6.3 5.3 8.2 3.6 5.2 3.5 5.4 3.1 4.6 3.6 5.2 Lewes 3.4 4.8 3.4 4.7 4.2 5.7 3.6 5.1 3.7 5.4 3.7 5.2 4.2 6.3 5.3 8.2 3.3 4.8 3.4 5.0 3.4 4.9 3.8 5.4 Milford 4 SE 3.3 4.7 3.3 4.6 4.0 5.5 3.4 4.8 3.7 5.2 3.7 5.1 4.1 6.6 4.4 7.1 3.9 5.5 3.4 5.1 3.6 4.8 3.7 5.4 ___________________________________________________________________________________________________________________________ NOTE:
+- p.218 units=time numbers=5,6,3
+  > P = Climatological normal precipitation P5 = 5-year return period precipitation +"/6"3:
+- p.220 units=slope numbers=9,5,0,4,5,8,45,8,5,3,53,5,5,4104,4,45,1,3,03,45,3,4,6,3
+  > &9)*#*5.. 0/4*5&8"45&8"5&353&"5.&/5 "/%%*4104"-4:45&. 1&3'03."/$&45"/%"3%4 +"/6"3: /DUJH2Q6LWH:DVWHZDWHU7UHDWPHQWDQG'LVSRVDO6\VWHP /2:7'6 3HUIRUPDQFH6WDQGDUGV  5HTXLUHPHQWVIRU/2:7'6KDYLQJIORZVJSGEXW JSG D $OOQHZV\VWHPVVKDOOPHHWD3HUIRUPDQFH6WDQGDUG1LWURJHQOHYHO 361  E $OOUHSODFHPHQWV\VWHPVZLWKLQIHHWRIWKH&KHVDSHDNH%D\WLGDOZDWHUV DV GLVSOD\HGE\([KLELW11 VKDOOPHHWD3HUIRUPDQFH6WDQGDUG1LWURJHQOHYHO 361  F :KHQWKHRSHUDWLRQSHUPLWH[SLUHVIRUDQH[LVWLQJV\VWHPZLWKLQIHHWRIWKH &KHVDSHDNH%D\WLGDOZDWHUV DVGLVSOD\HGRQ([KLELW11 WKHV\VWHPPXVWPHHWD 3HUIRUPDQFH6WDQGDUG1LWURJHQOHYHO 361 ,IWKHV\VWHPPXVWEHUHGHVLJQHG WKHRZQHURURSHUDWRURIWKHV\VWHPZLOOKDYHXSWRPRQWKVIURPWKHSHUPLW H[SLUDWLRQGDWHWREULQJWKHV\VWHPLQWRFRPSOLDQFHZLWKWKHQHZVWDQGDUG  5HTXLUHPHQWVIRU/2:7'6KDYLQJIORZVJSG D $OOQHZV\VWHPVVKDOOPHHW3HUIRUPDQFH6WDQGDUG1LWURJHQOHYHO 361 DQG 3HUIRUPDQFH6WDQGDUG3KRVSKRUXVOHYHO 363  E $OOUHSODFHPHQWV\VWHPVZLWKLQIHHWRIWKH&KHVDSHDNH%D\WLGDOZDWHUV DV GLVSOD\HGRQ([KLELW11 VKDOOPHHW3HUIRUPDQFH6WDQGDUG1LWURJHQOHYHO 361  F :KHQWKHRSHUDWLRQSHUPLWH[SLUHVIRUDQH[LVWLQJV\VWHPWKH'HSDUWPHQWZLOO UHTXLUHWKHV\VWHPWRPHHW3HUIRUPDQFH6WDQGDUG1LWURJHQOHYHO 361 ,IWKH V\VWHPPXVWEHUHGHVLJQHGWRPHHW361WKHRZQHURURSHUDWRURIWKHV\VWHPZLOO KDYHXSWRPRQWKVIURPWKHSHUPLWH[SLUDWLRQGDWHWREULQJWKHV\VWHPLQWR FRPSOLDQFHZLWKWKHQHZVWDQGDUG127( 6\VWHPVSHUPLWWHGDWDKLJKHU SHUIRUPDQFHVWDQGDUGZLOOUHPDLQDWWKDWKLJKHUSHUIRUPDQFHVWDQGDUG G :KHQWKHRSHUDWLRQSHUPLWH[SLUHVIRUDQH[LVWLQJV\VWHPDQGWKHV\VWHPORFDWLRQLV LGHQWLILHGDVKDYLQJKLJKSRWHQWLDOIRUSKRVSKRUXVPRELOLW\WKHV\VWHPPXVWFRPSO\ ZLWKWKH3HUIRUPDQFH6WDQGDUG3KRVSKRURXVOHYHO 363 ,IWKHV\VWHPPXVWEH UHGHVLJQHGWRPHHW363WKHRZQHURURSHUDWRURIWKHV\VWHPZLOOKDYHXSWR PRQWKVIURPWKHSHUPLWH[SLUDWLRQGDWHWREULQJWKHV\VWHPLQWRFRPSOLDQFHZLWKWKH QHZVWDQGDUG
 - p.224 units=distance numbers=1
   > Verify correct absorption facility measurements to an accuracy of one (1) foot.
 - p.224 units=depth numbers=4
@@ -482,13 +504,6 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 - p.241 units=depth numbers=6,8,1
   > Chisel plow disposal area 6 - 8"deep, or as prescribed by soil scientist Preferred methods 1.
 
-### Section 2
-
-- p.151 units=slope numbers=6.8,6.8,6.8,6.8,520,6.8,100,151 [obligation]
-  > The amount of constituent added should be approximately the same amount present in the unspiked sample, or must be approximately that stated as maximum or average in the discharge permit. 6.8.2.4.1.3 The data resulting from 6.8.2.4.1.1 and 6.8.2.4.1.2 shall be summarized in the annual report in terms of precision; percent recovery; number of duplicate and spiked samples run; date and laboratory log number of samples run, and name of analyst. 6.8.2.4.1.4 Precision shall be calculated by the standard deviation (s) formula s = ((cid:520)d2/k).5 where d is the difference between duplicate results and k is the number of duplicate pairs used in the calculations. 6.8.2.4.1.5 Percent recovery (R) shall be reported on the basis of the formula R = 100 (F-I)/A where F is the analytical result of the spiked sample, I is the result before spiking of the sample, and A is the amount of constituent added 151
-- p.152 units=slope numbers=6.8 [obligation]
-  > to the sample. 6.8.2.4.1.6 The percent recovery in Quality Assurance Practice shall be summarized yearly in terms of mean recovery and standard deviation from the mean.
-
 ### Section 2.1
 
 - p.11 units=distance,depth numbers=36,12,23 [obligation, setback]
@@ -511,24 +526,24 @@ the cited page is how a wrong regulatory number reaches a reviewer.
   > A minimum of 95% by weight must pass through a #4 sieve and a maximum of 10% by weight through a #100 sieve.
 - p.13 units=slope,distance,depth numbers=30,6,2,1 [obligation]
   > "Escarpment" means any naturally occurring slope greater than 30% which extends vertically six (6) feet or more as measured from top to toe, and which is characterized by a long cliff or steep slope which separates two (2) or more comparatively level or gently sloping surfaces, and may intercept one (1) or more layers that limit soil depth.
-- p.14 units=distance,concentration numbers=120,100,100,3,120,0.034,200,120 [obligation]
-  > (cid:120) The site's soils have a Fertility Index Value (FIV) of greater than 100 for phosphorus or a soil test value of over 100 parts per million (ppm) by the Mehlich 3 soil test; and (cid:120) The groundwater phosphorus content is above 0.034 mg/L and there is an indication that groundwater is anoxic due to low dissolved oxygen or oxidation reduction potential below 200 mV; and (cid:120) The disposal area contains soils with a seasonal high water table above 27 inches.
+- p.14 units=distance,concentration numbers=100,100,3,0.034,200,27 [obligation]
+  > "High potential for phosphorus mobility" means an area where: x The site's soils have a Fertility Index Value (FIV) of greater than 100 for phosphorus or a soil test value of over 100 parts per million (ppm) by the Mehlich 3 soil test; and x The groundwater phosphorus content is above 0.034 mg/L and there is an indication that groundwater is anoxic due to low dissolved oxygen or oxidation reduction potential below 200 mV; and x The disposal area contains soils with a seasonal high water table above 27 inches.
 - p.15 units=volume,time numbers=2,500 [obligation]
   > "Large system" means any on-site wastewater treatment and disposal system with a projected wastewater design flow rate greater than or equal to 2,500 gallons per day.
-- p.16 units=percolation numbers=120,120,120,120,120 [obligation]
-  > (cid:120) The presence of seasonal or perennial saturation in some part or all of the soil matrix as evidenced by redoximorphic features or direct measurement of piezometers and/or observation wells; or (cid:120) Layers with a measured or estimated percolation rate of 120 mpi or slower; or (cid:120) Rock with open joints, fractures or solution channels, masses of loose rock fragments, or loose weathered rock, including gravel, with insufficient fine soil to fill the voids between the fragments; or (cid:120) Geologic stratum or soil zone in which the permeability of the stratum or zone effectively limits the movement of water • For large systems - maximum height of the projected seasonal high groundwater mound "Liquid waste" means any waste which is not a solid waste as defined for the purposes of these Regulations.
+- p.16 units=percolation numbers=16,120 [obligation]
+  > 16 x The presence of seasonal or perennial saturation in some part or all of the soil matrix as evidenced by redoximorphic features or direct measurement of piezometers and/or observation wells; or x Layers with a measured or estimated percolation rate of 120 mpi or slower; or x Rock with open joints, fractures or solution channels, masses of loose rock fragments, or loose weathered rock, including gravel, with insufficient fine soil to fill the voids between the fragments; or x Geologic stratum or soil zone in which the permeability of the stratum or zone effectively limits the movement of water • For large systems - maximum height of the projected seasonal high groundwater mound "Liquid waste" means any waste which is not a solid waste as defined for the purposes of these Regulations.
 - p.16 units=slope,time numbers=30,20,30,18,60,12 [obligation]
   > "Mineral soil" means a soil that is saturated with water less than 30 days (cumulative) per year in normal years and contains less than 20% (by weight) organic carbon; or is saturated for greater than 30 days or more cumulative in normal years, and has an organic carbon content (by weight) of less than 18% if the mineral fraction contains 60% or more clay; or less than 12% if the mineral fraction contains no clay.
 - p.17 units=slope,concentration numbers=1,5,90,5,5 [obligation]
   > "Performance standard nitrogen level 1 (PSN1)" means where total nitrogen levels achieve either: • An average annual concentration of 5 mg/L (parts per million (ppm)) total nitrogen in effluent sampled at the end-of-pipe of the advanced treatment unit; or • A 90% reduction in effluent total nitrogen concentration when compared to the influent total nitrogen concentration; or • An average annual concentration of 5 mg/L beneath any permitted on-site wastewater treatment and disposal system as verified by in-field monitoring provided that the design percolate concentration does not exceed 5 mg/L on an average annual basis.
-- p.18 units=slope,concentration numbers=80,10,10 [obligation]
-  > • An 80% reduction in effluent total nitrogen concentration when compared to the influent total nitrogen concentration; or • An average annual concentration of 10 mg/L beneath any permitted on-site wastewater treatment and disposal system as verified by in-field monitoring provided that the design percolate concentration does not exceed 10 mg/L on an average annual basis.
+- p.18 units=slope,concentration numbers=18,80,10,10 [obligation]
+  > 18 • An 80% reduction in effluent total nitrogen concentration when compared to the influent total nitrogen concentration; or • An average annual concentration of 10 mg/L beneath any permitted on-site wastewater treatment and disposal system as verified by in-field monitoring provided that the design percolate concentration does not exceed 10 mg/L on an average annual basis.
 - p.18 units=slope,concentration numbers=1,4,75,4,4 [obligation]
   > "Performance standard phosphorus level 1 (PSP1)" means where total phosphorus levels achieve either: • An average annual concentration of 4 mg/L (ppm) total phosphorus in effluent sampled at the end-of-pipe of the advanced treatment unit; or • A 75% reduction in effluent total phosphorous concentration when compared to the influent total phosphorus; or • An average annual concentration of 4 mg/L beneath any permitted on-site wastewater treatment and disposal system as verified by in-field monitoring provided that the design percolate concentration does not exceed 4 mg/L on an annual average basis.
 - p.18 units=slope,concentration numbers=2,8,50,8,8 [obligation]
   > "Performance standard phosphorus level 2 (PSP2)" means where total phosphorus levels achieve: • An average annual concentration of 8 mg/L (ppm) total phosphorus in effluent sampled at the end-of-pipe of the advanced treatment unit; or • A 50% reduction in effluent total phosphorous concentration when compared to the influent total phosphorus; or • An average annual concentration of 8 mg/L beneath any permitted on-site wastewater treatment and disposal system as verified by in-field monitoring provided that the design percolate concentration does not exceed 8 mg/L on an annual average basis.
-- p.20 units=slope,concentration numbers=85,30,5,45,5,20 [obligation]
-  > "Secondary treatment" means a combination of unit processes that will consistently remove 85% or more of the organic and suspended material in domestic wastewater and produce an effluent of sufficient quality to satisfy the following requirements; monthly average effluent BOD and TSS concentrations of 30 mg/L; daily maximum 5 effluent BOD and TSS concentrations of 45 mg/L. 5 "Secretary" means the Secretary of the Department of Natural Resources and Environmental Control or a duly authorized designee. 20
+- p.20 units=slope,concentration numbers=85,30,45 [obligation]
+  > "Secondary treatment" means a combination of unit processes that will consistently remove 85% or more of the organic and suspended material in domestic wastewater and produce an effluent of sufficient quality to satisfy the following requirements; monthly average effluent BOD5 and TSS concentrations of 30 mg/L; daily maximum effluent BOD5 and TSS concentrations of 45 mg/L.
 - p.11 units=distance numbers=5
   > "Building drain" means the piping coming from inside a building that extends five (5) feet beyond the exterior walls of the building and conveys wastewater to the building sewer.
 - p.12 units=time numbers=10
@@ -541,20 +556,20 @@ the cited page is how a wrong regulatory number reaches a reviewer.
   > Trenches are installed between 9-17 inches into natural soil below a soil cap of a specified depth and texture.
 - p.16 units=distance numbers=18
   > Trenches are installed 18 inches into natural soil.
-- p.17 units=concentration numbers=2,10,17
-  > "Performance standard nitrogen level 2 (PSN2)" means where total nitrogen levels achieve either: • An average annual concentration of 10 mg/L (ppm) total nitrogen in effluent sampled at the end-of-pipe of the advanced treatment unit; or 17
+- p.17 units=concentration numbers=2,10
+  > "Performance standard nitrogen level 2 (PSN2)" means where total nitrogen levels achieve either: • An average annual concentration of 10 mg/L (ppm) total nitrogen in effluent sampled at the end-of-pipe of the advanced treatment unit; or
 - p.18 units=slope,concentration numbers=3,20,50,50
   > "Performance standard nitrogen level 3 (PSN3)" means where total nitrogen levels achieve either: • An average annual concentration of 20 mg/L (ppm) total nitrogen in effluent sampled at the end-of-pipe of the advanced treatment unit; or • A 50% reduction in effluent total nitrogen concentration when compared to the influent total nitrogen concentration at the end-of-pipe of the advanced treatment unit; or • A 50% reduction in effluent total nitrogen concentration when compared to the influent total nitrogen concentration beneath any permitted on-site wastewater treatment and disposal system as verified by in-field monitoring or third party test results.
 - p.20 units=concentration numbers=1
   > "Reducing condition" means a geochemical condition where dissolved oxygen is depleted (< 1 mg/L).
 - p.21 units=volume,time numbers=2,500
   > "Small system" means any on-site wastewater treatment and disposal system with a projected wastewater design flow rate < 2,500 gallons per day.
-- p.22 units=distance numbers=1,8,22
-  > When moist, a thin ribbon or one eighth (1/ ) inch wire can 8 be formed between thumb and finger that will sustain its weight and will withstand gentle movement. 22
+- p.22 units=distance numbers=1,8
+  > When moist, a thin ribbon or one eighth (1 /8) inch wire can be formed between thumb and finger that will sustain its weight and will withstand gentle movement.
 - p.23 units=distance numbers=1,8
-  > When moist, a thin ribbon or one eighth (1/ ) inch or less sized wire formed between 8 thumb and finger withstand considerable movement and deformation. • Clay:
+  > When moist, a thin ribbon or one eighth (1 /8) inch or less sized wire formed between thumb and finger withstand considerable movement and deformation. • Clay:
 - p.23 units=distance numbers=1
-  > When moist, a thin, long ribbon or one sixteenth (1/ ) inch wire can be molded with ease. l6 Fingerprints will show on the soil, and a dull to bright polish is made on the soil by a shovel. • Silt:
+  > When moist, a thin, long ribbon or one sixteenth (1 /l6) inch wire can be molded with ease.
 
 ### Section 3.23.2
 
@@ -564,7 +579,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 ### Section 3.23.5
 
 - p.27 units=time numbers=3.23,5 [obligation]
-  > 3.23.5 The moratorium shall be limited to a period of five (5) years after which reestablishment of the moratorium may be considered.
+  > 3.23.5 The moratorium shall be limited to a period of five (5) years after which re￾establishment of the moratorium may be considered.
 
 ### Section 3.30
 
@@ -613,14 +628,14 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 ### Section 3.31.15.1.1
 
 - p.30 units=area numbers=3.31,1,1,2,3.31,3.31,1 [obligation, setback]
-  > 3.31.15.1.1 For residential dwellings, the maximum siting density shall be one (1) dwelling unit per one half (1/ ) acre. 2 3.31.15.1.1.1 For single family residences, only the area within the property lines of the lot shall be considered. 3.31.15.1.1.2 For multiple family dwellings or where more than one (1) dwelling is to be served by an on-site wastewater treatment and disposal system, the maximum siting density shall be based on the net pervious area (e.g., unpaved, without structures) available for groundwater recharge after total project completion.
+  > 3.31.15.1.1 For residential dwellings, the maximum siting density shall be one (1) dwelling unit per one half (1 /2) acre. 3.31.15.1.1.1 For single family residences, only the area within the property lines of the lot shall be considered. 3.31.15.1.1.2 For multiple family dwellings or where more than one (1) dwelling is to be served by an on-site wastewater treatment and disposal system, the maximum siting density shall be based on the net pervious area (e.g., unpaved, without structures) available for groundwater recharge after total project completion.
 - p.30 units=area numbers=3.31,1,1,2 [obligation, setback]
-  > The following criteria shall be utilized in determining the maximum siting densities: 3.31.15.1.1.2.1 For projects utilizing only a septic tank for treatment prior to discharge to the absorption facility, the maximum siting density shall be one (1) dwelling unit per one half (1/ ) acre of pervious area. 2
+  > The following criteria shall be utilized in determining the maximum siting densities: 3.31.15.1.1.2.1 For projects utilizing only a septic tank for treatment prior to discharge to the absorption facility, the maximum siting density shall be one (1) dwelling unit per one half (1 /2) acre of pervious area.
 
 ### Section 3.31.15.1.2
 
 - p.30 units=area,volume,time numbers=3.31,500,1,2 [obligation]
-  > 3.31.15.1.2 For commercial facilities the maximum siting density shall be established by dividing the projected design flow by 500 gallons per day per one half (1/ ) acre and shall be based on the net pervious area (e.g., unpaved, without 2 structures) available for groundwater recharge after total project completion.
+  > 3.31.15.1.2 For commercial facilities the maximum siting density shall be established by dividing the projected design flow by 500 gallons per day per one half (1 /2) acre and shall be based on the net pervious area (e.g., unpaved, without structures) available for groundwater recharge after total project completion.
 
 ### Section 3.31.16
 
@@ -629,8 +644,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 3.32
 
-- p.31 units=volume numbers=3.32,149,2,500
-  > 3.32 General Standards, Prohibitions and Provisions for large systems ((cid:149) 2,500 gpd) only
+- p.31 units=volume numbers=3.32,2,500
+  > 3.32 General Standards, Prohibitions and Provisions for large systems ( 2,500 gpd) only
 
 ### Section 3.32.6.5.1
 
@@ -708,8 +723,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 4.9.2.1
 
-- p.35 units=time numbers=4.9,1,35
-  > 4.9.2.1 Have one (1) year of full time experience installing conventional OWTDS (as a Class E.1). 35
+- p.35 units=time numbers=4.9,1
+  > 4.9.2.1 Have one (1) year of full time experience installing conventional OWTDS (as a Class E.1).
 
 ### Section 4.9.3.2
 
@@ -723,8 +738,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 4.11.2
 
-- p.36 units=time numbers=4.11,3,36 [obligation]
-  > 4.11.2 Possess, with a minimum of three (3) years of experience, either a Class B or C license. 36
+- p.36 units=time numbers=4.11,3 [obligation]
+  > 4.11.2 Possess, with a minimum of three (3) years of experience, either a Class B or C license.
 
 ### Section 4.11.5
 
@@ -881,8 +896,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.2.1.3.1
 
-- p.44 units=percolation,distance numbers=5.2,148,24,75 [obligation, setback]
-  > 5.2.1.3.1.4.1 For systems with a separation distance of (cid:148) 24 inches the assigned percolation rate must be determined based on the most limiting layer above or below (after removal or sand-lining) the very slowly permeable soils or 75 mpi, whichever is greatest.
+- p.44 units=percolation,distance numbers=44,5.2,24,75 [obligation, setback]
+  > 44 5.2.1.3.1.4.1 For systems with a separation distance of 24 inches the assigned percolation rate must be determined based on the most limiting layer above or below (after removal or sand-lining) the very slowly permeable soils or 75 mpi, whichever is greatest.
 - p.44 units=percolation,distance numbers=24,60 [obligation, setback]
   > Where the separation distance is > 24 inches, the minimum percolation rate assigned will be 60 mpi.
 - p.43 units=percolation,distance numbers=5.2,120
@@ -894,7 +909,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
   > Site drawing(s) shall be based on a whole number scale not to exceed one (1) inch equals 100 feet.
 - p.44 units=distance numbers=8.5,11 [obligation]
   > Any site drawing exceeding the dimensions of 8.5 inches X 11 inches must be submitted in duplicate.
-- p.44 units=distance numbers=1,10,20,30,40,50,60,80
+- p.44 units=distance numbers=1,10,20,30,40,50,60,80,100
   > Acceptable scales are: 1 inch = 10, 20, 30, 40, 50, 60, 80 or 100 feet.
 
 ### Section 5.2.1.5
@@ -941,7 +956,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 ### Section 5.2.1.15
 
 - p.46 units=time numbers=5.2,5 [obligation, setback]
-  > 5.2.1.15 The approved site evaluation shall be valid for five (5) years from the date of the Department's approval unless a subdivision base plan restricting well and onsite wastewater treatment and disposal system locations has been approved by the Department and recorded in the local Recorder of Deeds Office.
+  > 5.2.1.15 The approved site evaluation shall be valid for five (5) years from the date of the Department's approval unless a subdivision base plan restricting well and on￾site wastewater treatment and disposal system locations has been approved by the Department and recorded in the local Recorder of Deeds Office.
 - p.46 units=time numbers=5,5.2 [obligation]
   > After the five (5) year period, a current site evaluation as outlined in Section 5.2.1 shall be submitted to the Department for approval.
 
@@ -959,13 +974,13 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.2.1.19.2
 
-- p.47 units=time numbers=5.2,5.2,5.2,5,5.2,5,5.2,5.2 [obligation]
+- p.47 units=time numbers=5.2,5.2,5.2,5,5.2,5,5.2,5.2,5.2,5.2,5.2 [obligation]
   > 5.2.1.19.2 Installed Systems 5.2.1.19.2.1 Replacement/Malfunction (as defined in these Regulations) 5.2.1.19.2.1.1 In the case of replacement/malfunction system; a new site evaluation performed by a Class D soil scientist is required if the site evaluation is over five (5) years old. 5.2.1.19.2.1.1.1 If the site evaluation is less than five (5) years old; the Department strongly recommends that a supplemental soil boring be performed by a Class D soil scientist. 5.2.1.19.2.2 Expansion/Upgrade 5.2.1.19.2.2.1 In the case of an expansion/upgrade system for which an approved site evaluation is on file, it is recommended that a supplemental soil boring(s) as per section 5.2.1.16 be performed by a Class D soil scientist. 5.2.1.19.2.3 Emergency Repair/Repair 5.2.1.19.2.3.1 In the case of an application for a repair, the Department will review on a case by case basis the information supplied/extenuating circumstances to determine if supplemental borings or a new site evaluation is needed.
 
 ### Section 5.2.2.3
 
-- p.48 units=slope,distance numbers=5.2,149,50,149,50,48,149,100
-  > 5.2.2.3 If the proposed number of lots is (cid:149) 50 and (cid:149) 50% of the on-site soils have limiting zones < 48 inches or the number of lots is (cid:149) 100 or a large on-site wastewater treatment and disposal system (LOWTDS) is proposed, proceed to the requirements of Section 6.2, if not, proceed to Section 5.2.2.5.
+- p.48 units=slope,distance numbers=5.2,50,50,48,100,6.2,5.2
+  > 5.2.2.3 If the proposed number of lots is  50 and  50% of the on-site soils have limiting zones < 48 inches or the number of lots is  100 or a large on-site wastewater treatment and disposal system (LOWTDS) is proposed, proceed to the requirements of Section 6.2, if not, proceed to Section 5.2.2.5.
 
 ### Section 5.2.2.4.1
 
@@ -984,8 +999,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.2.2.5.2
 
-- p.48 units=distance numbers=5.2,2,48
-  > 5.2.2.5.2 Illustrate topography by two (2) foot contour intervals unless the Department approves the use of an alternate scale due to extreme variations in elevation on the site. 48
+- p.48 units=distance numbers=5.2,2
+  > 5.2.2.5.2 Illustrate topography by two (2) foot contour intervals unless the Department approves the use of an alternate scale due to extreme variations in elevation on the site.
 
 ### Section 5.2.2.5.3
 
@@ -1065,8 +1080,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.2.4.2.5
 
-- p.52 units=distance numbers=5.2,6 [obligation]
-  > 5.2.4.2.5.2 Test holes with a horizontal diameter of six (6) inches shall be dug or bored.
+- p.52 units=distance numbers=52,5.2,6 [obligation]
+  > 52 5.2.4.2.5.2 Test holes with a horizontal diameter of six (6) inches shall be dug or bored.
 - p.52 units=distance,depth numbers=2,5.2,12 [obligation]
   > Two (2) inches of coarse sand or fine aggregate shall be placed in the bottom of the hole to prevent sealing of the hole bottom when water is added. 5.2.4.2.5.4 The hole shall be filled with water to a minimum depth of 12 inches above the aggregate or sand.
 - p.52 units=distance,time numbers=4,5.2,6 [obligation]
@@ -1087,8 +1102,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
   > On-site wastewater treatment and disposal systems shall not be placed on those portions of any sites that have percolation rates slower than 120 mpi.
 - p.52 units=time numbers=10,1
   > Where the interval is 10 minutes due to fast percolation, the readings may be discontinued after one (1) hour.
-- p.52 units=distance numbers=2,1
-  > A steady rate is established when two (2) successive water level drops do not vary by more than one-sixteenth (1/ ) of an inch.
+- p.52 units=distance numbers=2,1,16
+  > A steady rate is established when two (2) successive water level drops do not vary by more than one-sixteenth (1 /16) of an inch.
 
 ### Section 5.2.5.3.1
 
@@ -1134,15 +1149,15 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.2.2
 
-- p.55 units=percolation numbers=5.3,148,120 [obligation]
-  > 5.3.2.2 The minimum disposal area required for trench systems with percolation rates (cid:148) 120 mpi shall be determined from the following equation:
+- p.55 units=percolation numbers=5.3,120 [obligation]
+  > 5.3.2.2 The minimum disposal area required for trench systems with percolation rates 120 mpi shall be determined from the following equation:
 - p.55 units=percolation,area,volume,distance,time numbers=20 [obligation]
   > A = the minimum disposal area required in square feet Q = wastewater application rate in gallons per day t = the average percolation rate in minutes per inch (minimum rate is 20 mpi for design)
 
 ### Section 5.3.2.3
 
-- p.55 units=percolation numbers=5.3,148,120 [obligation]
-  > 5.3.2.3 The minimum disposal area required for seepage bed systems with percolation rates (cid:148) 120 mpi shall be determined from the following equation:
+- p.55 units=percolation numbers=5.3,120 [obligation]
+  > 5.3.2.3 The minimum disposal area required for seepage bed systems with percolation rates 120 mpi shall be determined from the following equation:
 - p.55 units=percolation,area,volume,distance,time numbers=20 [obligation]
   > A = the minimum disposal area required in square feet Q = wastewater application rate in gallons per day t = the average percolation rate in minutes per inch (minimum rate is 20 mpi for design)
 
@@ -1153,15 +1168,13 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.2.5
 
-- p.55 units=percolation numbers=5.3,148,120,20 [obligation]
-  > 5.3.2.5 The minimum disposal area required for low-pressure pipe systems with percolation rates (cid:148) 120 mpi (minimum rate is 20 mpi for design) shall be determined from the following equation:
-- p.55 units=area,volume,distance,time numbers=55 [obligation]
-  > A = the minimum disposal are required in square feet Q = design flow rate in gallons per day U = unit absorption area (see Exhibit P) 55
+- p.55 units=percolation numbers=5.3,120,20 [obligation]
+  > 5.3.2.5 The minimum disposal area required for low-pressure pipe systems with percolation rates 120 mpi (minimum rate is 20 mpi for design) shall be determined from the following equation:
 
 ### Section 5.3.2.6
 
-- p.56 units=percolation numbers=5.3,148,75,20 [obligation]
-  > 5.3.2.6 The minimum disposal area for Wisconsin At-Grade systems with percolation rates (cid:148) 75 mpi (minimum rate is 20 mpi for design) shall be determined from the following criteria:
+- p.56 units=percolation numbers=5.3,75,20 [obligation]
+  > 5.3.2.6 The minimum disposal area for Wisconsin At-Grade systems with percolation rates 75 mpi (minimum rate is 20 mpi for design) shall be determined from the following criteria:
 
 ### Section 5.3.2.6.2
 
@@ -1217,27 +1230,27 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.6.2
 
-- p.57 units=percolation,distance numbers=5.3,2,500,149,6,57
-  > 5.3.6.2 Gravity distribution systems may be used when the design wastewater flow requires < 2,500 ft2 of disposal area for seepage trenches or seepage beds and the percolation rate is (cid:149) six (6) minutes per inch. 57
+- p.57 units=percolation,distance numbers=5.3,2,500,6
+  > 5.3.6.2 Gravity distribution systems may be used when the design wastewater flow requires < 2,500 ft2 of disposal area for seepage trenches or seepage beds and the percolation rate is  six (6) minutes per inch.
 
 ### Section 5.3.7.1
 
 - p.58 units=distance numbers=5.3,40,4,11,2,20,4,40 [obligation]
-  > 5.3.7.1 All unperforated gravity transmission pipe up to the distribution box shall be Sch. 40 PVC at least four (4) inches or greater in diameter unless lifted by a lift station to a distribution box in which case a minimum 11⁄2 inch diameter pipe would be permissible with a minimum of 20 feet of four (4) inch diameter Sch. 40 PVC pipe set at a minimum grade of (cid:489) inch per foot prior to entering the distribution box.
+  > 5.3.7.1 All unperforated gravity transmission pipe up to the distribution box shall be Sch. 40 PVC at least four (4) inches or greater in diameter unless lifted by a lift station to a distribution box in which case a minimum 11⁄2 inch diameter pipe would be permissible with a minimum of 20 feet of four (4) inch diameter Sch. 40 PVC pipe set at a minimum grade of ǩ inch per foot prior to entering the distribution box.
 - p.58 units=depth numbers=5.3 [obligation]
   > Minimum bury depth requirements apply to all pressurized transmission piping - see Section 5.3.9.2.
 
 ### Section 5.3.7.2
 
 - p.58 units=distance numbers=1,8 [obligation]
-  > A minimum grade of 1/ inch per foot 8 shall be provided for gravity transmission piping.
+  > A minimum grade of 1 /8 inch per foot shall be provided for gravity transmission piping.
 
 ### Section 5.3.7.3
 
 - p.58 units=distance numbers=5.3,40,4 [obligation]
   > 5.3.7.3 All gravity distribution laterals shall be thin walled or Sch. 40 PVC and shall be four (4) inches in diameter.
-- p.58 units=distance numbers=3,3,8,4,30 [obligation]
-  > Perforated PVC pipe shall have 3/ to 3/ inch diameter 8 4 holes a maximum of 30 inches on center.
+- p.58 units=distance numbers=3,8,3,4,30 [obligation]
+  > Perforated PVC pipe shall have 3 /8 to 3 /4 inch diameter holes a maximum of 30 inches on center.
 - p.58 units=distance numbers=2,100 [obligation]
   > A grade of less than two (2) inches per 100 feet shall be provided for all gravity distribution laterals.
 
@@ -1280,12 +1293,12 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.9.3
 
-- p.59 units=distance numbers=5,1,32,2 [obligation]
-  > Minimum hole diameters for perforated pressure distribution laterals shall be 5/ to 1/ inch maximum and spacing intervals 32 2 as determined by a Class C designer and be placed on center along the length of the pipe.
-- p.59 units=percolation,distance numbers=20,25,60,30,60,72,65,120 [obligation]
+- p.59 units=distance numbers=5,32,1,2 [obligation]
+  > Minimum hole diameters for perforated pressure distribution laterals shall be 5 /32 to 1 /2 inch maximum and spacing intervals as determined by a Class C designer and be placed on center along the length of the pipe.
+- p.59 units=percolation,distance numbers=20,25,60,30,60,72,65,120,96 [obligation]
   > Percolation Rate Maximum Hole Spacing 20 - 25 MPI 60 inches 30 - 60 MPI 72 inches 65 - 120 MPI 96 inches NOTE:
 - p.59 units=volume,slope numbers=5 [obligation]
-  > Trench systems designed on slopes > 5% must provide for balanced trench loading rates (gpd/ft2).
+  > Trench systems designed on slopes > 5% must provide for balanced trench loading rates (gpd/ft2 ).
 
 ### Section 5.3.9.7
 
@@ -1299,8 +1312,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.12.1.2
 
-- p.61 units=slope numbers=15 [obligation]
-  > 15% shall be permitted only if the design is prepared by a licensed Class C designer.
+- p.61 units=slope numbers=61,15 [obligation]
+  > 61 15% shall be permitted only if the design is prepared by a licensed Class C designer.
 - p.60 units=slope numbers=5.3,0,15
   > 5.3.12.1.2 Slope: 0 - 15%:
 - p.60 units=slope numbers=2
@@ -1308,8 +1321,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.12.1.3
 
-- p.61 units=distance numbers=3,116,48 [obligation]
-  > The limiting zone shall be a minimum of three (3) feet below the bottom of the trench (cid:116) 48 inches beneath the soil surface.
+- p.61 units=distance numbers=3,48 [obligation]
+  > The limiting zone shall be a minimum of three (3) feet below the bottom of the trench t 48 inches beneath the soil surface.
 - p.61 units=depth numbers=5.3
   > 5.3.12.1.3 Depth to Limiting Zone:
 
@@ -1359,14 +1372,12 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.12.3.3
 
-- p.62 units=distance numbers=149,20 [obligation]
-  > Replacement systems must have a limiting zone (cid:149) 20 inches and in soils without an umbric epipedon or prone to ponding and/or flooding.
+- p.62 units=distance numbers=20 [obligation]
+  > Replacement systems must have a limiting zone  20 inches and in soils without an umbric epipedon or prone to ponding and/or flooding.
 - p.62 units=percolation,distance,depth numbers=36,20 [obligation]
   > The soil scientist must also specify the percolation rate for each soil horizon to a depth of 36 inches and the incremental loading rates for the first 20 inches of soil (see Exhibit V).
-- p.62 units=depth numbers=5.3
-  > 5.3.12.3.3 Depth to Limiting Zone:
-- p.62 units=distance numbers=149,24
-  > (cid:149) 24 inches to evidence of a limiting zone.
+- p.62 units=distance,depth numbers=5.3,24
+  > 5.3.12.3.3 Depth to Limiting Zone:  24 inches to evidence of a limiting zone.
 
 ### Section 5.3.12.3.4
 
@@ -1377,7 +1388,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.12.4.2
 
-- p.62 units=percolation,slope numbers=5.3,5.3,0,6,60,5.3,0,12
+- p.62 units=percolation,slope numbers=5.3,5.3,0,6,60,5.3,0,12,60
   > 5.3.12.4.2 Slope: 5.3.12.4.2.1 0 - 6% for soils with percolation rates slower than 60 mpi. 5.3.12.4.2.2 0 - 12% for soils with percolation rates faster than 60 mpi.
 
 ### Section 5.3.12.4.3
@@ -1408,10 +1419,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.12.5.3
 
-- p.62 units=distance,depth numbers=149,48,3,5,2 [obligation]
-  > (cid:149) 48 inches from original grade and three (3) feet below bottom of filter aggregate (e.g. a minimum of five (5) feet below existing grade for two (2) foot deep trench and bed systems).
-- p.62 units=depth numbers=5.3
-  > 5.3.12.5.3 Depth to Limiting Zone:
+- p.62 units=distance,depth numbers=5.3,48,3,5,2 [obligation]
+  > 5.3.12.5.3 Depth to Limiting Zone:  48 inches from original grade and three (3) feet below bottom of filter aggregate (e.g. a minimum of five (5) feet below existing grade for two (2) foot deep trench and bed systems).
 
 ### Section 5.3.12.5.4
 
@@ -1431,10 +1440,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 - p.63 units=distance numbers=1 [obligation]
   > Sand-lined systems shall not be used where there is less than one (1) foot of undisturbed native soil between the limiting zone after excavation and the impermeable or slowly permeable soil zone.
-- p.63 units=depth numbers=5.3
-  > 5.3.12.6.3 Depth to Limiting Zone:
-- p.63 units=distance numbers=149,48,3
-  > (cid:149) 48 inches from original grade and three (3) feet below bottom of filter aggregate (except for impermeable, slowly permeable, or very slowly permeable materials proposed for removal).
+- p.63 units=distance,depth numbers=5.3,48,3
+  > 5.3.12.6.3 Depth to Limiting Zone:  48 inches from original grade and three (3) feet below bottom of filter aggregate (except for impermeable, slowly permeable, or very slowly permeable materials proposed for removal).
 
 ### Section 5.3.12.6.4
 
@@ -1457,8 +1464,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.13.2.3
 
-- p.64 units=distance numbers=4,3,11,4,2 [obligation]
-  > Building sewers placed in wet soil shall have a four (4) inch bedding of 3/ " to 11/ " aggregate. 4 2
+- p.64 units=distance numbers=4,3,4,11,2 [obligation]
+  > Building sewers placed in wet soil shall have a four (4) inch bedding of 3 /4" to 11 /2" aggregate.
 
 ### Section 5.3.13.2.4
 
@@ -1470,7 +1477,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 ### Section 5.3.13.2.6
 
 - p.64 units=distance numbers=8 [obligation]
-  > A building sewer shall be installed in a straight line to the maximum extent practicable with a uniform continuous grade not less than l/ 8 inch/foot, unless it can be demonstrated to the satisfaction of the Department that an alternative design can maintain adequate flow from the source and is approvable under the applicable local building code.
+  > A building sewer shall be installed in a straight line to the maximum extent practicable with a uniform continuous grade not less than l /8 inch/foot, unless it can be demonstrated to the satisfaction of the Department that an alternative design can maintain adequate flow from the source and is approvable under the applicable local building code.
 
 ### Section 5.3.13.2.7
 
@@ -1484,8 +1491,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.14.4.1
 
-- p.65 units=volume numbers=5.3,500,100,1,000 [obligation]
-  > 5.3.14.4.1 For flows 500 gpd the minimum liquid working capacity shall be (cid:100) 1,000 gallons.
+- p.65 units=volume numbers=5.3,500,1,000 [obligation]
+  > 5.3.14.4.1 For flows d 500 gpd the minimum liquid working capacity shall be 1,000 gallons.
 
 ### Section 5.3.14.4.2
 
@@ -1599,8 +1606,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.18.6.1
 
-- p.69 units=time numbers=5.3,5,69
-  > 5.3.18.6.1 The application for permit includes a copy of a legal commitment from the governmental unit or wastewater utility that within five (5) years from the date of application the governmental unit or wastewater utility will extend to the property covered by the application, a large or area-wide central wastewater system meeting the requirements of the Department. 69
+- p.69 units=time numbers=5.3,5
+  > 5.3.18.6.1 The application for permit includes a copy of a legal commitment from the governmental unit or wastewater utility that within five (5) years from the date of application the governmental unit or wastewater utility will extend to the property covered by the application, a large or area-wide central wastewater system meeting the requirements of the Department.
 
 ### Section 5.3.18.7.2
 
@@ -1614,8 +1621,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.18.9.4
 
-- p.70 units=slope numbers=5.3,75,70
-  > 5.3.18.9.4 Be equipped with both an audible and visual alarm installed on an AC circuit and placed in a location, acceptable to the Department, to indicate when the contents of the tank are at 75% of capacity. 70
+- p.70 units=slope numbers=5.3,75
+  > 5.3.18.9.4 Be equipped with both an audible and visual alarm installed on an AC circuit and placed in a location, acceptable to the Department, to indicate when the contents of the tank are at 75% of capacity.
 
 ### Section 5.3.18.9.8
 
@@ -1643,7 +1650,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.21.7
 
-- p.72 units=distance numbers=5.3,1,10,20,30,40,50,60 [obligation]
+- p.72 units=distance numbers=5.3,1,10,20,30,40,50,60,100 [obligation]
   > 5.3.21.7 Owner/Agent signature on plot plan drawing, straight edge must be used (no free-hand lines), to scale (acceptable scales are: 1 inch = 10, 20, 30, 40, 50, 60 and 100 feet), north arrow or compass rose and certification that designer site checked the property to confirm no changes have taken place since site evaluation was approved.
 
 ### Section 5.3.23
@@ -1734,8 +1741,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.3.32.6.3
 
-- p.82 units=slope,distance numbers=5.3,25,5.3,2 [obligation]
-  > 5.3.32.6.3.2 Each splash guard shall cover at least 25% of the trailer's open area. 5.3.32.6.3.3 A minimum two (2) feet of freeboard shall be maintained between the biosolids and the top of the trailer unless the top of the trailer is completely sealed.
+- p.82 units=slope,distance numbers=82,5.3,25,5.3,2 [obligation]
+  > 82 5.3.32.6.3.2 Each splash guard shall cover at least 25% of the trailer's open area. 5.3.32.6.3.3 A minimum two (2) feet of freeboard shall be maintained between the biosolids and the top of the trailer unless the top of the trailer is completely sealed.
 
 ### Section 5.4.1.1
 
@@ -1758,8 +1765,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.4.2.2
 
-- p.83 units=slope numbers=3,8,100,4,95,100,50,5 [obligation]
-  > Sandy Fill Gradation Requirements Sieve Size Maximum Percentage Passing Sieve 3/8" 100% #4 95-100% #50 5-30% #100 1-7% Aggregate Sizing Requirements Maximum Minimum Percentage Sieve Size Percentage Retained Passing Sieve 2 1⁄2" 0% 100% 2" 0-3% 97-100% 1 1⁄2" 5-10% 90-95% 1" 50-80% 20-50% 1⁄2" 25-35% 10-25% #4 0-5% 0-5% #8 0% 0% Tire Chip Sizing Requirements Sieve Size Percentage Passing Sieve 4" 100% minimum 2" 25% minimum #4 5% maximum NOTE:
+- p.83 units=slope numbers=3,8,100,4,95,100,50,5,30,100,1,7,2,1,2,0,100,2,0,3,97,100,1,1 [obligation]
+  > Sandy Fill Gradation Requirements Sieve Size Maximum Percentage Passing Sieve 3/8" 100% #4 95-100% #50 5-30% #100 1-7% Aggregate Sizing Requirements Sieve Size Maximum Percentage Retained Minimum Percentage Passing Sieve 2 1⁄2" 0% 100% 2" 0-3% 97-100% 1 1⁄2" 5-10% 90-95% 1" 50-80% 20-50% 1⁄2" 25-35% 10-25% #4 0-5% 0-5% #8 0% 0% Tire Chip Sizing Requirements Sieve Size Percentage Passing Sieve 4" 100% minimum 2" 25% minimum #4 5% maximum NOTE:
 - p.83 units=slope numbers=1 [obligation]
   > The tire shreds shall have less than one (1)% (by weight) of metal fragments that are not at least partially encased in rubber.
 - p.83 units=slope,distance numbers=1,100,1,2,75 [obligation]
@@ -1806,15 +1813,15 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.4.4.1
 
-- p.84 units=area,distance numbers=5.4,149,2,500 [obligation]
-  > 5.4.4.1 All systems requiring a total of (cid:149) 2,500 square feet of disposal area shall have a pressurized distribution system pursuant to these Regulations.
+- p.84 units=area,distance numbers=5.4,2,500 [obligation]
+  > 5.4.4.1 All systems requiring a total of  2,500 square feet of disposal area shall have a pressurized distribution system pursuant to these Regulations.
 
 ### Section 5.4.4.2
 
-- p.85 units=distance numbers=10 [obligation, setback]
-  > minimum separation between absorption facilities shall be 10 feet, with the exception of subsurface irrigation systems.
-- p.84 units=area,distance numbers=5.4,149,2,500 [obligation]
-  > 5.4.4.2 All systems requiring (cid:149) 2,500 square feet of disposal area, with the exception of low pressure pipe systems, shall be divided into a minimum of two separate alternating systems of equal size with pressurized distribution.
+- p.85 units=distance numbers=85,10 [obligation, setback]
+  > 85 minimum separation between absorption facilities shall be 10 feet, with the exception of subsurface irrigation systems.
+- p.84 units=area,distance numbers=5.4,2,500 [obligation]
+  > 5.4.4.2 All systems requiring  2,500 square feet of disposal area, with the exception of low pressure pipe systems, shall be divided into a minimum of two separate alternating systems of equal size with pressurized distribution.
 
 ### Section 5.4.4.3
 
@@ -1834,8 +1841,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.4.4.5
 
-- p.85 units=slope numbers=5.4,148,2
-  > 5.4.4.5 Gravity system distribution laterals may be connected in closed loop systems on slopes (cid:148) two (2)%.
+- p.85 units=slope numbers=5.4,2
+  > 5.4.4.5 Gravity system distribution laterals may be connected in closed loop systems on slopes two (2)%.
 
 ### Section 5.4.4.6
 
@@ -1970,8 +1977,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 - p.88 units=time numbers=5.4,5.4,5.4,10 [obligation]
   > 5.4.6.1.6 The Department may waive the pre-cover inspection, provided: 5.4.6.1.6.1 The installation is an on-site wastewater treatment and disposal system installed by a licensed person pursuant to these Regulations; and 5.4.6.1.6.2 After system completion the Class E system contractor shall provide a construction report which certifies in writing that the system complies with the Department's Regulations within 10 calendar days of system completion.
-- p.89 units=time numbers=10 [obligation]
-  > contractor shall also provide a detailed "as-built" plan (drawn to scale) within 10 calendar days of system completion.
+- p.89 units=time numbers=89,10 [obligation]
+  > 89 contractor shall also provide a detailed "as-built" plan (drawn to scale) within 10 calendar days of system completion.
 
 ### Section 5.4.6.1.7
 
@@ -2014,7 +2021,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.4.6.3.10
 
-- p.91 units=slope,depth numbers=5.4,5.4,5.4,5.4,5.4,5.4,5.4,5.4 [obligation]
+- p.91 units=slope,depth numbers=5.4,5.4,5.4,5.4,5.4,5.4,5.4,5.4,30,5.4 [obligation]
   > 5.4.6.3.10 Tank and Building Sewer Inspection 5.4.6.3.10.1 Locate tank. 5.4.6.3.10.2 Excavate both inlet and outlet lids on septic tank, if not equipped with risers. 5.4.6.3.10.3 Check flow through building sewer from house to inlet baffle, if possible. 5.4.6.3.10.4 Observe and make note of effluent levels in septic tank. 5.4.6.3.10.5 Observe and make note of effluent filter, if present. 5.4.6.3.10.6 Measure and report sludge and scum thickness to determine the volume of solids in the tank. 5.4.6.3.10.6.1 The combined total should not exceed 30% of tank volume. 5.4.6.3.10.7 Proceed with tank pump-out.
 
 ### Section 5.4.6.3.13
@@ -2038,7 +2045,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 - p.93 units=distance numbers=1,100 [obligation]
   > Site sketches shall be based on a whole number scale not to exceed one (1) inch equals 100 feet.
-- p.93 units=distance numbers=1,10,20,30,40,50,60,100 [setback]
+- p.93 units=distance numbers=1,10,20,30,40,50,60,100,5.4,5.4 [setback]
   > Acceptable scales are: 1 inch = 10, 20, 30, 40, 50, 60, or 100 feet. 5.4.6.3.19.2 A north directional arrow. 5.4.6.3.19.3 Indicate location of central water line or on-site well.
 
 ### Section 5.4.6.3.20
@@ -2076,7 +2083,7 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 ### Section 5.5.2
 
 - p.94 units=time numbers=5.5,3,1,3 [obligation]
-  > 5.5.2 Each on-site wastewater treatment and disposal system shall be pumped by a licensed Class F liquid waste hauler once every three (3) years and innovative/alternative treatment systems shall be pumped according to manufacturer recommendations unless determined that the tank is less than one-third (1/ ) full of 3 solids.
+  > 5.5.2 Each on-site wastewater treatment and disposal system shall be pumped by a licensed Class F liquid waste hauler once every three (3) years and innovative/alternative treatment systems shall be pumped according to manufacturer recommendations unless determined that the tank is less than one-third (1 /3) full of solids.
 
 ### Section 5.5.3
 
@@ -2127,20 +2134,20 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 5.6.3.1.5
 
-- p.97 units=area,distance numbers=5.6,5.6,5.6,5.6,10,5.6,5.6,100 [obligation]
+- p.97 units=area,distance numbers=5.6,5.6,5.6,5.6,10,5.6,5.6,100,5.6,150,5.6,5.6,7,6004 [obligation]
   > This submittal must include all appropriate fees. 5.6.3.1.5.2 A site evaluation report conducted by a Class D.2 or D.3 soil scientist to include the requirements of Section 5.6.3.1. 5.6.3.1.5.3 At the sole discretion of the Department, a design prepared by a licensed Class C designer may be required to show exact location of a proposed system with initial submission of the RAW application. 5.6.3.1.5.4 Proof the parcel is a minimum of 10 acres (survey or statement from zoning office). 5.6.3.1.5.5 Location of any wetlands, refer to Statewide Wetlands Mapping Project (SWMP) map, and State Tidal Wetlands maps, if applicable. 5.6.3.1.5.6 A proposed disposal location which is a minimum of 100 feet from all property boundaries (when soil conditions allow). 5.6.3.1.5.7 The location of all wells within 150 feet of the property boundaries. 5.6.3.1.5.8 A list of all property owners' names and addresses located contiguous to the site. 5.6.3.1.5.9 The Department shall advertise the RAW application in accordance with 7 Del.C. §6004 to include direct notification of adjacent property owners.
 
 ### Section 6.0
 
-- p.4 units=volume numbers=6.0,149,2,500,99
-  > 6.0 Large Systems ((cid:149) 2,500 gpd) 99
-- p.99 units=volume numbers=6.0,149,2,500
-  > 6.0 LARGE SYSTEMS ((cid:149) 2,500 GPD)
+- p.4 units=volume numbers=6.0,2,500,99
+  > 6.0 Large Systems ( 2,500 gpd) 99
+- p.99 units=volume numbers=6.0,2,500
+  > 6.0 LARGE SYSTEMS ( 2,500 GPD)
 
 ### Section 6.1
 
-- p.99 units=volume numbers=6.1,149,2,500 [obligation]
-  > 6.1 A permit must be obtained from the Department prior to the construction, operation, maintenance or repair of any on-site wastewater treatment and disposal systems with daily design flow rates of (cid:149) 2,500 gallons.
+- p.99 units=volume numbers=6.1,2,500 [obligation]
+  > 6.1 A permit must be obtained from the Department prior to the construction, operation, maintenance or repair of any on-site wastewater treatment and disposal systems with daily design flow rates of  2,500 gallons.
 
 ### Section 6.2.2.2.1
 
@@ -2215,14 +2222,14 @@ the cited page is how a wrong regulatory number reaches a reviewer.
   > Spray irrigation projects must be mapped on a grid pattern at a minimum of one observation every 10 acres. 6.2.2.5.1.4 Observations must be made using a number of auger borings and test pits to a minimum depth of six (6) feet.
 - p.101 units=percolation,distance,depth numbers=6,6.2,6.2 [obligation]
   > These tests must be performed within the most hydraulically restrictive horizon in the upper six (6) feet. 6.2.2.5.1.6 Determination of an appropriate design percolation rate based upon infiltration tests, soil characteristics (textures, structure, etc.) and number of mapping units within the PDA. 6.2.2.5.1.7 Depth of the limiting zone based on either a hydraulically restrictive layer or seasonally saturated materials based on redoximorphic features and/or piezometric study.
-- p.101 units=time numbers=6.2,6.2,2007,6.2,101
-  > Approval page). 6.2.2.5.1.8 Number of proposed lots, dwellings, expected gal/day/unit flow, design flow rate, anticipated disposal method and loading rate. 6.2.2.5.1.9 The location of any wetlands, refer to the 2007 Statewide Wetlands Mapping Project (SWMP) map, and State Tidal Wetlands maps, if applicable. 6.2.2.5.1.10 Identification of any limitation that could affect system performance and design considerations for the anticipated method of disposal. 101
+- p.101 units=time numbers=6.2,6.2,2007,6.2
+  > Approval page). 6.2.2.5.1.8 Number of proposed lots, dwellings, expected gal/day/unit flow, design flow rate, anticipated disposal method and loading rate. 6.2.2.5.1.9 The location of any wetlands, refer to the 2007 Statewide Wetlands Mapping Project (SWMP) map, and State Tidal Wetlands maps, if applicable. 6.2.2.5.1.10 Identification of any limitation that could affect system performance and design considerations for the anticipated method of disposal.
 
 ### Section 6.2.3.2.3
 
 - p.102 units=distance numbers=6.2,1,2,400,6.2,6.2,6.2,6.2,1 [obligation]
   > 6.2.3.2.3 Detailed (1:2,400 scale or larger) map(s) showing: 6.2.3.2.3.1 Property boundaries. 6.2.3.2.3.2 Roadways and easements. 6.2.3.2.3.3 Tax map parcel number(s). 6.2.3.2.3.4 Hypsography at one (1) foot contour intervals (must include existing and proposed elevations in proposed disposal area) unless the Department approves the use of an alternate scale.
-- p.102 units=distance numbers=2,6.2,6.2,6.2,6.2,6.2,6.2,6.2
+- p.102 units=distance numbers=2,6.2,6.2,6.2,6.2,6.2,6.2,6.2,6.2
   > Hypsography for spray irrigation sites may utilize two (2) foot contour intervals. 6.2.3.2.3.5 Surface-water features. 6.2.3.2.3.6 Current land use. 6.2.3.2.3.7 Existing buildings. 6.2.3.2.3.8 On-site wells, both existing and proposed (including monitor/observation wells). 6.2.3.2.3.9 Test boring locations. 6.2.3.2.3.10 Area(s) evaluated for wastewater disposal. 6.2.3.2.3.11 Proposed disposal area layout, including spare area. 6.2.3.2.3.12 Scale and north arrow.
 
 ### Section 6.2.3.3.1
@@ -2244,8 +2251,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.2.3.4.2
 
-- p.103 units=area,volume,distance,depth numbers=6.2,149,2,500,148,20,000,3,20,6.2 [obligation]
-  > Test boring requirements vary based on system type and capacity as follow: 6.2.3.4.2.1.1 All systems, including drip irrigation but excluding rapid infiltration basins (RIBs) and spray irrigation systems with proposed discharges (cid:149) 2,500 gpd and (cid:148) 20,000 gpd must have a minimum of three (3) 20-foot deep continuously sampled test borings. 6.2.3.4.2.1.2 All systems, excluding RIBs and spray irrigation systems with proposed discharges > 20,000 gpd must have a minimum of three (3) 40-foot deep continuously sampled test borings. 6.2.3.4.2.1.3 All RIB systems with proposed discharges (cid:149) 2,500 gpd must have a minimum of three (3) 40-foot deep continuously sampled test borings per proposed acre of disposal area. 6.2.3.4.2.1.4 All RIB systems with proposed discharges > 100,000 gpd must have at least one (1) 100-foot deep boring continuously sampled to 40 feet below land surface then every 5 feet thereafter.
+- p.103 units=area,volume,distance,depth numbers=6.2,2,500,20,000,3,20,6.2,20,000,3,40,6.2,2,500,3,40,6.2,100,000,1,100,40,5 [obligation]
+  > Test boring requirements vary based on system type and capacity as follow: 6.2.3.4.2.1.1 All systems, including drip irrigation but excluding rapid infiltration basins (RIBs) and spray irrigation systems with proposed discharges  2,500 gpd and 20,000 gpd must have a minimum of three (3) 20-foot deep continuously sampled test borings. 6.2.3.4.2.1.2 All systems, excluding RIBs and spray irrigation systems with proposed discharges > 20,000 gpd must have a minimum of three (3) 40-foot deep continuously sampled test borings. 6.2.3.4.2.1.3 All RIB systems with proposed discharges  2,500 gpd must have a minimum of three (3) 40-foot deep continuously sampled test borings per proposed acre of disposal area. 6.2.3.4.2.1.4 All RIB systems with proposed discharges > 100,000 gpd must have at least one (1) 100-foot deep boring continuously sampled to 40 feet below land surface then every 5 feet thereafter.
 - p.103 units=area,distance,depth numbers=100,6.2,3,1,10,6.2 [obligation]
   > Boring may be terminated at a shallower depth if a confining bed is encountered < 100 feet below land surface. 6.2.3.4.2.1.5 All spray irrigation systems must have at least three (3) 20foot deep continuously sampled test borings with an additional one (1) 20foot boring per 10 acres of proposed disposal area. 6.2.3.4.2.2 Depending on site or project characteristics, greater test-boring depth or additional test borings may be required.
 
@@ -2256,8 +2263,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.2.3.4.4
 
-- p.104 units=time numbers=6.2,149,20,6.2,6.2 [obligation, setback]
-  > Pressure transducers may be deployed to collect continuous water-level data. 6.2.3.4.4.2 On-site wet-season water-level data shall be correlated to the nearest unconfined well(s) with a long-term record ((cid:149) 20 years). 6.2.3.4.4.3 The hydrograph shall include; the minimum, 10th, 25th, 50th (e.g., median), 75th and 90th percentiles and maximum water level for the long-term well(s) in conjunction with the on-site water-level data. 6.2.3.4.4.4 The peak on-site wet-season water level shall be corrected to the 10th percentile of the long-term record.
+- p.104 units=time numbers=6.2,20,6.2,6.2 [obligation, setback]
+  > Pressure transducers may be deployed to collect continuous water-level data. 6.2.3.4.4.2 On-site wet-season water-level data shall be correlated to the nearest unconfined well(s) with a long-term record ( 20 years). 6.2.3.4.4.3 The hydrograph shall include; the minimum, 10th, 25th, 50th (e.g., median), 75th and 90th percentiles and maximum water level for the long-term well(s) in conjunction with the on-site water-level data. 6.2.3.4.4.4 The peak on-site wet-season water level shall be corrected to the 10th percentile of the long-term record.
 
 ### Section 6.2.3.5.1
 
@@ -2267,17 +2274,17 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 ### Section 6.2.3.5.2
 
 - p.106 units=distance,depth,concentration numbers=100,100
-  > Field Test Temperature °F Field Test Specific Conductance μS/cm Field Test Dissolved Oxygen Or Oxidation mg/L or mv Field Test Reduction Potential Depth to Water Table Hundredth of a foot Field Test Ammonia Nitrogen mg/L Grab Arsenic mg/L Grab Cadmium mg/L Grab Chloride mg/L Grab Chromium mg/L Grab Copper mg/L Grab Fecal Coliform Col/100 ml Grab Hardness mg/L Grab Iron mg/L Grab Lead mg/L Grab Manganese mg/L Grab Mercury mg/L Grab Nickel mg/L Grab Nitrate as Nitrogen mg/L Grab Nitrite as Nitrogen mg/L Grab Organic Nitrogen mg/L Grab Selenium mg/L Grab Sodium mg/L Grab Sulfate mg/L Grab Total Dissolved Solids mg/L Grab Total Nitrogen mg/L Grab Total Coliforms Col/100 ml Grab Total Phosphorus mg/L Grab Total Suspended Solids mg/L Grab Zinc mg/L Grab
+  > Field Test Temperature °F Field Test Specific Conductance μS/cm Field Test Dissolved Oxygen Or Oxidation Reduction Potential mg/L or mv Field Test Depth to Water Table Hundredth of a foot Field Test Ammonia Nitrogen mg/L Grab Arsenic mg/L Grab Cadmium mg/L Grab Chloride mg/L Grab Chromium mg/L Grab Copper mg/L Grab Fecal Coliform Col/100 ml Grab Hardness mg/L Grab Iron mg/L Grab Lead mg/L Grab Manganese mg/L Grab Mercury mg/L Grab Nickel mg/L Grab Nitrate as Nitrogen mg/L Grab Nitrite as Nitrogen mg/L Grab Organic Nitrogen mg/L Grab Selenium mg/L Grab Sodium mg/L Grab Sulfate mg/L Grab Total Dissolved Solids mg/L Grab Total Nitrogen mg/L Grab Total Coliforms Col/100 ml Grab Total Phosphorus mg/L Grab Total Suspended Solids mg/L Grab Zinc mg/L Grab
 
 ### Section 6.2.3.6.2
 
-- p.107 units=volume numbers=6.2,149,2,500,148,100,000,6.2,100,000,6.2 [obligation]
-  > 6.2.3.6.2.1 All systems, excluding rapid infiltration basins (RIBs), with proposed discharges (cid:149) 2,500 gpd and (cid:148) 100,000 gpd must, at a minimum, use an analytical model. 6.2.3.6.2.2 All systems with proposed discharges > 100,000 gpd must use a numerical model. 6.2.3.6.2.3 All RIB systems must use a numerical model.
+- p.107 units=volume numbers=107,6.2,2,500,100,000,6.2,100,000,6.2 [obligation]
+  > 107 6.2.3.6.2.1 All systems, excluding rapid infiltration basins (RIBs), with proposed discharges  2,500 gpd and 100,000 gpd must, at a minimum, use an analytical model. 6.2.3.6.2.2 All systems with proposed discharges > 100,000 gpd must use a numerical model. 6.2.3.6.2.3 All RIB systems must use a numerical model.
 
 ### Section 6.2.3.6.5
 
-- p.107 units=volume,distance numbers=6.2,149,100,000,6.2,10,10,10,6.2 [obligation]
-  > 6.2.3.6.5 All RIB systems with a design flow (cid:149) 100,000 gpd must have a basin test performed to evaluate infiltration rates, the potential for perching and/or groundwater mounding. 6.2.3.6.5.1 The test basin(s) infiltration area must be a minimum of 10 foot diameter circle or a 10 foot by 10 foot square with the basin bottom completed at the same elevation as the proposed full-scale system. 6.2.3.6.5.2 The location of the basin(s) within the proposed disposal area shall be determined by the most hydraulically restrictive zone observed in the on-site borings (e.g., clay, silty clay, clayey silt). 6.2.3.6.5.3 A work plan must be submitted to the Department for approval prior to commencing the basin test.
+- p.107 units=volume,distance numbers=6.2,100,000,6.2,10,10,10,6.2,6.2 [obligation]
+  > 6.2.3.6.5 All RIB systems with a design flow  100,000 gpd must have a basin test performed to evaluate infiltration rates, the potential for perching and/or groundwater mounding. 6.2.3.6.5.1 The test basin(s) infiltration area must be a minimum of 10 foot diameter circle or a 10 foot by 10 foot square with the basin bottom completed at the same elevation as the proposed full-scale system. 6.2.3.6.5.2 The location of the basin(s) within the proposed disposal area shall be determined by the most hydraulically restrictive zone observed in the on-site borings (e.g., clay, silty clay, clayey silt). 6.2.3.6.5.3 A work plan must be submitted to the Department for approval prior to commencing the basin test.
 
 ### Section 6.2.4.4.1
 
@@ -2291,8 +2298,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.3.1.1.2
 
-- p.108 units=area numbers=6.3,1,1,2,108 [setback]
-  > 6.3.1.1.2 The overall density of the subdivision or planned unit development is more than one (1) dwelling unit per one half (1⁄2) acre. 108
+- p.108 units=area numbers=6.3,1,1,2 [setback]
+  > 6.3.1.1.2 The overall density of the subdivision or planned unit development is more than one (1) dwelling unit per one half (1⁄2) acre.
 
 ### Section 6.3.1.4.1
 
@@ -2361,46 +2368,46 @@ the cited page is how a wrong regulatory number reaches a reviewer.
   > Basins should be configured in a strip configuration perpendicular to the direction of groundwater flow. 6.3.2.2.1.4 All berms must be at least two (2) feet tall, eight (8) feet wide (if providing access to that basin), and have a 3:1 slope ratio enabling light vehicular traffic for maintenance (e.g. mowing).
 - p.111 units=distance numbers=6,6.3,42 [obligation]
   > Leveling of the basin bottom may need to be performed but not to exceed six (6) inches of additional engineered sandy fill. 6.3.2.2.1.6 The RIBs must be enclosed by fencing with a minimum height of 42-inches to prevent access to the area by foot or vehicular traffic.
-- p.111 units=distance numbers=200,6.3,111 [obligation]
-  > The entrance to the RIBs must be locked and signs must be posted every 200 feet warning the public that the enclosed area is utilized for the disposal of treated wastewater. 6.3.2.2.1.7 A silt fence must be installed around the perimeter of the basin between the berm and the basin bottom to prevent eroded sediments from 111
+- p.111 units=distance numbers=200,6.3 [obligation]
+  > The entrance to the RIBs must be locked and signs must be posted every 200 feet warning the public that the enclosed area is utilized for the disposal of treated wastewater. 6.3.2.2.1.7 A silt fence must be installed around the perimeter of the basin between the berm and the basin bottom to prevent eroded sediments from
 
 ### Section 6.3.2.3.3
 
-- p.113 units=concentration,time numbers=6.3,6.3,6.3,6.3,6.3,5,5,50 [obligation]
-  > 6.3.2.3.3 Public Access 6.3.2.3.3.1 Limited public access sites are sites where access by the public is controlled and only available to authorized personnel, including operations staff, laboratory staff and farm personnel. 6.3.2.3.3.1.1 Suitable barriers, access road gates, or "No Trespassing" signs must be provided at all limited access site entry points. 6.3.2.3.3.1.2 The treated wastewater utilized for limited public access sites must meet the following daily permissible average concentrations: 6.3.2.3.3.1.2.1 The 5-day Biochemical Oxygen Demand (BOD ) of the 5 treated wastewater must not exceed 50 mg/L. 6.3.2.3.3.1.2.2 Disinfection of wastewaters containing domestic waste is required to yield a discharge not to exceed 200 col/100 mL Fecal Coliform. 6.3.2.3.3.1.2.3 The treated wastewater must not contain more than 50 mg/L of Total Suspended Solids for mechanical systems and 90 mg/L of Total Suspended Solids for ponds.
+- p.113 units=concentration,time numbers=6.3,6.3,6.3,6.3,6.3,5,50,6.3,200,100,6.3,50,90 [obligation]
+  > 6.3.2.3.3 Public Access 6.3.2.3.3.1 Limited public access sites are sites where access by the public is controlled and only available to authorized personnel, including operations staff, laboratory staff and farm personnel. 6.3.2.3.3.1.1 Suitable barriers, access road gates, or "No Trespassing" signs must be provided at all limited access site entry points. 6.3.2.3.3.1.2 The treated wastewater utilized for limited public access sites must meet the following daily permissible average concentrations: 6.3.2.3.3.1.2.1 The 5-day Biochemical Oxygen Demand (BOD5) of the treated wastewater must not exceed 50 mg/L. 6.3.2.3.3.1.2.2 Disinfection of wastewaters containing domestic waste is required to yield a discharge not to exceed 200 col/100 mL Fecal Coliform. 6.3.2.3.3.1.2.3 The treated wastewater must not contain more than 50 mg/L of Total Suspended Solids for mechanical systems and 90 mg/L of Total Suspended Solids for ponds.
 - p.114 units=concentration numbers=6.3,6.3,0.5,4 [obligation]
   > Any advanced treatment technology achieving the same treatment levels will be considered by the Department. 6.3.2.3.3.2.3 Disinfection 6.3.2.3.3.2.3.1 If chlorine is utilized for disinfection, a total chlorine residual ranging between 0.5 and 4 mg/L must be maintained at the compliance monitoring point prior to irrigation.
-- p.114 units=concentration,time numbers=100,6.3,6.3,6.3,6.3,5,5,10 [obligation]
-  > If ultraviolet disinfection is utilized, ultraviolet disinfection must be performed following storage with an ultraviolet dose of 100 mJ/cm2 or greater. 6.3.2.3.3.2.3.2 If chemical disinfection is utilized, continuous on-line monitoring of residual disinfection concentrations must be provided at the compliance monitoring point. 6.3.2.3.3.2.3.3 If ultraviolet disinfection is utilized, routine sampling for the effectiveness of disinfection must be performed at the compliance monitoring point. 6.3.2.3.3.2.4 The treated wastewater utilized for unlimited public access sites must meet the following daily permissible average concentrations: 6.3.2.3.3.2.4.1 The 5-day Biochemical Oxygen Demand (BOD ) of the 5 treated wastewater must not exceed 10 mg/L. 6.3.2.3.3.2.4.2 Disinfection of wastewaters containing domestic waste is required to yield a discharge not to exceed 20 col/100 mL Fecal Coliform. 6.3.2.3.3.2.4.3 The treated wastewater must not contain more than 10 mg/L Total Suspended Solids. 6.3.2.3.3.2.4.4 The turbidity of the treated wastewater must not exceed five (5) NTU.
-- p.114 units=concentration numbers=10,5,20,100,10,5,6.3 [obligation]
-  > Daily Permissible Average Parameter Concentration BOD 10 mg/L 5 Fecal Coliform 20 colonies/100 mL Total Suspended Solids 10 mg/L Turbidity 5 NTU 6.3.2.3.3.2.5 Treatment facilities for wastewater to be used on unlimited access sites shall include continuous on-line monitoring for turbidity at the compliance monitoring point.
-- p.113 units=concentration numbers=50,5,200,100,90,50,113
-  > Daily Permissible Average Parameter Concentration BOD 50 mg/L 5 Fecal Coliform 200 colonies/100 mL Total Suspended 90 mg/L for ponds, Solids 50 mg/L for mechanical 113
+- p.114 units=concentration,time numbers=100,6.3,6.3,6.3,6.3,5,10,6.3,20,100,6.3,10,6.3,5 [obligation]
+  > If ultraviolet disinfection is utilized, ultraviolet disinfection must be performed following storage with an ultraviolet dose of 100 mJ/cm2 or greater. 6.3.2.3.3.2.3.2 If chemical disinfection is utilized, continuous on-line monitoring of residual disinfection concentrations must be provided at the compliance monitoring point. 6.3.2.3.3.2.3.3 If ultraviolet disinfection is utilized, routine sampling for the effectiveness of disinfection must be performed at the compliance monitoring point. 6.3.2.3.3.2.4 The treated wastewater utilized for unlimited public access sites must meet the following daily permissible average concentrations: 6.3.2.3.3.2.4.1 The 5-day Biochemical Oxygen Demand (BOD5) of the treated wastewater must not exceed 10 mg/L. 6.3.2.3.3.2.4.2 Disinfection of wastewaters containing domestic waste is required to yield a discharge not to exceed 20 col/100 mL Fecal Coliform. 6.3.2.3.3.2.4.3 The treated wastewater must not contain more than 10 mg/L Total Suspended Solids. 6.3.2.3.3.2.4.4 The turbidity of the treated wastewater must not exceed five (5) NTU.
+- p.114 units=concentration numbers=10,20,100,10,5,6.3 [obligation]
+  > Parameter Daily Permissible Average Concentration BOD5 10 mg/L Fecal Coliform 20 colonies/100 mL Total Suspended Solids 10 mg/L Turbidity 5 NTU 6.3.2.3.3.2.5 Treatment facilities for wastewater to be used on unlimited access sites shall include continuous on-line monitoring for turbidity at the compliance monitoring point.
+- p.113 units=concentration numbers=50,200,100,90,50
+  > Parameter Daily Permissible Average Concentration BOD5 50 mg/L Fecal Coliform 200 colonies/100 mL Total Suspended Solids 90 mg/L for ponds, 50 mg/L for mechanical
 
 ### Section 6.3.2.3.4
 
-- p.115 units=slope numbers=6.3,6.3,15,6.3,25,6.3,5,6.3 [obligation]
+- p.115 units=slope numbers=6.3,6.3,15,6.3,25,6.3,5,6.3,6.3 [obligation]
   > The nitrogen balance must take into consideration the following: the average design wastewater loading, nitrogen concentration in effluent, average annual precipitation and fixation, application of all fertilizers, proposed cover crop and cover crop management scheme (see Exhibit GG). 6.3.2.3.4.3.2 In the nitrogen balance calculations, all nitrogen not lost to denitrification, ammonia volatilization, evapotranspiration or plant uptake must be assumed to leach into the groundwater as nitrate nitrogen. 6.3.2.3.4.3.3 For row and forage crop systems, assumed losses to denitrification should not exceed 15% of the total nitrogen applied. 6.3.2.3.4.3.4 In forest systems, assumed denitrification losses should not exceed 25%. 6.3.2.3.4.3.5 Assumed losses to ammonia volatilization should not exceed 5% of the total ammonia nitrogen applied. 6.3.2.3.4.3.6 Soil storage of nitrogen should be assumed to be zero. 6.3.2.3.4.3.7 The source of the monthly plant nitrogen uptake rate(s) used for design must be referenced in the Design Engineer Report.
 
 ### Section 6.3.2.3.5
 
-- p.115 units=distance,depth numbers=6.3,6.3,6.3,6.3,6.3,3,5,6.3 [obligation]
+- p.115 units=distance,depth numbers=6.3,6.3,6.3,6.3,6.3,3,5,6.3,6.3,1,107,6.3,3 [obligation]
   > 6.3.2.3.5 Ponds 6.3.2.3.5.1 Treatment ponds may be aerated, facultative or a combined aerated-facultative system. 6.3.2.3.5.2 Sizing of completely and partially mixed aerated ponds must be based on first-order removal rate kinetic equations and the expected annual temperature variation. 6.3.2.3.5.3 Facultative pond cells must have an appropriate length to width ratio consistent with current engineering standards to minimize short circuiting. 6.3.2.3.5.4 Facultative pond cells must have a depth between three (3) and five (5) feet. 6.3.2.3.5.5 All systems must have provisions for storage or an alternative permitted disposal method(s). 6.3.2.3.5.6 Ponds used for treatment and/or storage must have impermeable synthetic liners having a hydraulic conductivity equal to or less than 1 X 107 cm/sec. 6.3.2.3.5.7 At least three (3) feet of freeboard, measured from the lowest point of the berm, is required for all ponds.
 - p.115 units=distance numbers=6.3,2 [obligation]
   > The lowest point of the berm must be determined and marked. 6.3.2.3.5.8 The base of any pond, at its lowest point, must be at least two (2) feet above the seasonal high water table.
 
 ### Section 6.3.2.3.6
 
-- p.116 units=time numbers=6.3 [obligation]
-  > harvesting to maintain optimum growth conditions. 6.3.2.3.6.3 Forage crops must be harvested and removed from the irrigation field(s) at least twice a year.
+- p.116 units=time numbers=116,6.3 [obligation]
+  > 116 harvesting to maintain optimum growth conditions. 6.3.2.3.6.3 Forage crops must be harvested and removed from the irrigation field(s) at least twice a year.
 - p.116 units=time numbers=6,6.3,6.3,5 [obligation]
   > Crops harvested must be removed from the irrigation site within six (6) months of harvest. 6.3.2.3.6.4 Sufficient spray field area or storage capacity must be provided in the design to allow for harvesting and the regeneration cycle. 6.3.2.3.6.5 Spray irrigation fields must be assessed every five (5) years to determine if soils renovation or maintenance is necessary.
-- p.116 units=slope,depth,time numbers=6.3,6.3,20,25,6.3,40,60,6.3 [obligation]
+- p.116 units=slope,depth,time numbers=6.3,6.3,20,25,6.3,40,60,6.3,6.3,6.3,6.3,6.3,1,6.3,1,6.3,18,6.3,4,6.3,25,6.3 [obligation]
   > Assessments must address crop consistency, soil monitoring results, infiltration, and compaction. 6.3.2.3.6.6 Disturbed areas in forest systems must be initially replanted or covered with thick mulch for succession to forest vegetation. 6.3.2.3.6.7 Pine forest systems should be harvested at 20 to 25 year intervals. 6.3.2.3.6.8 Hardwood forest systems should be harvested at 40 to 60 years. 6.3.2.3.6.8.1 Due to soil exposure and compaction as a result of any forest harvesting activities, wastewater loadings must be reduced following harvesting until the hydraulic capacity of the site is restored. 6.3.2.3.6.9 Forage crops irrigated with treated domestic wastewater must be harvested before feeding to livestock. 6.3.2.3.6.10 The grazing of animals on a site actively irrigated with treated domestic wastewater is prohibited. 6.3.2.3.6.11 If domestic treated wastewater applications are terminated, the facility must adhere to the following precautions: 6.3.2.3.6.11.1 Grazing by animals (other than lactating dairy cows) whose products are consumed by humans is prohibited for one (1) month. 6.3.2.3.6.11.2 Grazing by lactating dairy cows is prohibited for one (1) year. 6.3.2.3.6.11.3 Growing vegetables and root crops, which are eaten raw, is prohibited for 18 months. 6.3.2.3.6.11.4 Hay must not be cut for four (4) days after applications. 6.3.2.3.6.11.5 If the wastewater contains more than 25% industrial waste (excluding food processing industries) the forage must be monitored for potential toxicity problems to animals or possible food-chain effects. 6.3.2.3.6.12 Unmanaged, volunteer vegetation is not an acceptable spray field cover.
 
 ### Section 6.3.2.3.7
 
-- p.116 units=slope,distance,depth,time numbers=6.3,6.3,6.3,24,6.3,7,15,30 [obligation]
+- p.116 units=slope,distance,depth,time numbers=6.3,6.3,6.3,24,6.3,7,15,30,6.3 [obligation]
   > 6.3.2.3.7 Soils 6.3.2.3.7.1 Soils with a permeability < .02 inches/hour are prohibited from irrigation of treated wastewater. 6.3.2.3.7.2 Soils with a depth to water < 24 inches are prohibited from irrigation of treated wastewater. 6.3.2.3.7.3 Equipment limitations and erosion potential dictate maximum slopes for wastewater spray fields to be limited to 7% for row crops, 15% for forage crops and 30% for forests. 6.3.2.3.7.4 Design considerations must be taken for depressions to preclude ponding.
 
 ### Section 6.3.2.3.8
@@ -2412,10 +2419,10 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 - p.117 units=distance numbers=6.3,6.3,150,6.3,150 [obligation, setback]
   > Buffer zones must be vegetated. 6.3.2.3.10.1 The following buffer zones must be provided for limited public access spray irrigation sites: 6.3.2.3.10.1.1 A 150 foot buffer must be maintained between the edge of the wetted field area and all property boundaries. 6.3.2.3.10.1.2 A 150 foot buffer must be maintained between the edge of the wetted field area and the shoulder of internal and external public roads.
-- p.117 units=distance numbers=6.3,150,100,6.3,117 [obligation, setback]
-  > Buffers from highways must be measured from the outer edge of the shoulder or edge of the highway, if no shoulder. 6.3.2.3.10.1.3 A 150 foot buffer must be maintained between the edge of the wetted field area and any public supply well and a 100 foot buffer from any individual domestic well unless other jurisdictions dictate greater distances. 6.3.2.3.10.1.4 Internal roads that are closed to public use do not require buffer zones. 117
-- p.118 units=distance numbers=6.3,100,6.3,50,6.3,100,6.3,50 [obligation, setback]
-  > 6.3.2.3.10.1.5 A 100 foot buffer is required between the wetted edge of spray fields and the edge of any perennial lake or stream or ephemeral drain. 6.3.2.3.10.1.6 A 50 foot buffer is required between spray fields and the edge of any channelized, intermittent watercourse. 6.3.2.3.10.1.7 If an intermittent watercourse were to become perennial, the 100 foot buffer requirement will apply. 6.3.2.3.10.1.8 A 50 foot buffer is required between the wetted field area and the edge of any wetlands. 6.3.2.3.10.2 Lesser distances may be permitted if the design and operations demonstrate that aerosols will be contained within the site and/or no threat to public health or the environment exists. 6.3.2.3.10.3 Buffer zones for unlimited public access sites are not normally required except for Sections 6.3.2.3.10.1.5, 6.3.2.3.10.1.6, 6.3.2.3.10.1.7 and 6.3.2.3.10.1.8 however other buffers may be necessary depending on site constraints. 6.3.2.3.10.4 Buffer zones around pretreatment facilities shall be designed for aerosol containment, noise abatement and nuisance control.
+- p.117 units=distance numbers=6.3,150,100,6.3 [obligation, setback]
+  > Buffers from highways must be measured from the outer edge of the shoulder or edge of the highway, if no shoulder. 6.3.2.3.10.1.3 A 150 foot buffer must be maintained between the edge of the wetted field area and any public supply well and a 100 foot buffer from any individual domestic well unless other jurisdictions dictate greater distances. 6.3.2.3.10.1.4 Internal roads that are closed to public use do not require buffer zones.
+- p.118 units=distance numbers=118,6.3,100,6.3,50,6.3,100,6.3,50,6.3,6.3,6.3,6.3,6.3,6.3,6.3 [obligation, setback]
+  > 118 6.3.2.3.10.1.5 A 100 foot buffer is required between the wetted edge of spray fields and the edge of any perennial lake or stream or ephemeral drain. 6.3.2.3.10.1.6 A 50 foot buffer is required between spray fields and the edge of any channelized, intermittent watercourse. 6.3.2.3.10.1.7 If an intermittent watercourse were to become perennial, the 100 foot buffer requirement will apply. 6.3.2.3.10.1.8 A 50 foot buffer is required between the wetted field area and the edge of any wetlands. 6.3.2.3.10.2 Lesser distances may be permitted if the design and operations demonstrate that aerosols will be contained within the site and/or no threat to public health or the environment exists. 6.3.2.3.10.3 Buffer zones for unlimited public access sites are not normally required except for Sections 6.3.2.3.10.1.5, 6.3.2.3.10.1.6, 6.3.2.3.10.1.7 and 6.3.2.3.10.1.8 however other buffers may be necessary depending on site constraints. 6.3.2.3.10.4 Buffer zones around pretreatment facilities shall be designed for aerosol containment, noise abatement and nuisance control.
 
 ### Section 6.3.2.3.11
 
@@ -2433,12 +2440,12 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.3.2.3.13
 
-- p.120 units=percolation numbers=6.3,6.3,6.3,6.3,6.3,6.3,6.3,6.3 [obligation, setback]
-  > 6.3.2.3.13.8.4.3 Design percolation rate. 6.3.2.3.13.8.4.4 Nitrogen loading and other constituent loading limitations. 6.3.2.3.13.8.4.5 Groundwater and drainage conditions. 6.3.2.3.13.8.4.6 Influent wastewater flows. 6.3.2.3.13.9 The collection and channelization of irrigated wastewater for purposes other than retreatment is prohibited. 6.3.2.3.13.10 Direct application of treated wastewater to drainage ditches, any water bodies, and wetlands is prohibited. 6.3.2.3.13.11 Irrigation on frozen or saturated soils is prohibited. 6.3.2.3.13.12 Surface water bodies adjacent to wastewater spray irrigation sites must be monitored by the wastewater treatment facility.
+- p.120 units=percolation numbers=120,6.3,6.3,6.3,6.3,6.3,6.3,6.3,6.3 [obligation, setback]
+  > 120 6.3.2.3.13.8.4.3 Design percolation rate. 6.3.2.3.13.8.4.4 Nitrogen loading and other constituent loading limitations. 6.3.2.3.13.8.4.5 Groundwater and drainage conditions. 6.3.2.3.13.8.4.6 Influent wastewater flows. 6.3.2.3.13.9 The collection and channelization of irrigated wastewater for purposes other than retreatment is prohibited. 6.3.2.3.13.10 Direct application of treated wastewater to drainage ditches, any water bodies, and wetlands is prohibited. 6.3.2.3.13.11 Irrigation on frozen or saturated soils is prohibited. 6.3.2.3.13.12 Surface water bodies adjacent to wastewater spray irrigation sites must be monitored by the wastewater treatment facility.
 - p.119 units=distance numbers=1,000 [obligation]
   > Limited public access sites must have signs posted on the perimeter every 1,000 feet, at a minimum, and at all entry points.
-- p.119 units=percolation,area,slope,distance,time numbers=6.3,1,000,6.3,6.3,5,10,6.3,6.3 [obligation]
-  > Fencing of spray fields is not required. 6.3.2.3.13.4 All domestic, irrigation, commercial, industrial, and public wells must be identified within 1,000 linear feet from the perimeter of the irrigation fields. 6.3.2.3.13.5 Shallow and poorly constructed wells within the land treatment system will require proper abandonment. 6.3.2.3.13.6 The design percolation rate at land treatment sites with seasonal high groundwater at depths greater than five (5) feet (after consideration of mounding due to wastewater irrigation) be no more than 10% of the mean saturated hydraulic conductivity of the most limiting layer within the first five feet from the surface. 6.3.2.3.13.7 The Design Engineer Report must include an emergency contingency plan to demonstrate preparedness in the event that the wastewater treatment facility may experience a significant natural occurrence. 6.3.2.3.13.7.1 The contingency plan must address, but must not be limited to, extended periods of excessive precipitation, and extended periods of subfreezing temperatures causing prolonged periods of frozen soil conditions. 6.3.2.3.13.7.2 The contingency plan must delineate the wastewater treatment facilities available options to reduce, eliminate and/or prevent non-compliant conditions. 6.3.2.3.13.8 Wastewater application rates 6.3.2.3.13.8.1 Wastewater application rates may not exceed a maximum of 2.5 inches/acre/7 day period absent Department written authorization. 6.3.2.3.13.8.2 There must be a sufficient rest period between applications to prevent field saturation from occurring in any part of the field. 6.3.2.3.13.8.3 Sites that experience direct runoff as a result of wastewater irrigation must reduce application rates. 6.3.2.3.13.8.4 The design wastewater application rates must account for site specific: 6.3.2.3.13.8.4.1 Precipitation - normal and 5 year return (P5). 6.3.2.3.13.8.4.2 Evapotranspiration. 119
+- p.119 units=percolation,area,slope,distance,time numbers=6.3,1,000,6.3,6.3,5,10,6.3,6.3,6.3,6.3,6.3,2.5,7,6.3,6.3,6.3,6.3,5,6.3 [obligation]
+  > Fencing of spray fields is not required. 6.3.2.3.13.4 All domestic, irrigation, commercial, industrial, and public wells must be identified within 1,000 linear feet from the perimeter of the irrigation fields. 6.3.2.3.13.5 Shallow and poorly constructed wells within the land treatment system will require proper abandonment. 6.3.2.3.13.6 The design percolation rate at land treatment sites with seasonal high groundwater at depths greater than five (5) feet (after consideration of mounding due to wastewater irrigation) be no more than 10% of the mean saturated hydraulic conductivity of the most limiting layer within the first five feet from the surface. 6.3.2.3.13.7 The Design Engineer Report must include an emergency contingency plan to demonstrate preparedness in the event that the wastewater treatment facility may experience a significant natural occurrence. 6.3.2.3.13.7.1 The contingency plan must address, but must not be limited to, extended periods of excessive precipitation, and extended periods of subfreezing temperatures causing prolonged periods of frozen soil conditions. 6.3.2.3.13.7.2 The contingency plan must delineate the wastewater treatment facilities available options to reduce, eliminate and/or prevent non-compliant conditions. 6.3.2.3.13.8 Wastewater application rates 6.3.2.3.13.8.1 Wastewater application rates may not exceed a maximum of 2.5 inches/acre/7 day period absent Department written authorization. 6.3.2.3.13.8.2 There must be a sufficient rest period between applications to prevent field saturation from occurring in any part of the field. 6.3.2.3.13.8.3 Sites that experience direct runoff as a result of wastewater irrigation must reduce application rates. 6.3.2.3.13.8.4 The design wastewater application rates must account for site specific: 6.3.2.3.13.8.4.1 Precipitation - normal and 5 year return (P5). 6.3.2.3.13.8.4.2 Evapotranspiration.
 - p.120 units=slope numbers=6.3,10 [obligation]
   > Monitoring must be performed upgradient and downgradient of the irrigation site. 6.3.2.3.13.13 Spray nozzle pressure variation due to friction loss and static head for solid set, uniformly spaced systems should not exceed plus or minus 10% of the design spray nozzle pressure.
 - p.120 units=distance,depth numbers=6.3,5,2,6.3 [obligation]
@@ -2451,8 +2458,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.4.1.1.1
 
-- p.122 units=time numbers=6.4,6,6.4
-  > 6.4.1.1.1.1.3 Proof of the responsible party's financial solvency by providing a business financial statement (including balance sheet) that is not more than six (6) months old, and a statement of financial encumbrances. 6.4.1.1.1.1.4 A list of licensed wastewater treatment facility operators employed by the responsible party.
+- p.122 units=time numbers=122,6.4,6,6.4
+  > 122 6.4.1.1.1.1.3 Proof of the responsible party's financial solvency by providing a business financial statement (including balance sheet) that is not more than six (6) months old, and a statement of financial encumbrances. 6.4.1.1.1.1.4 A list of licensed wastewater treatment facility operators employed by the responsible party.
 
 ### Section 6.4.1.2
 
@@ -2506,29 +2513,29 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.5
 
-- p.125 units=volume numbers=6.5,149,2,500,125 [obligation]
-  > 6.5 Large System Permitting In order to obtain a permit to construct and operate an on-site wastewater treatment and disposal systems with daily flow rates of (cid:149) 2,500 gallons, a permit application must be 125
+- p.125 units=volume numbers=6.5,2,500 [obligation]
+  > 6.5 Large System Permitting In order to obtain a permit to construct and operate an on-site wastewater treatment and disposal systems with daily flow rates of  2,500 gallons, a permit application must be
 
 ### Section 6.5.1.4.1
 
-- p.127 units=distance,time numbers=6.5,6.5,6.4,6.5,6.5,1,6.5,6.5 [obligation]
-  > 6.5.1.4.1.3.8 Easement agreement(s) 6.5.1.4.1.3.9 Legal documents (see Section 6.4 for additional legal requirements) 6.5.1.4.1.4 Site Map 6.5.1.4.1.4.1 Provide scaled drawings with one (1) foot contour elevations, excluding spray irrigation fields, showing: 6.5.1.4.1.4.1.1 Layout of service area (development, strip mall, etc.) 6.5.1.4.1.4.1.2 Wastewater treatment facility, including: 6.5.1.4.1.4.1.2.1 Lift stations 6.5.1.4.1.4.1.2.2 Storage structures 6.5.1.4.1.4.1.3 Disposal site(s) and spare disposal site area(s) 6.5.1.4.1.4.1.4 Irrigation fields including acreage of each pivot or zone with two (2) foot contour elevations 6.5.1.4.1.4.1.5 Access roads and utilities 6.5.1.4.1.4.1.6 Location of all monitoring and observation wells (existing and proposed) 6.5.1.4.1.4.1.7 Buffers to property lines, watercourses and wetlands 6.5.1.4.1.4.1.8 Location of any storm water control structures 6.5.1.4.1.4.1.9 Drainage structures 6.5.1.4.1.4.1.10 FEMA 100 year floodplain line 6.5.1.4.1.4.1.11 Location of any wetlands, refer to the 2007 Statewide Wetlands Mapping Project (SWMP) map, and State Tidal Wetlands maps, if applicable 6.5.1.4.1.4.1.12 Watercourses within or contiguous to the site 6.5.1.4.1.4.1.13 Residences and habitable structures within or contiguous to the site 6.5.1.4.1.5 Design wastewater characteristics Design wastewater characteristics for new facilities must be in accordance with current industry averages.
+- p.127 units=distance,time numbers=127,6.5,6.5,6.4,6.5,6.5,1,6.5,6.5,6.5,6.5,6.5,6.5,2,6.5,6.5,6.5,6.5,6.5,6.5,100,6.5,2007,6.5 [obligation]
+  > 127 6.5.1.4.1.3.8 Easement agreement(s) 6.5.1.4.1.3.9 Legal documents (see Section 6.4 for additional legal requirements) 6.5.1.4.1.4 Site Map 6.5.1.4.1.4.1 Provide scaled drawings with one (1) foot contour elevations, excluding spray irrigation fields, showing: 6.5.1.4.1.4.1.1 Layout of service area (development, strip mall, etc.) 6.5.1.4.1.4.1.2 Wastewater treatment facility, including: 6.5.1.4.1.4.1.2.1 Lift stations 6.5.1.4.1.4.1.2.2 Storage structures 6.5.1.4.1.4.1.3 Disposal site(s) and spare disposal site area(s) 6.5.1.4.1.4.1.4 Irrigation fields including acreage of each pivot or zone with two (2) foot contour elevations 6.5.1.4.1.4.1.5 Access roads and utilities 6.5.1.4.1.4.1.6 Location of all monitoring and observation wells (existing and proposed) 6.5.1.4.1.4.1.7 Buffers to property lines, watercourses and wetlands 6.5.1.4.1.4.1.8 Location of any storm water control structures 6.5.1.4.1.4.1.9 Drainage structures 6.5.1.4.1.4.1.10 FEMA 100 year floodplain line 6.5.1.4.1.4.1.11 Location of any wetlands, refer to the 2007 Statewide Wetlands Mapping Project (SWMP) map, and State Tidal Wetlands maps, if applicable 6.5.1.4.1.4.1.12 Watercourses within or contiguous to the site 6.5.1.4.1.4.1.13 Residences and habitable structures within or contiguous to the site 6.5.1.4.1.5 Design wastewater characteristics Design wastewater characteristics for new facilities must be in accordance with current industry averages.
 - p.129 units=time numbers=90 [obligation]
   > Ensure that the calculations demonstrate the ability to evacuate the maximum accumulated storage within a 90 day period and include the following considerations on a monthly basis:
-- p.129 units=time numbers=6.5,6.5,6.5,6.5,6.5,5,6.5,6.5
-  > 6.5.1.4.1.7.6.4 Determination of required wetted field area(s) 6.5.1.4.1.7.6.5 Actual design wetted field area(s) 6.5.1.4.1.7.6.6 Determination of required storage volume 6.5.1.4.1.7.6.7 Actual design storage volume 6.5.1.4.1.7.6.8 Five (5) year vegetative management plan to include: 6.5.1.4.1.7.6.8.1 Crop type(s) 6.5.1.4.1.7.6.8.2 Crop planting sequence 6.5.1.4.1.7.6.8.3 Anticipated crop yield based on field data 6.5.1.4.1.7.6.8.4 Timing and application rates of commercial fertilizers (See Section 6.3.2.3.13.24), if applicable 6.5.1.4.1.7.6.8.5 Planting and harvesting timelines 6.5.1.4.1.7.6.8.6 Nitrogen balance calculation sheet 6.5.1.4.1.7.6.8.7 Selection of cover crop and management scheme(s) 6.5.1.4.1.7.6.8.8 Phosphorus balance calculations for phosphorus limited sites 6.5.1.4.1.7.6.9 Construction application requirements 6.5.1.4.1.7.6.9.1 After performing individual calculations to determine the design parameters, create and submit an active spreadsheet that incorporates all required calculated design parameters, and demonstrates their mathematical influence on each other per field and per month.
+- p.129 units=time numbers=129,6.5,6.5,6.5,6.5,6.5,5,6.5,6.5,6.5,6.5,6.3,6.5,6.5,6.5,6.5,6.5,6.5
+  > 129 6.5.1.4.1.7.6.4 Determination of required wetted field area(s) 6.5.1.4.1.7.6.5 Actual design wetted field area(s) 6.5.1.4.1.7.6.6 Determination of required storage volume 6.5.1.4.1.7.6.7 Actual design storage volume 6.5.1.4.1.7.6.8 Five (5) year vegetative management plan to include: 6.5.1.4.1.7.6.8.1 Crop type(s) 6.5.1.4.1.7.6.8.2 Crop planting sequence 6.5.1.4.1.7.6.8.3 Anticipated crop yield based on field data 6.5.1.4.1.7.6.8.4 Timing and application rates of commercial fertilizers (See Section 6.3.2.3.13.24), if applicable 6.5.1.4.1.7.6.8.5 Planting and harvesting timelines 6.5.1.4.1.7.6.8.6 Nitrogen balance calculation sheet 6.5.1.4.1.7.6.8.7 Selection of cover crop and management scheme(s) 6.5.1.4.1.7.6.8.8 Phosphorus balance calculations for phosphorus limited sites 6.5.1.4.1.7.6.9 Construction application requirements 6.5.1.4.1.7.6.9.1 After performing individual calculations to determine the design parameters, create and submit an active spreadsheet that incorporates all required calculated design parameters, and demonstrates their mathematical influence on each other per field and per month.
 
 ### Section 6.5.1.5.2
 
-- p.130 units=distance numbers=2,6.5,6.5,6.5,6.5,6.5,6.5,6.5 [obligation]
+- p.130 units=distance numbers=2,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5 [obligation]
   > Topography for spray irrigation fields may utilize two (2) foot contour intervals. 6.5.1.5.2.2 Size and location of all proposed wastewater treatment plant structure(s). 6.5.1.5.2.3 Process flow diagram showing the flow through all treatment units. 6.5.1.5.2.4 Piping and appurtenances (including arrangements for bypassing individual units). 6.5.1.5.2.5 Materials handled and direction of flow through pipes must be shown. 6.5.1.5.2.6 Hydraulic profiles showing the flow of wastewater, supernatant liquor, and biosolids. 6.5.1.5.2.7 Influent and effluent flow meters locations. 6.5.1.5.2.8 Monitoring location point(s). 6.5.1.5.2.9 Location, dimensions and elevations of all existing and proposed facility components. 6.5.1.5.2.10 Type, size, pertinent features and manufacture's rated capacity of all pumps, blowers, motors, and other mechanical devices, unless included in the specifications.
 - p.130 units=distance numbers=6.5,6.5,1
   > 6.5.1.5.2 General layout of the wastewater treatment facility including: 6.5.1.5.2.1 Topography of the wastewater treatment facility site with one (1) foot contours unless the Department approved the use of an alternate scale.
 
 ### Section 6.5.1.5.3
 
-- p.130 units=distance numbers=2,6.5,6.5,6.5,6.5,6.5,6.5,6.5 [setback]
-  > Topography for spray irrigation fields may utilize two (2) foot contour intervals. 6.5.1.5.3.2 Proposed disposal system elevations. 6.5.1.5.3.3 Disposal system location, size and layout. 6.5.1.5.3.4 Spare disposal system location, size, layout and dimensions. 6.5.1.5.3.5 Piping inverts to disposal system. 6.5.1.5.3.6 Monitoring and observation well locations as approved by the Department. 6.5.1.5.3.7 Overlay of disposal area with approved soil delineation area. 6.5.1.5.3.8 Buffer areas. 6.5.1.5.3.9 Provide disposal system layout (identify laterals, transmission line, manifolds, valving, vaults, splash blocks, runs, laterals, air release valves, remote zoning, etc.). 6.5.1.5.3.10 Cross section of disposal system(s). 6.5.1.5.3.11 Cut/fill sections, if applicable. 6.5.1.5.3.12 Piping details to system including inverts. 6.5.1.5.3.13 Valving details of disposal system. 6.5.1.5.3.14 Splash block details for rapid infiltration basin(s). 6.5.1.5.3.15 Berm details applicable to the disposal system. 6.5.1.5.3.16 Fence details. 6.5.1.5.3.17 Sign details. 130
+- p.130 units=distance numbers=2,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5,6.5 [setback]
+  > Topography for spray irrigation fields may utilize two (2) foot contour intervals. 6.5.1.5.3.2 Proposed disposal system elevations. 6.5.1.5.3.3 Disposal system location, size and layout. 6.5.1.5.3.4 Spare disposal system location, size, layout and dimensions. 6.5.1.5.3.5 Piping inverts to disposal system. 6.5.1.5.3.6 Monitoring and observation well locations as approved by the Department. 6.5.1.5.3.7 Overlay of disposal area with approved soil delineation area. 6.5.1.5.3.8 Buffer areas. 6.5.1.5.3.9 Provide disposal system layout (identify laterals, transmission line, manifolds, valving, vaults, splash blocks, runs, laterals, air release valves, remote zoning, etc.). 6.5.1.5.3.10 Cross section of disposal system(s). 6.5.1.5.3.11 Cut/fill sections, if applicable. 6.5.1.5.3.12 Piping details to system including inverts. 6.5.1.5.3.13 Valving details of disposal system. 6.5.1.5.3.14 Splash block details for rapid infiltration basin(s). 6.5.1.5.3.15 Berm details applicable to the disposal system. 6.5.1.5.3.16 Fence details. 6.5.1.5.3.17 Sign details.
 - p.130 units=distance numbers=6.5,6.5,1
   > 6.5.1.5.3 General layout of wastewater disposal area, including: 6.5.1.5.3.1 Topography of the wastewater disposal site with one (1) foot contours unless the Department approves the use of an alternate scale.
 
@@ -2544,8 +2551,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.5.2.2.4
 
-- p.131 units=time numbers=6.5,1,131 [obligation]
-  > 6.5.2.2.4 If construction has not been initiated or construction has not been completed prior to the expiration of the one (1) year extension, provided, the SIR is valid, and there are no changes to the approved design prior to the expiration of the construction permit, the applicant must submit a construction permit application 131
+- p.131 units=time numbers=6.5,1 [obligation]
+  > 6.5.2.2.4 If construction has not been initiated or construction has not been completed prior to the expiration of the one (1) year extension, provided, the SIR is valid, and there are no changes to the approved design prior to the expiration of the construction permit, the applicant must submit a construction permit application
 
 ### Section 6.5.3.1.9
 
@@ -2580,8 +2587,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 - p.136 units=time numbers=6.5,180 [obligation]
   > 6.5.4 Operation Permit Re-Issuance At least 180 days prior to the expiration date of the operation permit, the permittee must submit an application for renewal or notify the Department of the intent to cease discharging by the expiration date.
-- p.136 units=volume,time numbers=149,100,000,5 [obligation]
-  > The application package for systems with a design flow (cid:149) 100,000 gpd, must include a five (5) year Compliance Monitoring Report (CMR).
+- p.136 units=volume,time numbers=100,000,5 [obligation]
+  > The application package for systems with a design flow  100,000 gpd, must include a five (5) year Compliance Monitoring Report (CMR).
 
 ### Section 6.5.4.3.1
 
@@ -2616,8 +2623,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.5.6.1
 
-- p.139 units=time numbers=6.5,1,30,139 [obligation]
-  > 6.5.6.1 No person shall transfer a permit from one (1) person to another unless 30 days written notice is given to the Department, indicating the transfer is agreeable to both persons, and approval of such transfer is obtained in writing from the 139
+- p.139 units=time numbers=6.5,1,30 [obligation]
+  > 6.5.6.1 No person shall transfer a permit from one (1) person to another unless 30 days written notice is given to the Department, indicating the transfer is agreeable to both persons, and approval of such transfer is obtained in writing from the
 
 ### Section 6.5.7.2
 
@@ -2681,13 +2688,13 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.7.2.2.3
 
-- p.147 units=area,distance,time numbers=6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7 [setback]
-  > 6.7.2.2.3.2.10.2.1.1 Wastewater loading rate (inches/week) 6.7.2.2.3.2.10.2.1.2 Wastewater application rate (inches/hour) 6.7.2.2.3.2.10.2.1.3 Spray field application cycles 6.7.2.2.3.2.10.2.1.4 Organics, metals, nitrogen, and phosphorus loading (lbs/acre per month, etc.) 6.7.2.2.3.2.10.2.2 Spray irrigation system operation and maintenance 6.7.2.2.3.2.10.2.2.1 Storage pond(s) 6.7.2.2.3.2.10.2.2.2 Irrigation pump station(s) 6.7.2.2.3.2.10.2.2.3 Spray field force main(s) and laterals 6.7.2.2.3.2.10.2.2.4 Irrigation equipment 6.7.2.2.3.2.10.2.3 Vegetation management 6.7.2.2.3.2.10.2.3.1 Discuss how the selected cover crop is to be established, monitored and maintained; how the irrigation schedule will be altered during harvest and regeneration 6.7.2.2.3.2.10.2.3.2 Discuss cover crop cultivation procedures, harvesting schedules and crop uses 6.7.2.2.3.2.10.2.3.3 Discuss buffer zone vegetative cover and its maintenance 6.7.2.2.3.2.10.3 Subsurface disposal systems 6.7.2.2.3.2.10.3.1 Dosing controls 6.7.2.2.3.2.10.3.2 Dosing volume and schedule 6.7.2.2.3.2.10.3.3 Inspection of disposal area(s) 6.7.2.2.3.2.10.3.4 Vegetative cover 6.7.2.2.3.2.10.3.5 Common signs of system specific expected problems and relative troubleshooting procedures.
+- p.147 units=area,distance,time numbers=147,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7 [setback]
+  > 147 6.7.2.2.3.2.10.2.1.1 Wastewater loading rate (inches/week) 6.7.2.2.3.2.10.2.1.2 Wastewater application rate (inches/hour) 6.7.2.2.3.2.10.2.1.3 Spray field application cycles 6.7.2.2.3.2.10.2.1.4 Organics, metals, nitrogen, and phosphorus loading (lbs/acre per month, etc.) 6.7.2.2.3.2.10.2.2 Spray irrigation system operation and maintenance 6.7.2.2.3.2.10.2.2.1 Storage pond(s) 6.7.2.2.3.2.10.2.2.2 Irrigation pump station(s) 6.7.2.2.3.2.10.2.2.3 Spray field force main(s) and laterals 6.7.2.2.3.2.10.2.2.4 Irrigation equipment 6.7.2.2.3.2.10.2.3 Vegetation management 6.7.2.2.3.2.10.2.3.1 Discuss how the selected cover crop is to be established, monitored and maintained; how the irrigation schedule will be altered during harvest and regeneration 6.7.2.2.3.2.10.2.3.2 Discuss cover crop cultivation procedures, harvesting schedules and crop uses 6.7.2.2.3.2.10.2.3.3 Discuss buffer zone vegetative cover and its maintenance 6.7.2.2.3.2.10.3 Subsurface disposal systems 6.7.2.2.3.2.10.3.1 Dosing controls 6.7.2.2.3.2.10.3.2 Dosing volume and schedule 6.7.2.2.3.2.10.3.3 Inspection of disposal area(s) 6.7.2.2.3.2.10.3.4 Vegetative cover 6.7.2.2.3.2.10.3.5 Common signs of system specific expected problems and relative troubleshooting procedures.
 
 ### Section 6.7.2.2.5
 
-- p.148 units=depth numbers=6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7 [setback]
-  > 6.7.2.2.5.1.1 Preventive 6.7.2.2.5.1.2 Corrective 6.7.2.2.5.2 Monitoring reports and/or records 6.7.2.2.5.2.1 Treatment system and storage pond(s) 6.7.2.2.5.2.1.1 Influent flow 6.7.2.2.5.2.1.2 Influent and effluent wastewater characteristics 6.7.2.2.5.2.2 Disposal system 6.7.2.2.5.2.2.1 Wastewater volume applied to disposal system 6.7.2.2.5.2.2.2 Disposal system operation scheduling 6.7.2.2.5.2.2.3 Loading rates 6.7.2.2.5.2.3 Annual record of groundwater depth 6.7.2.2.5.2.4 Surface water parameters 6.7.2.2.5.2.5 Soils data 6.7.2.2.5.2.6 Rainfall and climatic data
+- p.148 units=depth numbers=148,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7,6.7 [setback]
+  > 148 6.7.2.2.5.1.1 Preventive 6.7.2.2.5.1.2 Corrective 6.7.2.2.5.2 Monitoring reports and/or records 6.7.2.2.5.2.1 Treatment system and storage pond(s) 6.7.2.2.5.2.1.1 Influent flow 6.7.2.2.5.2.1.2 Influent and effluent wastewater characteristics 6.7.2.2.5.2.2 Disposal system 6.7.2.2.5.2.2.1 Wastewater volume applied to disposal system 6.7.2.2.5.2.2.2 Disposal system operation scheduling 6.7.2.2.5.2.2.3 Loading rates 6.7.2.2.5.2.3 Annual record of groundwater depth 6.7.2.2.5.2.4 Surface water parameters 6.7.2.2.5.2.5 Soils data 6.7.2.2.5.2.6 Rainfall and climatic data
 
 ### Section 6.7.3.10
 
@@ -2696,13 +2703,13 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.7.5
 
-- p.148 units=slope numbers=6.7,75,148 [obligation]
-  > 6.7.5 Grease traps shall be cleaned when 75% of the grease retention capacity has been reached. 148
+- p.148 units=slope numbers=6.7,75 [obligation]
+  > 6.7.5 Grease traps shall be cleaned when 75% of the grease retention capacity has been reached.
 
 ### Section 6.8.1.6
 
-- p.149 units=volume numbers=6.8,149,100,000,3,2 [obligation, setback]
-  > 6.8.1.6 All RIB systems with a design flow (cid:149) 100,000 gpd shall install a minimum of three (3) nested monitor well sets with each nest having a minimum of two (2) wells with varying depths and screen intervals.
+- p.149 units=volume numbers=6.8,100,000,3,2 [obligation, setback]
+  > 6.8.1.6 All RIB systems with a design flow  100,000 gpd shall install a minimum of three (3) nested monitor well sets with each nest having a minimum of two (2) wells with varying depths and screen intervals.
 
 ### Section 6.8.1.8
 
@@ -2711,27 +2718,31 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.8.1.10
 
-- p.150 units=volume numbers=6.8,149,100,000,1 [obligation, setback]
-  > 6.8.1.10 All large systems (cid:149) 100,000 gpd and all RIBs regardless of size must maintain, at a minimum, one (1) monitor well within the disposal area with a pressure transducer to record water levels.
+- p.150 units=volume numbers=6.8,100,000,1 [obligation, setback]
+  > 6.8.1.10 All large systems  100,000 gpd and all RIBs regardless of size must maintain, at a minimum, one (1) monitor well within the disposal area with a pressure transducer to record water levels.
 - p.150 units=time numbers=1 [obligation]
   > Pressure transducer readings must, at a minimum, be recorded at a one (1) hour frequency.
 
 ### Section 6.8.2.3
 
-- p.151 units=volume,concentration,time numbers=2,5,2,100,2,3
-  > Unit Monitoring Sample Type Parameter Measurement Frequency Influent Effluent Flow Gallons Per Day Continuous Recorded Recorded BOD mg/L 2 x Month Grab Composite 5 TSS mg/L 2 x Month Grab Composite Total Dissolved Solids mg/L Quarterly NA Grab Fecal Coliform Col/100 ml Quarterly NA Grab Total Nitrogen mg/L 2 x Month Grab Composite Ammonia Nitrogen mg/L Monthly Grab Composite Nitrate/Nitrite as Nitrogen mg/L Monthly Grab Composite pH S.U. 3 x per week Grab Composite Total Phosphorus mg/L Monthly Grab Composite Chloride mg/L Quarterly Grab Composite
+- p.151 units=volume,concentration,time numbers=151,2,2,100,2,3
+  > 151 Parameter Unit Measurement Monitoring Frequency Sample Type Influent Effluent Flow Gallons Per Day Continuous Recorded Recorded BOD5 mg/L 2 x Month Grab Composite TSS mg/L 2 x Month Grab Composite Total Dissolved Solids mg/L Quarterly NA Grab Fecal Coliform Col/100 ml Quarterly NA Grab Total Nitrogen mg/L 2 x Month Grab Composite Ammonia Nitrogen mg/L Monthly Grab Composite Nitrate/Nitrite as Nitrogen mg/L Monthly Grab Composite pH S.U. 3 x per week Grab Composite Total Phosphorus mg/L Monthly Grab Composite Chloride mg/L Quarterly Grab Composite
 
 ### Section 6.8.2.4.1
 
 - p.151 units=slope numbers=6.8,6.8,5 [obligation]
   > 6.8.2.4.1 The permittee is required to show the validity of all effluent monitoring and groundwater monitoring data by requiring its laboratory to adhere to the following minimum quality assurance practice: 6.8.2.4.1.1 Duplicate1 and spiked2 samples must be run for each effluent monitoring and groundwater monitoring constituent in the permit on 5% of the samples, or at least on one sample per quarter, whichever is greater.
+- p.151 units=slope numbers=6.8,6.8,6.8,6.8,2,6.8,100 [obligation]
+  > The amount of constituent added should be approximately the same amount present in the unspiked sample, or must be approximately that stated as maximum or average in the discharge permit. 6.8.2.4.1.3 The data resulting from 6.8.2.4.1.1 and 6.8.2.4.1.2 shall be summarized in the annual report in terms of precision; percent recovery; number of duplicate and spiked samples run; date and laboratory log number of samples run, and name of analyst. 6.8.2.4.1.4 Precision shall be calculated by the standard deviation (s) formula s = (Ȉd 2 /k).5 where d is the difference between duplicate results and k is the number of duplicate pairs used in the calculations. 6.8.2.4.1.5 Percent recovery (R) shall be reported on the basis of the formula R = 100 (F-I)/A where F is the analytical result of the spiked sample, I is the result before spiking of the sample, and A is the amount of constituent added
+- p.152 units=slope numbers=152,6.8 [obligation]
+  > 152 to the sample. 6.8.2.4.1.6 The percent recovery in Quality Assurance Practice shall be summarized yearly in terms of mean recovery and standard deviation from the mean.
 
 ### Section 6.8.3.1
 
 - p.153 units=time numbers=30 [obligation]
   > The results must be submitted to the GDS within 30 days of study completion.
-- p.153 units=slope,concentration,time numbers=2,5,4,4,4,4,4,1
-  > Annually Soil Composite Organic Matter % Annually Soil Composite Phosphorus (as P O ) mg/kg Annually Soil Composite 2 5 Potassium mg/kg Annually Soil Composite Total Nitrogen mg/L Quarterly Soil Composite Nitrate as Nitrogen mg/L Quarterly Soil Composite Sodium Adsorption Ratio meq/100g Annually Soil Composite Cadmium mg/kg Once per 4 years Soil Composite Nickel mg/kg Once per 4 years Soil Composite Lead mg/kg Once per 4 years Soil Composite Zinc mg/kg Once per 4 years Soil Composite Copper mg/kg Once per 4 years Soil Composite Cation Exchange *Only if soil pH Capacity meq/100g changes significantly Soil Composite Phosphorus **Only if soil Adsorption phosphorus levels become excessive meq/100g for plant growth Soil Composite Percent Base *Only if soil pH Saturation % changes significantly Soil Composite * A significant change in soil pH is defined as a change of one (1) or more standard units (S.U.) from the original value established in the Design Engineer Report. ** Excessive levels of soil phosphorus are defined by the Delaware Nutrient Management Commission.
+- p.153 units=slope,concentration,time numbers=4,4,4,4,4,1
+  > Annually Soil Composite Organic Matter % Annually Soil Composite Phosphorus (as P2O5) mg/kg Annually Soil Composite Potassium mg/kg Annually Soil Composite Total Nitrogen mg/L Quarterly Soil Composite Nitrate as Nitrogen mg/L Quarterly Soil Composite Sodium Adsorption Ratio meq/100g Annually Soil Composite Cadmium mg/kg Once per 4 years Soil Composite Nickel mg/kg Once per 4 years Soil Composite Lead mg/kg Once per 4 years Soil Composite Zinc mg/kg Once per 4 years Soil Composite Copper mg/kg Once per 4 years Soil Composite Cation Exchange Capacity meq/100g *Only if soil pH changes significantly Soil Composite Phosphorus Adsorption meq/100g **Only if soil phosphorus levels become excessive for plant growth Soil Composite Percent Base Saturation % *Only if soil pH changes significantly Soil Composite * A significant change in soil pH is defined as a change of one (1) or more standard units (S.U.) from the original value established in the Design Engineer Report. ** Excessive levels of soil phosphorus are defined by the Delaware Nutrient Management Commission.
 
 ### Section 6.8.5.1
 
@@ -2765,8 +2776,8 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.9.14.1
 
-- p.155 units=area numbers=6.9,155 [setback]
-  > 6.9.14.1 The annual volume of wastewater spray irrigated on each field with the total nitrogen and phosphorus loading applied from all sources to each field in pounds per acre per field as well as total pounds of nitrogen and phosphorus 155
+- p.155 units=area numbers=6.9 [setback]
+  > 6.9.14.1 The annual volume of wastewater spray irrigated on each field with the total nitrogen and phosphorus loading applied from all sources to each field in pounds per acre per field as well as total pounds of nitrogen and phosphorus
 
 ### Section 6.10
 
@@ -2795,25 +2806,20 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 6.11.6.1
 
-- p.160 units=concentration,time numbers=5,100
-  > Daily In-situ After storage, prior to distribution BOD mg/L Twice per month Composite Prior to storage 5 Total Suspended mg/L Twice per month Composite Prior to storage Solids Ammonia mg/L Twice per month Composite After storage, Nitrogen prior to distribution Chloride mg/L Twice per month Composite After storage, prior to distribution Nitrate + Nitrite mg/L Twice per month Composite After storage, Nitrogen prior to distribution Organic Nitrogen mg/L Twice per month Calculation After storage, prior to distribution Potassium mg/L Twice per month Composite After storage, prior to distribution Sodium mg/L Twice per month Composite After storage, prior to distribution Total Nitrogen mg/L Twice per month Composite After storage, prior to distribution Total Phosphorus mg/L Twice per month Composite After storage, prior to distribution Fecal Coliform Col/100 ml Twice per month Grab After storage, prior to distribution Cadmium mg/L Annually - performed in Composite After storage, the beginning of April prior to distribution Copper mg/L Annually - performed in Composite After storage, the beginning of April prior to distribution Lead mg/L Annually - performed in Composite After storage, the beginning of April prior to distribution Nickel mg/L Annually - performed in Composite After storage, the beginning of April prior to distribution Zinc mg/L Annually - performed in Composite After storage, the beginning of April prior to distribution
+- p.160 units=concentration,time numbers=160
+  > 160 Parameter Unit Measurement Monitoring Frequency Sample Type Sampling Location Effluent Flow Gal/day Continuous Recorded/ Totalized After storage, prior to distribution Turbidity NTU Continuous Recorded Prior to storage Total Residual Chlorine mg/l Continuous Recorded After storage, prior to distribution pH S.U.
+- p.160 units=concentration,time numbers=100
+  > Daily In-situ After storage, prior to distribution BOD5 mg/L Twice per month Composite Prior to storage Total Suspended Solids mg/L Twice per month Composite Prior to storage Ammonia Nitrogen mg/L Twice per month Composite After storage, prior to distribution Chloride mg/L Twice per month Composite After storage, prior to distribution Nitrate + Nitrite Nitrogen mg/L Twice per month Composite After storage, prior to distribution Organic Nitrogen mg/L Twice per month Calculation After storage, prior to distribution Potassium mg/L Twice per month Composite After storage, prior to distribution Sodium mg/L Twice per month Composite After storage, prior to distribution Total Nitrogen mg/L Twice per month Composite After storage, prior to distribution Total Phosphorus mg/L Twice per month Composite After storage, prior to distribution Fecal Coliform Col/100 ml Twice per month Grab After storage, prior to distribution Cadmium mg/L Annually - performed in the beginning of April Composite After storage, prior to distribution Copper mg/L Annually - performed in the beginning of April Composite After storage, prior to distribution Lead mg/L Annually - performed in the beginning of April Composite After storage, prior to distribution Nickel mg/L Annually - performed in the beginning of April Composite After storage, prior to distribution Zinc mg/L Annually - performed in the beginning of April Composite After storage, prior to distribution
 
 ### Section 6.11.6.2
 
-- p.160 units=area numbers=1,50,160 [obligation]
-  > A minimum of one (1) composite sample must be taken for each 50 acre area, unless otherwise provided in the permit. 160
-- p.161 units=slope numbers=2,5
-  > Soil Composite Organic Matter % Soil Composite Phosphorus (as P O ) mg/kg Soil Composite 2 5 Potassium mg/kg Soil Composite Sodium Adsorption Ratio Soil Composite Cadmium mg/kg Soil Composite Nickel mg/kg Soil Composite Lead mg/kg Soil Composite Zinc mg/kg Soil Composite Copper mg/kg Soil Composite Cation Exchange Capacity meq/100g Soil Composite Phosphorus Adsorption meq/100g Soil Composite Percent Base Saturation % Soil Composite
+- p.160 units=area numbers=1,50 [obligation]
+  > A minimum of one (1) composite sample must be taken for each 50 acre area, unless otherwise provided in the permit.
 
 ### Section 6.11.6.2.3
 
 - p.161 units=time numbers=6.11,10,6.11,6.11 [obligation]
   > 6.11.6.2.3 Prior to the initiation of any reuse activity, and every 10 years thereafter, a report must be submitted to the Department containing the following information for each reuse area: 6.11.6.2.3.1 The results of the soils sampling. 6.11.6.2.3.2 The calculated remaining site life on a constituent by constituent basis for phosphorus, cadmium, copper, lead, nickel and zinc.
-
-### Section 6.11.7.1.1
-
-- p.161 units=area,time numbers=161 [obligation]
-  > The total number of acres under irrigation for each recipient for that reporting year must also be indicated. 161
 
 ### Section 6.11.8.1.3
 
@@ -2822,60 +2828,42 @@ the cited page is how a wrong regulatory number reaches a reviewer.
 
 ### Section 8.0
 
-- p.173 units=slope,distance numbers=25,50,10,25,10,100,10,100 [obligation, setback]
-  > MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS Watercourse Components Well Water Other Top of Bank Dwellings and Supply active or Property Lines Pressure on-lot Escarpment Line systems >25% Septic tank Grease trap Distribution box 50 10 25 10 f -- -- Dosing chamber Diversion valve or box Advanced treatment unit Disposal area 100 10 100 b 10 g 10 15 a, c, d, e, h, i MINIMUM ISOLATION DISTANCES (FEET) FOR LARGE SYSTEMS Components Well Water Other Top of Bank Watercourse Dwellings & Supply active or Property Lines Pressure on-lot Escarpment Line systems >25% Spray field 100 d 10 100 j, k 150 k 10 -- Rapid 100 10 100 b 50 g 10 15 a, c, d, e Infiltration Basin Treatment plant 10 d 10 10 10 -- -- Disposal area 100 10 100 b 50 g 10 15 a, c, d, e NOTE:
+- p.173 units=slope,distance numbers=25,50,10,25,10,100,10,100,10,10,15,25,100,10,100,150,10,100,10,100,50,10,15,10 [obligation, setback]
+  > MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS Components Well Water Supply Pressure Line Watercourse Dwellings and Property Lines Other active on-lot systems Top of Bank or Escarpment >25% Septic tank Grease trap Distribution box Dosing chamber Diversion valve or box Advanced treatment unit 50 10 25 10 f -- -- Disposal area 100 a, c, d, e, h, i 10 100 b 10 g 10 15 MINIMUM ISOLATION DISTANCES (FEET) FOR LARGE SYSTEMS Components Well Water Supply Pressure Line Watercourse Dwellings & Property Lines Other active on-lot systems Top of Bank or Escarpment >25% Spray field 100 d 10 100 j, k 150 k 10 -- Rapid Infiltration Basin 100 a, c, d, e 10 100 b 50 g 10 15 Treatment plant 10 d 10 10 10 -- -- Disposal area 100 a, c, d, e 10 100 b 50 g 10 15 NOTE:
 - p.174 units=distance numbers=50 [obligation, setback]
   > Notes: a) Approval of a lesser distance to a minimum isolation distance of 50 feet may be approved by the Department as per the Delaware Regulations Governing the Construction and Use of Wells.
 - p.174 units=distance numbers=50 [obligation, setback]
   > The applicant shall provide documentation regarding well distances, depths, and construction to the Department upon request. b) Approval of a lesser distance to a minimum isolation of fifty (50) feet may be approved by the Department if the watercourse has not been designated for use as a public water supply or shellfish.
-- p.174 units=distance numbers=150,8,1984,3,50,3,3,100 [obligation, setback]
-  > RIB's are measured from inside edge of berm. d) For public or industrial wells the minimum isolation distance shall be 150 feet. e) For replacement systems on lots created by plat or deed and recorded prior to April 8, 1984,(cid:3) an isolation distance of fifty (50) feet between domestic wells and absorption facility(cid:3)may be(cid:3) considered by the Department where the lot size will not allow an isolation distance of 100(cid:3) feet.
-- p.174 units=distance,depth numbers=3,87,90,82,42,3,3,40 [obligation, setback]
-  > The well must be cased to a depth of forty(cid:3)(cid:87)(cid:90)(cid:82) (42) feet, exclusive of the screen,(cid:3) and(cid:3)pressure-grouted with either concrete or bentonite clay to a minimum depth of forty (40)(cid:3) feet.(cid:3)The applicant shall provide documentation regarding well distances, depths, and(cid:3) construction to the Department upon request. f) Except in the case of a septic tank for a central sewer system where the absorption facility is not located on the same lot as the septic tank, in which case the distance shall be five (5) feet from the interior lot or easement lines within a recorded subdivision. g) Except in the case of a central sewer system where the absorption facility can be five (5) feet from an interior lot or easement lines within a recorded subdivision. h) For replacement systems, the well isolation distance may be reduced from 100 feet to a minimum of 50 feet.
-- p.174 units=distance numbers=36,48,100,50,100,50 [obligation, setback]
-  > (i.e. 36 inch separation for gravity systems to 48 inch separation for well isolation reduction). i) The Department may reduce the well isolation distance from 100 feet to a minimum of 50 feet (maximizing the distance) if advanced treatment is incorporated. j) If effluent is treated to "Unlimited" access levels the well isolation distance may be reduced from 100 feet to 50 feet k) This includes the shoulder of internal and external roads or edge of the roadway if no shoulder is present.
-- p.202 units=distance,depth numbers=0,11,11,18,18,18,18,0 [obligation, setback]
-  > On-Site Wastewater Treatment and Disposal System Siting Information SEPARATION REQUIREMENTS DEPTH TO THE SYSTEM TYPE TRENCH DEPTH LIMITING ZONE (LZ) SMALL SYSTEM LARGE SYSTEM1 POINT OF COMPLIANCE Denial 0 - <11 inches N/A N/A N/A N/A Alternative Technologies 11 - 18 inches * * * * Micro-Irrigation (Drip) >18 inches 18 inches 18 inches Tubing 0 - 6 inches Peat Biofilters >12 inches 12 inches 12 inches Aggregate N/A Elevated Sand Mound 20 - 26 inches 36 inches 36 inches Aggregate/Chamber N/A Wisconsin At-Grade 24 - 26 inches 24 inches 24 inches Land Surface N/A Low Pressure Pipe (CF) 27 - 35 inches 18 inches 18 inches Aggregate/Chamber Varies, min. 9 inches Low Pressure Pipe (FD) 36 - 47 inches 18 inches 18 inches Aggregate/Chamber 18 inches Gravity Capping Fill 48 - 59 inches 36 inches N/A Aggregate/Chamber Varies, min. 12 inches Pressure-Dosed (CF) 48 - 59 inches 36 inches 36 inches Aggregate/Chamber Varies, min. 12 inches Full Depth Gravity >60 inches 36 inches N/A Aggregate/Chamber 24 inches Pressure-Dosed (FD) >60 inches 36 inches 36 inches Aggregate/Chamber 24 inches Rapid Infiltration Basin (RIB) >48 inches N/A 24 inches Basin Bottom N/A Spray Irrigation >24 inches N/A 24 inches (cid:37)(cid:72)(cid:81)(cid:72)(cid:68)(cid:87)(cid:75)(cid:3)(cid:53)(cid:82)(cid:82)(cid:87)(cid:3)(cid:61)(cid:82)(cid:81)(cid:72) N/A 1Large system separation requirements must be maintained from the mounded seasonal high water table to the point of compliance. *Depends on the method of disposal.
+- p.174 units=distance numbers=150,8,1984,50,100 [obligation, setback]
+  > RIB's are measured from inside edge of berm. d) For public or industrial wells the minimum isolation distance shall be 150 feet. e) For replacement systems on lots created by plat or deed and recorded prior to April 8, 1984, an isolation distance of fifty (50) feet between domestic wells and absorption facility may be considered by the Department where the lot size will not allow an isolation distance of 100 feet.
+- p.174 units=distance,depth numbers=42,40 [obligation, setback]
+  > The well must be cased to a depth of forty WZR (42) feet, exclusive of the screen, and pressure-grouted with either concrete or bentonite clay to a minimum depth of forty (40) feet.
+- p.174 units=distance numbers=5,5,100,50 [obligation, setback]
+  > The applicant shall provide documentation regarding well distances, depths, and construction to the Department upon request. f) Except in the case of a septic tank for a central sewer system where the absorption facility is not located on the same lot as the septic tank, in which case the distance shall be five (5) feet from the interior lot or easement lines within a recorded subdivision. g) Except in the case of a central sewer system where the absorption facility can be five (5) feet from an interior lot or easement lines within a recorded subdivision. h) For replacement systems, the well isolation distance may be reduced from 100 feet to a minimum of 50 feet.
+- p.174 units=distance numbers=36,48,100,50,100,50,6,3 [obligation, setback]
+  > (i.e. 36 inch separation for gravity systems to 48 inch separation for well isolation reduction). i) The Department may reduce the well isolation distance from 100 feet to a minimum of 50 feet (maximizing the distance) if advanced treatment is incorporated. j) If effluent is treated to "Unlimited" access levels the well isolation distance may be reduced from 100 feet to 50 feet k) This includes the shoulder of internal and external roads or edge of the roadway if no shoulder is present. +"/6"3:
 - p.171 units=distance numbers=1,100 [obligation]
-  > Site sketch(es) shall be based on a whole numberscale not to exceed 1 inch equals 100 feet.
-- p.175 units=volume,time numbers=5,3,15,30,50,20,10,125 [obligation]
-  > TYPE OF ESTABLISHMENT UNIT GALLONS/UNIT/DAY Airport Person 5 Assembly Hall, Auditoriums, Indoor Theaters Seat 3 Banquet Halls/Fire Halls/Community Centers Seat 15 With bar & food Seat 30 Barber Shop Chair 50 Bar with minimum food prep Seat 20 Bath House Person 10 Beauty Shop Chair 125 Boarding or rooming houses Person 50 Staff Person 15 Bowling Alley with no bar or restaurant Lane 100 With bar or restaurant Lane 200 Camps Work Person 40 Summer Person 40 Trailer without sewer hook-up Site 50 Trailer with sewer hook-up Site 75 Churches Seat 5 Country Clubs Person 100 Day Care Child 10 Day Care Staff add Person 15 Dentist Office Chair 100 Office Staff add Person 20 Dog Kennel Dog 10 Factories Person 25 with shower Person 35 Hospitals Bed 250+ Hotels Room 120 (cid:43)(cid:34)(cid:47)(cid:54)(cid:34)(cid:51)(cid:58)(cid:1)(cid:19)(cid:17)(cid:18)(cid:21)
-- p.202 units=volume numbers=500 [obligation]
-  > In this instance, converting a residential use to a commercial use the maximum allowable daily flow is 500 gpd.
-- p.206 units=time numbers=10 [obligation]
-  > THIS FORM MUST BE SUBMITTED WITHIN 10 DAYS OF COMPLETION REASON FOR ABANDONMENT:
+  > Site sketch(es) shall be based on a whole number scale not to exceed 1 inch equals 100 feet.
+- p.175 units=volume,time numbers=5,3,15,30,50,20,10,125,50,15,100,200,40,40,50,75,5,100,10,15,100,20,10,25 [obligation]
+  > TYPE OF ESTABLISHMENT UNIT GALLONS/UNIT/DAY Airport Person 5 Assembly Hall, Auditoriums, Indoor Theaters Seat 3 Banquet Halls/Fire Halls/Community Centers Seat 15 With bar & food Seat 30 Barber Shop Chair 50 Bar with minimum food prep Seat 20 Bath House Person 10 Beauty Shop Chair 125 Boarding or rooming houses Person 50 Staff Person 15 Bowling Alley with no bar or restaurant Lane 100 With bar or restaurant Lane 200 Camps Work Person 40 Summer Person 40 Trailer without sewer hook-up Site 50 Trailer with sewer hook-up Site 75 Churches Seat 5 Country Clubs Person 100 Day Care Child 10 Day Care Staff add Person 15 Dentist Office Chair 100 Office Staff add Person 20 Dog Kennel Dog 10 Factories Person 25 with shower Person 35 Hospitals Bed 250+ Hotels Room 120 +"/6"3:
+- p.171 units=distance numbers=1,10,20,30,40,50,60,100 [setback]
+  > Acceptable scales are: 1 inch = 10, 20, 30, 40, 50, 60, or 100 feet. x A north directional arrow. x Indicate location of central water line or onsite well.
 - p.166 units=time numbers=5
   > Climatological Normal Precipitation (P) & 5 Year Return Monthly Precipitation (P5) LL.
-- p.166 units=distance numbers=1,000,166
-  > Chesapeake Bay 1,000 Foot Enforcement Zone 166
+- p.166 units=distance numbers=1,000
+  > Chesapeake Bay 1,000 Foot Enforcement Zone
 - p.169 units=volume numbers=231
   > L" X W" / 231 X H" ** Specify Concrete, Metal, Other Holding / Dosing Tank / Lift Station Holding Tank Lift Station Dosing Tank Gallons:
-- p.171 units=distance numbers=1,10,20,30,40,50,60,100
-  > Acceptable scales are: 1 inch = 10, 20, 30, 40, 50, 60, or 100 feet.
 - p.174 units=distance numbers=12
   > (maximizing the distance) if and additional twelve (12) inches of suitable soil exists below or is added to (i.e.
-- p.176 units=volume,time numbers=500,10,30,100,150,70,20,7
-  > TYPE OF ESTABLISHMENT UNIT GALLONS/UNIT/DAY Laundromat Machine 500 Marinas Boat Slip 10 Marinas with restrooms Boat Slip 30 Motels Room 100 with kitchen Room 150 Medical office buildings and clinics Persons Doctors, nurses and medical staff 70 Office staff 20 Patients 7 Offices Employee 20 Outdoor sporting facilities Persons per day 5 Parks with beaches Lavatory waste only Person 5 Bath house, showers, lavatories Person 13 Picnic Grounds, Public Swimming Pools Picnic with toilets only Person 5 Picnic with lavatories and showers Person 11 Swimming Pools and Beaches with lavatories and Person 13 showers Residential Dwellings Bedroom 120 Restaurants Seat 24 hour service 40 18 hour service 30 12 hour service 20 Add for bars & cocktail lounges 5 Rest/Nursing/Assisted Living Homes Bed 100 (cid:43)(cid:34)(cid:47)(cid:54)(cid:34)(cid:51)(cid:58)(cid:1)(cid:19)(cid:17)(cid:18)(cid:21)
-- p.177 units=area,volume,distance,time numbers=10,25,15,75,15,50,0.1,0.1
-  > TYPE OF ESTABLISHMENT UNIT GALLONS/UNIT/DAY Schools Student 10 with gym, showers, cafeteria Student 25 with cafeteria Student 15 Boarding Student 75 Non-resident staff Staff 15 Service Station Pump 50 with convenience store Sq. ft. 0.1 Stores (Retail) Sq. ft. 0.1 Theaters Drive-in Space 10 Movie Theaters Seat 4 Veterinarian Patient 10 (cid:43)(cid:34)(cid:47)(cid:54)(cid:34)(cid:51)(cid:58)(cid:1)(cid:19)(cid:17)(cid:18)(cid:21)
-- p.178 units=volume numbers=15,30,50,20,40,50,25,50
-  > GREASE TRAP DESIGN CAPACITIES REQUIRED CAPACITY GREASE RETENTION PER FIXTURE TYPE OF FIXTURE FLOW RATE (GPM) CAPACITY (LB) CONNECTED TO TRAP (GAL) Restaurant kitchen sink 15 30 50 Single-compartment sink 20 40 50 Double-compartment sink 25 50 62.5 Triple-compartment sink 30 60 75 2 single-compartment sinks 25 50 62.5 2 triple-compartment sinks 40 80 100 Dishwasher for restaurants Up to 30 gallons of water 15 30 50 Up to 50 gallons of water 25 50 62.5 50 to 100 gallons of water 40 80 100 (cid:43)(cid:34)(cid:47)(cid:54)(cid:34)(cid:51)(cid:58)(cid:1)(cid:19)(cid:17)(cid:18)(cid:21)
-- p.201 units=percolation,volume,distance numbers=20,0.0042,0.525,25,0.0033,0.501,30,0.0028
-  > Long Term Acceptance Rate (LTAR) Calculation Permeability Rate (MPI) K (ft/min) LTAR (gpd/ft2) 20 0.0042 0.525 25 0.0033 0.501 30 0.0028 0.483 35 0.0024 0.469 40 0.0021 0.458 45 0.0019 0.448 50 0.0017 0.440 55 0.0015 0.433 60 0.0014 0.427 65 0.0013 0.421 70 0.0012 0.416 75 0.0011 0.412 Incremental Loading Rate (ILR) Calculation Structure Texture Moderate to Strong Weak Massive Single Grain Sand or coarser NR NR NR NR Loamy Sand NR 0.50 NR 0.45 L. fine sand-fine sand NR 0.35 0.20 0.30 Sandy Loam 0.40 0.30 0.10 NR Fine SL-L-Silt Loam 0.30 0.20 0.00 NR Sandy Clay Loam 0.25 0.15 0.00 NR Clay Loam-Silty CL 0.20 0.10 0.00 NR Sandy Clay-Silty C-C 0.05 0.01 0.00 NR NR = Not Recommended 0.00 for any cemented class or any consistency stronger than firm (cid:43)(cid:34)(cid:47)(cid:54)(cid:34)(cid:51)(cid:58)(cid:1)(cid:19)(cid:17)(cid:18)(cid:21)
-- p.204 units=percolation numbers=5,10,20,30,30,50,50,75
-  > PERCOLATION RATES BASED UPON USDA SOIL TEXTURES USDA TEXTURE DNREC ASSIGNED PERMEABILITY RATE (MPI)* Sands 5 Loamy Sand 10 Sandy Loam 20 Sandy Clay Loam 30 Loam 30 Silt Loam 50 Silt 50 Clay Loam 75 Silty Clay Loam 75 Sandy Clay 120 Silty Clay 120 Clay 120 * Other soil properties such as high bulk density, structure, total porosity, and size and continuity of the pores may significantly affect these permeability rates.
-- p.204 units=percolation numbers=120,50,120,25,49,10,25,6
-  > Permeability Class Permeability Rate (mpi) Very Slow > 120 Slow 50 - 120 Moderate 25 - 49 Moderately Rapid 10 - 25 Rapid 6 - 10 Very Rapid < 6 (cid:43)(cid:34)(cid:47)(cid:54)(cid:34)(cid:51)(cid:58)(cid:1)(cid:19)(cid:17)(cid:18)(cid:21)
-- p.207 units=percolation,volume numbers=5,2.033,1.597,10,1.437,1.129,15,1.174
-  > Peat System Design Loading Rates Soil Type Permeability Rate Hydraulic Loading Hydraulic Loading (mpi) Rate (gpd/ft2) Rate (gpd/ft2) Trench Bed S 5 2.033 1.597 LS 10 1.437 1.129 15 1.174 .922 SL 20 1.016 .799 25 .909 .714 SCL, L 30 .803 .652 35 .768 .604 40 .719 .565 45 .678 .532 Si,SiL 50 .643 .505 55 .613 .482 60 .587 .461 65 .564 .443 70 .543 .427 CL, SiCL 75 .525 .412 80 .508 .399 85 .493 .387 90 .479 .376 95 .466 .366 100 .455 .357 105 .444 .349 110 .433 .341 115 .424 .333 SC, SiC, C 120 .415 .326 Notes: 1.
-- p.213 units=distance numbers=120,24
-  > Initial Replacement (cid:120) Selected Observable Features Indicative of Soil Compaction (upper 24 inches only):
-- p.213 units=depth numbers=2
-  > Depth Observed ______ Platy Soil Structure [2]:
-- p.213 units=depth numbers=3
-  > Depth Observed ______ Redoximorphic Concentrations [3]:
-- p.213 units=distance numbers=9,5
-  > Yes No N/A Soil Horizons Mixed (> 9 inches from surface) [5]:
+- p.176 units=volume,time numbers=500,10,30,100,150,70,20,7,20,5,5,13,5,11,13,120,24,40,18,30,12,20,5,100
+  > TYPE OF ESTABLISHMENT UNIT GALLONS/UNIT/DAY Laundromat Machine 500 Marinas Boat Slip 10 Marinas with restrooms Boat Slip 30 Motels Room 100 with kitchen Room 150 Medical office buildings and clinics Persons Doctors, nurses and medical staff 70 Office staff 20 Patients 7 Offices Employee 20 Outdoor sporting facilities Persons per day 5 Parks with beaches Lavatory waste only Person 5 Bath house, showers, lavatories Person 13 Picnic Grounds, Public Swimming Pools Picnic with toilets only Person 5 Picnic with lavatories and showers Person 11 Swimming Pools and Beaches with lavatories and showers Person 13 Residential Dwellings Bedroom 120 Restaurants Seat 24 hour service 40 18 hour service 30 12 hour service 20 Add for bars & cocktail lounges 5 Rest/Nursing/Assisted Living Homes Bed 100 +"/6"3:
+- p.177 units=area,volume,distance,time numbers=10,25,15,75,15,50,0.1,0.1,10,4,10,6,3
+  > TYPE OF ESTABLISHMENT UNIT GALLONS/UNIT/DAY Schools Student 10 with gym, showers, cafeteria Student 25 with cafeteria Student 15 Boarding Student 75 Non-resident staff Staff 15 Service Station Pump 50 with convenience store Sq. ft. 0.1 Stores (Retail) Sq. ft. 0.1 Theaters Drive-in Space 10 Movie Theaters Seat 4 Veterinarian Patient 10 +"/6"3:
+- p.178 units=volume numbers=15,30,50,20,40,50,25,50,62.5,30,60,75,2,25,50,62.5,2,40,80,100,30,15,30,50
+  > GREASE TRAP DESIGN CAPACITIES TYPE OF FIXTURE FLOW RATE (GPM) GREASE RETENTION CAPACITY (LB) REQUIRED CAPACITY PER FIXTURE CONNECTED TO TRAP (GAL) Restaurant kitchen sink 15 30 50 Single-compartment sink 20 40 50 Double-compartment sink 25 50 62.5 Triple-compartment sink 30 60 75 2 single-compartment sinks 25 50 62.5 2 triple-compartment sinks 40 80 100 Dishwasher for restaurants Up to 30 gallons of water 15 30 50 Up to 50 gallons of water 25 50 62.5 50 to 100 gallons of water 40 80 100 +"/6"3:
+- p.201 units=percolation,volume,distance numbers=20,0.0042,0.525,25,0.0033,0.501,30,0.0028,0.483,35,0.0024,0.469,40,0.0021,0.458,45,0.0019,0.448,50,0.0017,0.440,55,0.0015,0.433
+  > Long Term Acceptance Rate (LTAR) Calculation Permeability Rate (MPI) K (ft/min) LTAR (gpd/ft2 ) 20 0.0042 0.525 25 0.0033 0.501 30 0.0028 0.483 35 0.0024 0.469 40 0.0021 0.458 45 0.0019 0.448 50 0.0017 0.440 55 0.0015 0.433 60 0.0014 0.427 65 0.0013 0.421 70 0.0012 0.416 75 0.0011 0.412 Incremental Loading Rate (ILR) Calculation Structure Texture Moderate to Strong Weak Massive Single Grain Sand or coarser NR NR NR NR Loamy Sand NR 0.50 NR 0.45 L. fine sand-fine sand NR 0.35 0.20 0.30 Sandy Loam 0.40 0.30 0.10 NR Fine SL-L-Silt Loam 0.30 0.20 0.00 NR Sandy Clay Loam 0.25 0.15 0.00 NR Clay Loam-Silty CL 0.20 0.10 0.00 NR Sandy Clay-Silty C-C 0.05 0.01 0.00 NR NR = Not Recommended 0.00 for any cemented class or any consistency stronger than firm +"/6"3:
 
 ### Section 40
 
