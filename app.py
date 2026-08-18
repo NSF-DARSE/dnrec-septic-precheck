@@ -27,6 +27,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 ROOT = Path(__file__).resolve().parent
+TESTDATA = ROOT / "testdata"
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
@@ -64,6 +65,20 @@ st.markdown(
         border-left: 5px solid #b45309; background: #fffbeb;
         padding: 12px 16px; font-size: 15.5px; margin-top: 8px;
       }
+      .rule-row {
+        display: flex; justify-content: space-between; align-items: baseline;
+        gap: 10px; padding: 7px 0; border-bottom: 1px solid #e5e7eb;
+        font-size: 14px;
+      }
+      .rule-row b { font-weight: 600; }
+      .rule-cite { color: #6b7280; font-variant-numeric: tabular-nums;
+                   white-space: nowrap; }
+      .rule-flag { color: #b45309; font-size: 12px; text-transform: uppercase;
+                   letter-spacing: 0.04em; white-space: nowrap; }
+      .empty {
+        border: 2px dashed #d1d5db; border-radius: 10px; padding: 34px;
+        text-align: center; color: #4b5563; font-size: 17px; margin: 18px 0 22px;
+      }
     </style>
     """,
     unsafe_allow_html=True,
@@ -82,27 +97,6 @@ def load_graph_once():
         return load_graph()
     except Exception:  # noqa: BLE001
         return None
-
-
-@st.cache_data(show_spinner=False)
-def list_examples() -> list[dict]:
-    examples_dir = config.OUT_DIR / "examples"
-    if not examples_dir.exists():
-        return []
-    client = TextractClient()
-    found = []
-    for pdf in sorted(examples_dir.glob("*.pdf")):
-        doc_hash = document_hash(pdf.read_bytes())
-        parts = pdf.stem.split("_")
-        found.append({
-            "path": str(pdf),
-            "name": pdf.name,
-            "permit": parts[1] if len(parts) > 1 else pdf.stem,
-            "hash": doc_hash,
-            "cached": client.cached_by_hash(doc_hash) is not None,
-            "size_mb": pdf.stat().st_size / 1e6,
-        })
-    return found
 
 
 @st.cache_data(show_spinner=False)
@@ -158,45 +152,23 @@ def estimate_height(payload: dict) -> int:
 # Left panel
 # ---------------------------------------------------------------------------
 
-examples = list_examples()
-chosen = None
-
 with st.sidebar:
-    st.markdown("### Applications")
-    st.caption("Cached packets from the harvested corpus. No network needed.")
-
-    if not examples:
-        st.warning(
-            "No prepared examples under out/examples. Run "
-            "scripts/prepare_examples.py with AWS credentials to create them."
-        )
-    else:
-        labels = {
-            e["path"]: (
-                f"Permit {e['permit']}   {e['size_mb']:.1f} MB"
-                + ("" if e["cached"] else "   (not cached)")
-            )
-            for e in examples
-        }
-        chosen = st.radio(
-            "Select an application",
-            options=[e["path"] for e in examples],
-            format_func=lambda p: labels[p],
-            label_visibility="collapsed",
-        )
-
-    st.divider()
-    st.markdown("### Or upload a packet")
+    st.markdown("### Application packet")
+    st.caption(
+        "Drop a scanned application PDF here. Packets analysed before are served "
+        "from the local cache, with no network and no credentials."
+    )
     uploaded = st.file_uploader(
         "Application PDF", type=["pdf"], label_visibility="collapsed"
     )
+    st.caption(f"Sample packets: `{TESTDATA.name}/`")
 
     st.divider()
     rules = engine.load_rules()
     verified = sum(1 for r in rules if r.verified)
     st.markdown("### Rule set")
     st.markdown(
-        f"- **{len(rules)}** rules staged  \n"
+        f"- **{len(rules)}** rules drawn from the regulation  \n"
         f"- **{verified}** certified by a person  \n"
         f"- source: the 2014 regulation, 245 pages"
     )
@@ -207,18 +179,33 @@ with st.sidebar:
             "VERIFY. That is the interlock, not a failure.</div>",
             unsafe_allow_html=True,
         )
-    st.caption("Certification checklist: docs/rules_review.md")
+
+    # Previously a caption pointing at a file path, which read as an empty
+    # heading on screen. The rules themselves are the useful thing to show: a
+    # reviewer can see what is being checked and where each one comes from.
+    with st.expander(f"What the {len(rules)} rules check", expanded=False):
+        for r in rules:
+            cite = r.citation.section or ""
+            if r.citation.page:
+                cite = f"{cite}, p.{r.citation.page}"
+            mark = "certified" if r.verified else "awaiting certification"
+            st.markdown(
+                f"<div class='rule-row'><b>{r.parameter}</b>"
+                f"<span class='rule-cite'>{cite}</span>"
+                f"<span class='rule-flag'>{mark}</span></div>",
+                unsafe_allow_html=True,
+            )
 
 
 # ---------------------------------------------------------------------------
 # Main panel
 # ---------------------------------------------------------------------------
 
-st.markdown("## Septic permit pre-submission review")
+st.markdown("## Septic permit application review")
 st.caption(
-    "A first pass over an application packet. It flags deficiencies and puts the "
-    "regulation citation next to each one. It does not approve or deny anything. "
-    "The reviewer decides."
+    "A first pass over an application packet for the reviewer assessing it. It "
+    "flags deficiencies and puts the regulation citation next to each one. It "
+    "does not approve or deny anything. The reviewer decides."
 )
 
 if uploaded is not None:
@@ -238,9 +225,19 @@ if uploaded is not None:
         uploads.mkdir(parents=True, exist_ok=True)
         target = uploads / uploaded.name
         target.write_bytes(data)
+        started = time.perf_counter()
         result = review_from_cache(str(target))
+        elapsed = time.perf_counter() - started
         if result:
             html, payload = result
+            subject = payload.get("subject") or {}
+            st.markdown(
+                f"<div class='provenance'><b>{subject.get('document', '')}</b>"
+                f" &nbsp;|&nbsp; {subject.get('pages', 0)} pages"
+                f" &nbsp;|&nbsp; {subject.get('source', '')}"
+                f" &nbsp;|&nbsp; reviewed in {elapsed * 1000:.0f} ms</div>",
+                unsafe_allow_html=True,
+            )
             components.html(html, height=estimate_height(payload), scrolling=True)
     else:
         st.info(
@@ -251,32 +248,26 @@ if uploaded is not None:
             f"and nothing was changed.\n\n"
             f"Document fingerprint `{doc_hash[:16]}`\n\n"
             f"To add it to the cache, run this where credentials are available:\n\n"
-            f"`python -m septic review --pdf {uploaded.name}`\n\n"
-            f"Select a prepared application on the left to see a full review now."
+            f"`python -m septic review --pdf {uploaded.name}`"
         )
-
-elif chosen:
-    started = time.perf_counter()
-    result = review_from_cache(chosen)
-    elapsed = time.perf_counter() - started
-
-    if result is None:
-        st.error(
-            "This packet has no cached Textract analysis, so it cannot be "
-            "reviewed without AWS credentials. Run scripts/prepare_examples.py "
-            "where credentials are available to cache it."
-        )
-    else:
-        html, payload = result
-        subject = payload.get("subject") or {}
-        st.markdown(
-            f"<div class='provenance'><b>{subject.get('document', '')}</b>"
-            f" &nbsp;|&nbsp; {subject.get('pages', 0)} pages"
-            f" &nbsp;|&nbsp; {subject.get('source', '')}"
-            f" &nbsp;|&nbsp; rendered in {elapsed * 1000:.0f} ms</div>",
-            unsafe_allow_html=True,
-        )
-        components.html(html, height=estimate_height(payload), scrolling=True)
 
 else:
-    st.info("Select an application on the left to begin.")
+    ready = [p for p in sorted(TESTDATA.glob("*.pdf"))] if TESTDATA.exists() else []
+    st.markdown(
+        "<div class='empty'>Drop an application packet into the panel on the "
+        "left to review it.</div>",
+        unsafe_allow_html=True,
+    )
+    if ready:
+        st.markdown(
+            f"Sample packets are in <code>{TESTDATA.name}/</code>, already "
+            f"analysed and cached so they review with no network:",
+            unsafe_allow_html=True,
+        )
+        for p in ready:
+            st.markdown(
+                f"<div class='rule-row'><b>{p.name}</b>"
+                f"<span class='rule-cite'>{p.stat().st_size / 1e6:.1f} MB</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )

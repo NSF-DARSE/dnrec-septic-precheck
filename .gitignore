@@ -45,3 +45,8 @@ GEMINI.md
 
 # The regulation PDF is the specification and stays tracked, so it is not
 # covered by any pattern above.
+
+# Demo packets, copied from out/examples. The Textract cache they depend on
+# also lives under out/, so committing these alone would not make the demo
+# reproducible for anyone else.
+testdata/

@@ -168,12 +168,16 @@ class TestAppRuns:
         app_test.run()
         assert not app_test.exception, [str(e.value) for e in app_test.exception]
 
-    def test_sidebar_lists_the_cached_examples(self, app_test):
-        if not cached_examples():
-            pytest.skip("no cached examples present")
+    def test_sidebar_offers_an_uploader_and_no_preselected_list(self, app_test):
+        """A reviewer brings the packet in front of them, not one off a menu.
+
+        The console used to preselect from a fixed list, which reads as a canned
+        demo. Selection is now the upload itself, so the uploader must be the
+        only way in.
+        """
         app_test.run()
-        assert app_test.sidebar.radio, "no application selector rendered"
-        assert len(app_test.sidebar.radio[0].options) == len(cached_examples())
+        assert app_test.sidebar.get("file_uploader"), "no uploader rendered"
+        assert not app_test.sidebar.radio, "a preselected application list came back"
 
     def test_verdict_reaches_the_screen(self, app_test):
         if not cached_examples():
@@ -185,13 +189,28 @@ class TestAppRuns:
             for headline in VERDICT_COLOR
         ) or "pre-submission review" in text
 
-    def test_changing_selection_does_not_raise(self, app_test):
-        if len(cached_examples()) < 2:
-            pytest.skip("need two cached examples")
+    def test_empty_state_points_at_the_sample_packets(self, app_test):
+        """With nothing uploaded the screen must say what to do next.
+
+        Upload only means the first screen is empty, so it has to name where the
+        ready made packets live or the demo starts with a dead end.
+        """
+        testdata = ROOT / "testdata"
+        if not list(testdata.glob("*.pdf")):
+            pytest.skip("no testdata packets present")
         app_test.run()
-        options = app_test.sidebar.radio[0].options
-        app_test.sidebar.radio[0].set_value(options[1]).run()
+        text = " ".join(m.value or "" for m in app_test.markdown)
+        assert "testdata" in text, "empty state does not name the sample folder"
         assert not app_test.exception, [str(e.value) for e in app_test.exception]
+
+    def test_rule_list_is_browsable(self, app_test):
+        """The sidebar used to show a caption naming a file, which read as blank.
+
+        What a reviewer needs is the rules themselves with their citations.
+        """
+        app_test.run()
+        labels = [e.label for e in app_test.get("expander")]
+        assert any("rules check" in (l or "") for l in labels), labels
 
     def test_rule_state_is_shown_in_the_sidebar(self, app_test):
         """A reviewer must see that no rule is certified."""

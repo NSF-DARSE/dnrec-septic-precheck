@@ -18,6 +18,30 @@ import html
 RULE = "=" * 78
 THIN = "-" * 78
 
+
+def _data_uri(path) -> str | None:
+    """Read an image off disk and return it as a data URI.
+
+    The HTML report is viewed two ways that both break a relative src: embedded
+    in the console through an iframe, where a relative path resolves against the
+    server rather than the out directory, and opened straight from the file
+    system after being moved. Inlining the bytes makes the file self contained,
+    which is also what the no remote reference rule already requires of the SVG.
+
+    Returns None when the figure is missing, so a report without a map still
+    renders rather than showing a broken image.
+    """
+    import base64
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.is_absolute():
+        p = (Path(__file__).resolve().parents[3] / "out" / p).resolve()
+    if not p.is_file():
+        return None
+    kind = "svg+xml" if p.suffix.lower() == ".svg" else p.suffix.lower().lstrip(".")
+    return f"data:image/{kind};base64,{base64.b64encode(p.read_bytes()).decode('ascii')}"
+
 VERDICT_COLOR = {
     "NO DEFICIENCIES FOUND": ("#1b4332", "#d8f3dc"),
     "DEFICIENCIES FOUND": ("#7f1d1d", "#fee2e2"),
@@ -476,9 +500,11 @@ def render_html(composed) -> str:
             add(f"<div class='notice'>{_esc(flag)}</div>")
         figure = screening.get("figure_png")
         if figure:
-            add(f"<p><img src='{_esc(figure)}' alt='Location map' "
-                f"style='max-width:100%;border:1px solid #d1d5db;"
-                f"border-radius:8px'></p>")
+            src = _data_uri(figure)
+            if src:
+                add(f"<p><img src='{src}' alt='Location map' "
+                    f"style='max-width:100%;border:1px solid #d1d5db;"
+                    f"border-radius:8px'></p>")
 
     precedents = c.get("precedents") or {}
     entries = precedents.get("precedents") or []

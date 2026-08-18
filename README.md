@@ -25,6 +25,14 @@ answer. The reviewer decides.
 
 ## The pipeline
 
+![Pipeline](docs/pipeline.svg)
+
+<details>
+<summary>Diagram source</summary>
+
+The image above is rendered from this definition and committed, so the figure
+does not depend on a diagram renderer running in the reader's browser.
+
 ```mermaid
 flowchart TB
     portal["DNREC permit portal<br/>den.dnrec.delaware.gov"]
@@ -70,6 +78,8 @@ flowchart TB
     style wording fill:#555,color:#fff
     style index fill:#555,color:#fff
 ```
+
+</details>
 
 The green boxes decide. Everything grey is context or wording and cannot change a
 finding. No model is ever asked whether an application complies.
