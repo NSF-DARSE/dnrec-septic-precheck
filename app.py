@@ -1085,6 +1085,141 @@ def drop_zone():
         )
 
 
+
+# ---------------------------------------------------------------------------
+# Reviewer chatbot. Appears only after a permit has been reviewed, below
+# the embedded report. Uses Gemini via Vertex AI to help reviewers
+# understand the deterministic results. Does not approve or deny anything.
+# ---------------------------------------------------------------------------
+
+def _chatbot_section(payload: dict) -> None:
+    """Render the reviewer chatbot section below the report.
+
+    Shows only when a review payload exists. Gracefully hides if the SDK or
+    configuration is unavailable. The existing review continues working
+    regardless of chatbot availability.
+    """
+    from septic.chatbot.config import is_available as chatbot_available
+
+    if not chatbot_available():
+        return
+
+    st.divider()
+    st.markdown("### Reviewer assistant")
+    st.caption(
+        "⚠️ This assistant helps you understand the review results. "
+        "It does not make the final decision — the reviewer decides. "
+        "AI-generated explanations are labelled and separated from "
+        "deterministic rule results."
+    )
+
+    # Session state for conversation
+    if "chatbot_messages" not in st.session_state:
+        st.session_state["chatbot_messages"] = []
+    if "chatbot_instance" not in st.session_state:
+        st.session_state["chatbot_instance"] = None
+    # Track which payload the chatbot was created for
+    payload_id = payload.get("generated_at", "") + str(
+        payload.get("subject", {}).get("document", "")
+    )
+    if st.session_state.get("chatbot_payload_id") != payload_id:
+        st.session_state["chatbot_messages"] = []
+        st.session_state["chatbot_instance"] = None
+        st.session_state["chatbot_payload_id"] = payload_id
+
+    # Suggested questions
+    suggested = [
+        "Summarize the review findings.",
+        "What information is missing?",
+        "Why could some rules not be evaluated?",
+        "Which regulations apply to this permit?",
+        "What should the reviewer verify next?",
+    ]
+
+    # Clear chat button
+    col1, col2 = st.columns([6, 1])
+    with col2:
+        if st.button("Clear chat", key="clear_chat"):
+            st.session_state["chatbot_messages"] = []
+            st.session_state["chatbot_instance"] = None
+            st.rerun()
+
+    # Show suggested questions as clickable buttons
+    st.markdown("**Suggested questions:**")
+    cols = st.columns(len(suggested))
+    clicked_suggestion = None
+    for i, (col, question) in enumerate(zip(cols, suggested)):
+        with col:
+            if st.button(question, key=f"suggest_{i}", use_container_width=True):
+                clicked_suggestion = question
+
+    # Display conversation history
+    for msg in st.session_state["chatbot_messages"]:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # Chat input
+    user_input = st.chat_input(
+        "Ask about the review results, missing information, or cited regulations…"
+    )
+
+    # Use clicked suggestion if no direct input
+    query = user_input or clicked_suggestion
+    if query:
+        # Display user message
+        with st.chat_message("user"):
+            st.markdown(query)
+        st.session_state["chatbot_messages"].append(
+            {"role": "user", "content": query}
+        )
+
+        # Get or create chatbot instance
+        with st.spinner("Thinking…"):
+            try:
+                from septic.chatbot.client import (
+                    ChatbotError,
+                    ReviewerChatbot,
+                    create_chatbot,
+                )
+
+                bot = st.session_state.get("chatbot_instance")
+                if bot is None:
+                    bot = create_chatbot(payload)
+                    if bot is None:
+                        raise ChatbotError(
+                            "The AI assistant is not configured. "
+                            "Check that GOOGLE_CLOUD_PROJECT and "
+                            "GOOGLE_GENAI_USE_VERTEXAI environment variables "
+                            "are set."
+                        )
+                    # Replay history into the bot
+                    for msg in st.session_state["chatbot_messages"][:-1]:
+                        if msg["role"] == "user":
+                            # Find the corresponding model response
+                            pass
+                    st.session_state["chatbot_instance"] = bot
+
+                response = bot.send_message(query)
+
+                # Display assistant response
+                with st.chat_message("assistant"):
+                    st.markdown(response)
+                st.session_state["chatbot_messages"].append(
+                    {"role": "assistant", "content": response}
+                )
+
+            except Exception as exc:  # noqa: BLE001
+                error_msg = str(exc) if str(exc) else (
+                    "The AI assistant encountered an error. "
+                    "The review results above are unaffected."
+                )
+                with st.chat_message("assistant"):
+                    st.warning(error_msg)
+                # Remove the user message that failed
+                if st.session_state["chatbot_messages"]:
+                    st.session_state["chatbot_messages"].pop()
+
+
 if st.session_state.get(PACKET) is None:
     uploaded = drop_zone()
 else:
@@ -1176,6 +1311,9 @@ if uploaded is not None:
 
             with viewer_col:
                 render_pdf_viewer(data, doc_hash, payload)
+
+            # Reviewer chatbot — appears below the report
+            _chatbot_section(payload)
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"
@@ -1209,5 +1347,6 @@ if show_rules:
         "shown so any of them can be read back at the source."
     )
     st.markdown(rules_reference(rules), unsafe_allow_html=True)
+
 
 st.markdown(attribution_band(), unsafe_allow_html=True)

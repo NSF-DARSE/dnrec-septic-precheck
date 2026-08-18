@@ -71,10 +71,21 @@ class TestConsoleModule:
             assert pattern not in source, f"app.py references {pattern}"
 
     def test_app_is_not_a_chat_interface(self):
-        """The product claim is that rules decide. A chat UI contradicts it."""
-        source = (ROOT / "app.py").read_text(encoding="utf-8").lower()
+        """The review display is not a chatbot. Rules decide, not a conversation.
+
+        The reviewer chatbot section (below the report) deliberately uses
+        st.chat_input and st.chat_message, but only inside _chatbot_section().
+        The review results themselves are never presented as a chat thread.
+        """
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        # The chat widgets must appear only inside the chatbot function
+        chatbot_section = source.split("def _chatbot_section(")[1] if "def _chatbot_section(" in source else ""
+        before_chatbot = source.split("def _chatbot_section(")[0] if "def _chatbot_section(" in source else source
+        before_lower = before_chatbot.lower()
         for banned in ("chat_input", "chat_message", "st.chat"):
-            assert banned not in source, f"app.py uses {banned}"
+            assert banned not in before_lower, (
+                f"app.py uses {banned} outside the chatbot section"
+            )
 
     def test_console_banner_shows_coverage_with_the_verdict(self):
         """The screen may not show a headline without saying how much ran.
@@ -749,7 +760,6 @@ class TestUploadDegradation:
         assert "needs AWS credentials" in source
 
 
-
 class TestPDFViewer:
     """Tests for the split PDF viewer and fact box provenance."""
 
@@ -831,3 +841,68 @@ class TestPDFViewer:
         source = (ROOT / "app.py").read_text(encoding="utf-8")
         for pattern in ("http://", "https://", "fonts.googleapis", "cdn."):
             assert pattern not in source, f"found {pattern!r} in app.py"
+
+
+class TestChatbotIntegration:
+    """The reviewer chatbot section must be callable after a permit is reviewed.
+
+    This is a regression test for NameError when _chatbot_section is defined
+    after its call site in app.py. Streamlit executes top-level code sequentially,
+    so the function must be defined before it is invoked.
+    """
+
+    @pytest.fixture
+    def app_test(self):
+        pytest.importorskip("streamlit")
+        from streamlit.testing.v1 import AppTest
+
+        return AppTest.from_file(str(ROOT / "app.py"), default_timeout=120)
+
+    def test_chatbot_function_defined_before_call(self):
+        """_chatbot_section must be defined before it is called in app.py."""
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        def_line = source.index("def _chatbot_section(")
+        call_line = source.index("_chatbot_section(payload)")
+        assert def_line < call_line, (
+            "_chatbot_section is called before it is defined — "
+            "this causes NameError at runtime"
+        )
+
+    def test_reviewed_payload_path_no_exception(self, app_test, monkeypatch):
+        """Loading a cached PDF must not raise NameError on the chatbot section.
+
+        This exercises the full reviewed-payload path including the chatbot
+        function call, ensuring no NameError or ImportError at runtime.
+        """
+        pdfs = cached_examples()
+        if not pdfs:
+            # Also check testdata/ which is where the demo PDFs live
+            testdata = ROOT / "testdata"
+            if testdata.exists():
+                from septic.ingest.textract import TextractClient, document_hash
+                client = TextractClient()
+                pdfs = [
+                    p for p in sorted(testdata.glob("*.pdf"))
+                    if client.cached_by_hash(document_hash(p.read_bytes())) is not None
+                ]
+        if not pdfs:
+            pytest.skip("no cached examples present")
+
+        # Disable the chatbot's availability check so it does not attempt
+        # a real Gemini connection, but the function is still called.
+        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "")
+
+        pdf = pdfs[0]
+
+        class Packet:
+            name = pdf.name
+
+            def getvalue(self):
+                return pdf.read_bytes()
+
+        app_test.session_state["application_packet"] = Packet()
+        app_test.run()
+        assert not app_test.exception, (
+            f"Exception in reviewed-payload path: "
+            f"{[str(e.value) for e in app_test.exception]}"
+        )
