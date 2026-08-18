@@ -157,6 +157,202 @@ class TestLabelMatching:
         )
 
 
+class TestLabelsFromTheSurveyedCorpus:
+    """Every label below produced a false deficiency on a real DNREC packet.
+
+    A survey of 145 approved packets returned 63 with DEFICIENCIES FOUND. All of
+    them were reading errors, and each one came from a form field label that
+    Textract had paired with whatever text sat nearest it. These are the exact
+    OCR strings, with the exact values that were read from them. They are approved
+    permits, so a reviewer opening the cited page would not agree with any of
+    these findings, which is the standard the matcher has to meet.
+    """
+
+    WELL_LABELS_THAT_ARE_NOT_DISTANCES = [
+        # label, the value that was read as a well setback in feet
+        ("A copy of this page must be submitted with both septic system and "
+         "well construction report(s)", "8 of 20"),
+        ("A copy of this page must be submitted with both the septic system and "
+         "well contruction report(s).", "7 of 11"),
+        ("PROP WELL", "60 PROP 4 BEDROOM DWELLING"),
+        ("PROPOSED WELL", "34'"),
+        ("PROPOSED WELL-", "LPP 50'+ TO TANKS"),
+        ("EXISTING WELL (TO BE ABANDONED)", "1-2%"),
+        ("Existing Well", "60"),
+        ("W PROPOSED WELL PROPOSED DRIVEWA", ",08 54.9' 422.2' 229.9'"),
+        ("WELL ARC", "2 BEDROOM HOUSE"),
+        ("Abandonment date for old well", "Aug 23"),
+        ("Desired capacity of the well", "6 gpm"),
+        ("Water Supply Well", "The property is served by a 2-inch well."),
+        ("DWELLING (WELL >100')", "20.0'"),
+        ("AT OUTLET AND ACCESS RISERS AT INLET AND OUTLET 50' MIN TO WELL 10' "
+         "MIN TO HOME & PROPERTY LINES", "PROPOSED WELL TO LPP 50'+ TO TANKS"),
+    ]
+
+    @pytest.mark.parametrize("label,value", WELL_LABELS_THAT_ARE_NOT_DISTANCES)
+    def test_a_well_on_the_page_is_not_a_distance_to_a_well(self, label, value):
+        assert _label_score(
+            label, FACTS["dist_disposal_to_well"]["labels"], distance_sense=True
+        ) == 0, f"{label!r} claimed a well setback"
+
+    @pytest.mark.parametrize("label,value", WELL_LABELS_THAT_ARE_NOT_DISTANCES)
+    def test_none_of_them_reaches_the_facts(self, label, value):
+        extraction = extract_facts(layout.parse_blocks(_kv_blocks([(label, value)])))
+        assert "dist_disposal_to_well" not in extraction.facts, (
+            f"{label!r} = {value!r} produced "
+            f"{extraction.facts.get('dist_disposal_to_well')}"
+        )
+
+    def test_property_line_labels_that_are_not_setbacks(self):
+        labels = FACTS["dist_disposal_to_property_line"]["labels"]
+        for label in ("Property line abandoned",
+                      "9 AMOUNT OF AREA AFFECTED BY THE LOT LINE ADJUSTMENT"):
+            assert _label_score(label, labels, distance_sense=True) == 0, label
+
+    def test_a_conditions_block_is_not_a_field_label(self):
+        """The label that supplied 5.3 feet to a watercourse.
+
+        The value it was paired with contained the words "Section 5.3.31 of the
+        Regulations", and the regulation's own section number became a setback.
+        """
+        conditions = (
+            "Conditions for Owner 17 The property owner shall connect to the "
+            "county or municipal sewer system within one year of the date that "
+            "such services become available and shall abandon the on-site system "
+            "in accordance with the Regulations"
+        )
+        assert _label_score(
+            conditions, FACTS["dist_disposal_to_watercourse"]["labels"],
+            distance_sense=True,
+        ) == 0
+        extraction = extract_facts(layout.parse_blocks(_kv_blocks([
+            (conditions,
+             "accordance with Section 5.3.31 of the Regulations On-Site "
+             "Wastewater Treatment and Disposal submitted by your designer"),
+        ])))
+        assert "dist_disposal_to_watercourse" not in extraction.facts
+
+    def test_a_page_of_prose_cannot_be_a_limiting_zone_depth(self):
+        """The reading that appeared on 37 packets at once.
+
+        The label is legitimate, the value is not: it is the soil scientist's
+        descriptive paragraph, which carries five numbers. Which one is the depth
+        was never established, so there is no value here to read.
+        """
+        value = (
+            "12 (no deeper at average elevations, but variable with increasing "
+            "elevation to 14) inches to prolonged (7 to 14 continuous days in "
+            "> 5 years in a 10 year cycle) indications of seasonal high water "
+            "table"
+        )
+        extraction = extract_facts(layout.parse_blocks(
+            _kv_blocks([("Limiting Zone Depth(s):", value)])
+        ))
+        assert "limiting_zone_depth" not in extraction.facts
+        assert any(
+            r["parameter"] == "limiting_zone_depth" for r in extraction.rejected
+        ), extraction.rejected
+
+    def test_a_depth_in_feet_is_not_read_as_inches(self):
+        """LIMITING ZONE = 5' is 60 inches, and reading it as 5 fails the rule.
+
+        Rejected rather than converted: the value that carried this on a real
+        packet was "5' in 3'", two numbers in feet on a trench cross section, and
+        guessing which one is the depth is how a confident wrong deficiency gets
+        made.
+        """
+        extraction = extract_facts(layout.parse_blocks(
+            _kv_blocks([("LIMITING ZONE", "5' in 3'")])
+        ))
+        assert "limiting_zone_depth" not in extraction.facts
+
+    def test_a_bedroom_count_answered_in_employees_is_not_a_bedroom_count(self):
+        """The last false deficiency in the survey of 145 packets.
+
+        A commercial packet answered the form's "# of Bedrooms" field with
+        "9 Employees". Nine bedrooms against a design flow of 360 gallons per day
+        derives 40 gallons per bedroom, which fails the 120 gallon requirement and
+        would have been the one deficiency the survey reported.
+        """
+        extraction = extract_facts(layout.parse_blocks(
+            _kv_blocks([("# of Bedrooms:", "9 Employees"),
+                        ("Gallons Per Day Flow:", "360")])
+        ))
+        assert "bedrooms" not in extraction.facts
+        assert "design_flow_per_bedroom" not in extraction.facts
+        assert extraction.facts["design_flow"] == 360.0
+        assert any(r["parameter"] == "bedrooms" for r in extraction.rejected)
+
+    @pytest.mark.parametrize(
+        "value", ["45 MPI", "40mpl", "45 PMI", "35 -", "30 MPI Assigned"]
+    )
+    def test_ocr_variants_of_the_percolation_unit_still_read(self, value):
+        """Real values on the form, and what Textract makes of MPI.
+
+        mpl and pmi are one character slips on the same unit, and a bare dash is
+        the empty column beside the number. Three packets lost a real percolation
+        rate to these before the unit check knew about them.
+        """
+        extraction = extract_facts(layout.parse_blocks(
+            _kv_blocks([("Avg. Percolation Rate:", value)])
+        ))
+        assert "perc_rate" in extraction.facts, value
+        assert extraction.facts["perc_rate"] in (45.0, 40.0, 35.0, 30.0)
+
+    def test_a_percolation_rate_answered_not_applicable_is_not_read(self):
+        extraction = extract_facts(layout.parse_blocks(
+            _kv_blocks([("Avg. Percolation Rate:", "[X] N/A")])
+        ))
+        assert "perc_rate" not in extraction.facts
+
+    def test_a_unit_the_fact_does_not_use_is_not_read(self):
+        """Values that state the wrong dimension entirely."""
+        cases = [
+            ("Distance to Well", "6 gpm", "dist_disposal_to_well"),
+            ("Distance to Property Line", "8.003 ACRES",
+             "dist_disposal_to_property_line"),
+        ]
+        for label, value, parameter in cases:
+            extraction = extract_facts(
+                layout.parse_blocks(_kv_blocks([(label, value)]))
+            )
+            assert parameter not in extraction.facts, f"{label} = {value}"
+
+    def test_the_real_labels_on_the_dnrec_application_still_read(self):
+        """The other half of the deal. These are the fields that must survive.
+
+        Taken from the construction permit application form and the site
+        evaluation, as Textract reports them.
+        """
+        document = layout.parse_blocks(_kv_blocks([
+            ("Avg. Percolation Rate:", "35 MPI Assigned"),
+            ("Gallons Per Day Flow:", "840"),
+            ("# of Bedrooms:", "7"),
+            ("Site Evaluation Number", "SE-2026-1183"),
+            ("Limiting Zone Depth(s):", "36 inches"),
+        ]))
+        extraction = extract_facts(document)
+        assert extraction.facts["perc_rate"] == 35.0
+        assert extraction.facts["design_flow"] == 840.0
+        assert extraction.facts["bedrooms"] == 7.0
+        assert extraction.facts["site_evaluation_report"] == "present"
+        assert extraction.facts["limiting_zone_depth"] == 36.0
+
+    def test_a_spelled_out_endpoint_pair_still_reads_as_a_distance(self):
+        """A label that names both ends is a distance even without the word.
+
+        This is the shape a site evaluation form uses, and it has to keep working,
+        because it is the only route by which these six rules can ever run.
+        """
+        document = layout.parse_blocks(_kv_blocks([
+            ("Disposal Area to Well", "125 ft"),
+            ("Distance to Property Line", "22'"),
+        ]))
+        extraction = extract_facts(document)
+        assert extraction.facts["dist_disposal_to_well"] == 125.0
+        assert extraction.facts["dist_disposal_to_property_line"] == 22.0
+
+
 class TestExtraction:
     def test_reads_labelled_fields(self, clean_document):
         extraction = extract_facts(clean_document)
