@@ -187,8 +187,19 @@ class Evaluation:
 
 
 class Verdict(str, Enum):
-    """Overall result. Three valued because missing information is its own case."""
+    """Overall result, answering only "is anything wrong with this packet".
 
-    READY_TO_SUBMIT = "READY TO SUBMIT"
-    LIKELY_RETURN = "LIKELY RETURN"
+    How much of the packet could be checked is a second and separate question,
+    carried alongside the verdict as coverage rather than folded into it. Six of
+    the isolation distances live on a scanned drawing that cannot be measured, so
+    a verdict that degraded whenever any check could not run would read CANNOT
+    VERIFY on every real packet forever and tell a reviewer nothing.
+
+    The earlier names were READY TO SUBMIT and LIKELY RETURN. Both were wrong for
+    this audience. The reviewer is not submitting anything, and predicting that
+    DNREC will return an application is a claim this tool does not make.
+    """
+
+    NO_DEFICIENCIES = "NO DEFICIENCIES FOUND"
+    DEFICIENCIES_FOUND = "DEFICIENCIES FOUND"
     CANNOT_VERIFY = "CANNOT VERIFY"

@@ -6,10 +6,13 @@ taking this tool's word for it, and anyone told to move a drainfield 40 feet is
 owed the sentence that requires it.
 
 The text renderer is for the terminal. The HTML renderer is for projection, so it
-is sized for reading at a distance: one clear verdict at the top, findings as a
-scannable list, citation attached to each one. No external stylesheet, no fonts to
-fetch, no JavaScript, because it has to open from a file on a laptop with no
-network.
+is sized for reading at a distance: one clear verdict at the top, the coverage
+figure directly under it in the same box, findings as a scannable list, citation
+attached to each one. Coverage is not optional decoration. A verdict of NO
+DEFICIENCIES FOUND over seven of fifteen checks and the same verdict over all
+fifteen are different statements, so neither renderer is allowed to show one
+without the other. No external stylesheet, no fonts to fetch, no JavaScript,
+because it has to open from a file on a laptop with no network.
 """
 from __future__ import annotations
 
@@ -86,13 +89,21 @@ def render_text(composed) -> str:
     add(f"{'generated':<16}{c.get('generated_at', '')}")
     add("")
 
-    add(f"VERDICT: {c['headline']}")
+    coverage = c.get("coverage") or {}
+    counts = c.get("counts") or {}
+    coverage_text = coverage.get("text") or (
+        f"{counts.get('pass', 0) + counts.get('fail', 0)} of "
+        f"{counts.get('pass', 0) + counts.get('fail', 0) + counts.get('unknown', 0)}"
+        f" checks ran"
+    )
+
+    add(f"VERDICT:  {c['headline']}")
+    add(f"COVERAGE: {coverage_text.upper()}")
     add("")
     for line in _wrap(c["explanation"]):
         add(line)
     add("")
 
-    counts = c.get("counts") or {}
     add(f"checks: {counts.get('pass', 0)} passed, {counts.get('fail', 0)} failed, "
         f"{counts.get('unknown', 0)} could not be evaluated")
     add("")
@@ -299,6 +310,12 @@ h1 { font-size:26px; margin:0 0 6px; letter-spacing:-0.01em; }
   border:2px solid currentColor;
 }
 .verdict h2 { margin:0; font-size:42px; letter-spacing:-0.02em; line-height:1.1; }
+/* Coverage sits inside the verdict box on purpose. A headline of NO
+   DEFICIENCIES FOUND means nothing without it, and anything placed outside the
+   box gets skimmed past or cropped out of a screenshot. */
+.verdict .coverage {
+  margin:10px 0 0; font-size:27px; font-weight:650; letter-spacing:-0.01em;
+}
 .verdict p { margin:12px 0 0; font-size:18px; max-width:74ch; color:var(--ink); }
 .counts { font-size:17px; color:var(--muted); margin:14px 0 30px; }
 .counts b { color:var(--ink); }
@@ -377,9 +394,17 @@ def render_html(composed) -> str:
 
     add(f"<div class='verdict' style='color:{fg};background:{bg}'>")
     add(f"<h2>{_esc(c['headline'])}</h2>")
+    coverage = c.get("coverage") or {}
+    counts = c.get("counts") or {}
+    evaluated = coverage.get("evaluated", counts.get("pass", 0) + counts.get("fail", 0))
+    total = coverage.get(
+        "total",
+        counts.get("pass", 0) + counts.get("fail", 0) + counts.get("unknown", 0),
+    )
+    coverage_text = coverage.get("text") or f"{evaluated} of {total} checks ran"
+    add(f"<p class='coverage'>{_esc(coverage_text)}</p>")
     add(f"<p>{_esc(c['explanation'])}</p></div>")
 
-    counts = c.get("counts") or {}
     add(f"<p class='counts'><b>{counts.get('pass', 0)}</b> passed &nbsp; "
         f"<b>{counts.get('fail', 0)}</b> failed &nbsp; "
         f"<b>{counts.get('unknown', 0)}</b> could not be evaluated</p>")
@@ -522,7 +547,8 @@ def render_html(composed) -> str:
         add(f"<p class='caveat'>{_esc(precedents.get('limits'))}</p>")
 
     add("<footer>This is a first pass for the reviewer, not a decision. The "
-        "every finding were produced by rules traced to the Delaware Regulations "
+        "verdict, the coverage figure and every finding were produced by rules "
+        "traced to the Delaware Regulations "
         "Governing On-Site Wastewater Treatment and Disposal Systems, January 11, "
         "2014. The reviewer decides.<br>")
     add(f"Wording: {_esc(c.get('wording_source'))}</footer>")

@@ -31,28 +31,57 @@ from ..rules.schema import Outcome, Severity, Verdict
 
 # Reviewer facing headline for each verdict. The enum values are internal.
 VERDICT_HEADLINE = {
-    Verdict.READY_TO_SUBMIT: "NO DEFICIENCIES FOUND",
-    Verdict.LIKELY_RETURN: "DEFICIENCIES FOUND",
+    Verdict.NO_DEFICIENCIES: "NO DEFICIENCIES FOUND",
+    Verdict.DEFICIENCIES_FOUND: "DEFICIENCIES FOUND",
     Verdict.CANNOT_VERIFY: "CANNOT VERIFY",
 }
 
 VERDICT_EXPLANATION = {
-    Verdict.READY_TO_SUBMIT: (
-        "Every rule that could be evaluated passed. This is not an approval: it "
-        "means this tool found nothing to flag among the checks it is able to run."
+    Verdict.NO_DEFICIENCIES: (
+        "Nothing was flagged among the checks that ran. This is not an approval, "
+        "and it is not a statement about the checks that did not run: read it "
+        "together with the coverage figure beside it, because a packet where "
+        "little could be checked can reach this headline with most of the "
+        "regulation still unexamined."
     ),
-    Verdict.LIKELY_RETURN: (
+    Verdict.DEFICIENCIES_FOUND: (
         "At least one requirement is not met. Each item below cites the section of "
         "the regulation it comes from so it can be checked against the source."
     ),
     Verdict.CANNOT_VERIFY: (
-        "This tool cannot give an answer. Either a value could not be read from "
-        "the packet, or the rule needed has not been confirmed against the "
-        "regulation by a person. Missing information is itself a common reason an "
-        "application is returned, so the unresolved items below are worth "
-        "attention rather than being treated as noise."
+        "No check reached a decision, so this tool has no answer at all. Either "
+        "the values the rules need could not be read from the packet, or the rules "
+        "needed have not been confirmed against the regulation by a person. "
+        "Missing information is itself a common reason an application is "
+        "returned, so the unresolved items below are worth attention rather than "
+        "being treated as noise."
     ),
 }
+
+
+def coverage_sentence(coverage: dict) -> str:
+    """The coverage figure as a sentence, for the explanation paragraph.
+
+    Every surface shows coverage["text"] verbatim as the headline number. This is
+    the longer form that says what the number means, so a reviewer who has never
+    seen the tool before does not have to infer it.
+    """
+    evaluated = coverage.get("evaluated", 0)
+    total = coverage.get("total", 0)
+    not_evaluated = coverage.get("not_evaluated", 0)
+    if not total:
+        return "No rules were applied to this packet."
+    if not not_evaluated:
+        return (
+            f"All {total} checks in the rule set ran against this packet, so the "
+            f"verdict covers everything this tool checks."
+        )
+    return (
+        f"{evaluated} of the {total} checks in the rule set ran against this "
+        f"packet. The other {not_evaluated} could not be evaluated and are "
+        f"itemised below with the reason for each. A check that did not run is "
+        f"not a check that passed."
+    )
 
 
 @dataclass
@@ -115,6 +144,7 @@ class Composed:
     explanation: str
     subject: dict[str, Any] = field(default_factory=dict)
     counts: dict[str, int] = field(default_factory=dict)
+    coverage: dict[str, Any] = field(default_factory=dict)
     deficiencies: list[Finding] = field(default_factory=list)
     unresolved: list[Finding] = field(default_factory=list)
     satisfied: list[Finding] = field(default_factory=list)
@@ -134,6 +164,7 @@ class Composed:
             "explanation": self.explanation,
             "subject": self.subject,
             "counts": self.counts,
+            "coverage": self.coverage,
             "deficiencies": [f.to_json() for f in self.deficiencies],
             "unresolved": [f.to_json() for f in self.unresolved],
             "satisfied": [f.to_json() for f in self.satisfied],
@@ -272,6 +303,7 @@ def compose(
     missing = list(getattr(extraction, "missing", []) or [])
 
     verdict = report.verdict
+    coverage = report.coverage()
     findings = [_finding_from(e, graph, provenance) for e in report.evaluations]
 
     deficiencies = [f for f in findings if f.outcome == Outcome.FAIL.value]
@@ -287,8 +319,8 @@ def compose(
     if unverified:
         notices.append(
             f"{len(unverified)} of {len(findings)} rules have not been confirmed "
-            "against the regulation by a person, so they were not evaluated. Until "
-            "a reviewer certifies them this tool cannot clear an application. See "
+            "against the regulation by a person, so they were not evaluated and "
+            "are counted against coverage rather than as passes. See "
             "docs/rules_review.md."
         )
 
@@ -345,9 +377,12 @@ def compose(
     return Composed(
         verdict=verdict.value,
         headline=VERDICT_HEADLINE[verdict],
-        explanation=VERDICT_EXPLANATION[verdict],
+        explanation=(
+            f"{VERDICT_EXPLANATION[verdict]} {coverage_sentence(coverage)}"
+        ),
         subject=subject or {},
         counts=report.counts(),
+        coverage=coverage,
         deficiencies=deficiencies,
         unresolved=unresolved,
         satisfied=satisfied,

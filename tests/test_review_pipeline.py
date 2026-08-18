@@ -247,7 +247,7 @@ class TestVerdictProvenance:
         rules = [_verified_rule()]
         report = engine.evaluate({"dist_disposal_to_well": 40}, rules)
         composed = compose_mod.compose(report)
-        assert composed.verdict == Verdict.LIKELY_RETURN.value
+        assert composed.verdict == Verdict.DEFICIENCIES_FOUND.value
         assert composed.headline == "DEFICIENCIES FOUND"
         assert len(composed.deficiencies) == 1
         finding = composed.deficiencies[0]
@@ -260,11 +260,16 @@ class TestVerdictProvenance:
         rules = [_verified_rule()]
         report = engine.evaluate({"dist_disposal_to_well": 150}, rules)
         composed = compose_mod.compose(report)
-        assert composed.verdict == Verdict.READY_TO_SUBMIT.value
+        assert composed.verdict == Verdict.NO_DEFICIENCIES.value
         assert composed.headline == "NO DEFICIENCIES FOUND"
         assert not composed.deficiencies
 
     def test_unknown_is_never_folded_into_pass(self):
+        """A single rule nobody could evaluate leaves the tool with no answer.
+
+        This is the surviving case for CANNOT VERIFY: not "something could not be
+        checked", which is true of every real packet, but "nothing could be".
+        """
         rules = [_verified_rule()]
         report = engine.evaluate({}, rules)
         composed = compose_mod.compose(report)
@@ -272,6 +277,7 @@ class TestVerdictProvenance:
         assert composed.headline == "CANNOT VERIFY"
         assert len(composed.unresolved) == 1
         assert not composed.satisfied
+        assert composed.coverage["text"] == "0 of 1 checks ran"
 
     def test_missing_parameter_is_reported_explicitly(self):
         rules = [_verified_rule()]
@@ -291,6 +297,7 @@ class TestVerdictProvenance:
         report = engine.evaluate(facts, rules)
         composed = compose_mod.compose(report)
         assert composed.counts == report.counts()
+        assert composed.coverage == report.coverage()
         assert len(composed.deficiencies) == len(report.failures)
         assert len(composed.satisfied) == len(report.passes)
         assert len(composed.unresolved) == len(report.unknowns)
@@ -421,3 +428,52 @@ class TestRendering:
         payload = json.loads(json.dumps(payload))
         assert render_mod.render_text(payload)
         assert render_mod.render_html(payload)
+
+
+class TestCoverageIsShownWithTheVerdict:
+    """NO DEFICIENCIES FOUND is only honest next to how much was checked.
+
+    The verdict no longer degrades when a check cannot run, which is the right
+    answer to "is anything wrong" and a dangerous one to show alone. These tests
+    hold the other half of the deal: every surface that prints the headline prints
+    the coverage figure too, in the same words.
+    """
+
+    @pytest.fixture
+    def partly_checked(self):
+        """One rule passes, two cannot be evaluated. The realistic shape."""
+        rules = [
+            _verified_rule(id="A", parameter="p_a"),
+            _verified_rule(id="B", parameter="p_b"),
+            _verified_rule(id="C", parameter="p_c"),
+        ]
+        report = engine.evaluate({"p_a": 150}, rules)
+        return compose_mod.compose(report)
+
+    def test_the_verdict_is_no_deficiencies_on_partial_coverage(self, partly_checked):
+        assert partly_checked.headline == "NO DEFICIENCIES FOUND"
+        assert partly_checked.coverage["text"] == "1 of 3 checks ran"
+
+    def test_text_report_puts_coverage_under_the_verdict(self, partly_checked):
+        text = render_mod.render_text(partly_checked)
+        lines = text.splitlines()
+        verdict_line = next(i for i, l in enumerate(lines) if "VERDICT:" in l)
+        assert "NO DEFICIENCIES FOUND" in lines[verdict_line]
+        assert "1 OF 3 CHECKS RAN" in lines[verdict_line + 1], lines[verdict_line + 1]
+
+    def test_html_report_puts_coverage_in_the_verdict_box(self, partly_checked):
+        html = render_mod.render_html(partly_checked)
+        box = html.split("class='verdict'")[1].split("</div>")[0]
+        assert "NO DEFICIENCIES FOUND" in box
+        assert "1 of 3 checks ran" in box
+
+    def test_the_explanation_says_what_did_not_run(self, partly_checked):
+        assert "2 could not be evaluated" in partly_checked.explanation
+        assert "not a check that passed" in partly_checked.explanation
+
+    def test_full_coverage_says_so_rather_than_going_quiet(self):
+        rules = [_verified_rule(id="A", parameter="p_a")]
+        composed = compose_mod.compose(engine.evaluate({"p_a": 150}, rules))
+        assert composed.coverage["text"] == "1 of 1 checks ran"
+        assert "1 of 1 checks ran" in render_mod.render_html(composed)
+        assert "1 OF 1 CHECKS RAN" in render_mod.render_text(composed)

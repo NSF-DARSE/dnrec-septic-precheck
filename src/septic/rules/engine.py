@@ -276,10 +276,30 @@ class Report:
             "return_reasons": len(self.return_reasons),
         }
 
+    def coverage(self) -> dict[str, Any]:
+        """How much of the rule set actually reached a decision.
+
+        The verdict alone is not readable without this. NO DEFICIENCIES FOUND on
+        7 of 15 checks and NO DEFICIENCIES FOUND on 15 of 15 are very different
+        statements, and the difference is invisible unless this number is carried
+        next to the headline. text is the phrasing every surface uses, so the
+        console banner, the HTML report and the text report cannot word it
+        differently.
+        """
+        evaluated = len(self.passes) + len(self.failures)
+        total = len(self.evaluations)
+        return {
+            "evaluated": evaluated,
+            "total": total,
+            "not_evaluated": total - evaluated,
+            "text": f"{evaluated} of {total} checks ran",
+        }
+
     def to_json(self) -> dict:
         return {
             "verdict": self.verdict.value,
             "counts": self.counts(),
+            "coverage": self.coverage(),
             "evaluations": [e.to_json() for e in self.evaluations],
             "facts": self.facts,
         }
@@ -288,18 +308,34 @@ class Report:
 def decide(evaluations: list[Evaluation]) -> Verdict:
     """Map rule results to the three valued verdict.
 
-    A rule that fails at RETURN severity outranks everything, because that is the
-    outcome the tool exists to predict. Otherwise anything unreadable means the
-    application cannot be cleared, since missing information is itself a reason
-    DNREC returns an application.
+    The verdict answers one question: is anything wrong with this packet. It does
+    not answer how much of the packet could be checked, which is reported
+    separately as coverage and has to be read next to the verdict for either to
+    mean anything.
+
+        DEFICIENCIES FOUND     at least one rule failed
+        NO DEFICIENCIES FOUND  nothing failed and at least one rule was evaluated
+        CANNOT VERIFY          no rule reached a decision at all
+
+    An unevaluated check is still never counted as a pass. It is counted nowhere:
+    it lowers coverage, and coverage travels with the verdict everywhere the
+    verdict is shown.
+
+    This used to degrade to CANNOT VERIFY on any single UNKNOWN. Six of the
+    isolation distances are measurements on a scanned drawing that Textract
+    cannot take, so in practice every real packet returned CANNOT VERIFY whether
+    or not anything was wrong with it, and the one thing a reviewer most needs to
+    see, an actual failed requirement, was reported with the same headline as a
+    packet nobody could read. Any FAIL now surfaces, including an advisory one,
+    because a report that itemises a deficiency under the headline NO
+    DEFICIENCIES FOUND contradicts itself. Severity still orders the findings and
+    is still reported per item.
     """
-    if any(e.is_return_reason for e in evaluations):
-        return Verdict.LIKELY_RETURN
-    if any(e.outcome is Outcome.UNKNOWN for e in evaluations):
-        return Verdict.CANNOT_VERIFY
-    if not evaluations:
-        return Verdict.CANNOT_VERIFY
-    return Verdict.READY_TO_SUBMIT
+    if any(e.outcome is Outcome.FAIL for e in evaluations):
+        return Verdict.DEFICIENCIES_FOUND
+    if any(e.outcome is Outcome.PASS for e in evaluations):
+        return Verdict.NO_DEFICIENCIES
+    return Verdict.CANNOT_VERIFY
 
 
 def evaluate(facts: dict[str, Any], rules: list[Rule] | None = None,

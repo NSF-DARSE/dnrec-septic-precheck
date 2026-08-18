@@ -58,6 +58,19 @@ st.markdown(
         border-bottom: 1px solid #e5e7eb; margin-bottom: 4px;
       }
       .provenance b { color: #111827; }
+      .banner {
+        border: 2px solid currentColor; border-radius: 10px;
+        padding: 18px 24px; margin: 10px 0 14px;
+      }
+      .banner-verdict {
+        font-size: 40px; font-weight: 700; letter-spacing: -0.02em;
+        line-height: 1.05;
+      }
+      .banner-coverage {
+        font-size: 26px; font-weight: 650; margin-top: 6px;
+        letter-spacing: -0.01em;
+      }
+      .banner-tail { font-size: 16px; margin-top: 8px; color: #111827; }
       .rule-state {
         border-left: 5px solid #b45309; background: #fffbeb;
         padding: 12px 16px; font-size: 15.5px; margin-top: 8px;
@@ -147,6 +160,50 @@ def review_from_cache(pdf_path: str) -> tuple[str, dict] | None:
     return result.html, result.composed.to_json()
 
 
+BANNER_COLOR = {
+    "NO DEFICIENCIES FOUND": ("#1b4332", "#d8f3dc"),
+    "DEFICIENCIES FOUND": ("#7f1d1d", "#fee2e2"),
+    "CANNOT VERIFY": ("#78350f", "#fef3c7"),
+}
+
+
+def banner(payload: dict) -> str:
+    """The verdict and the coverage figure, above the embedded report.
+
+    The report body carries both already. This repeats them outside the iframe
+    because the iframe starts scrolled to the top only until somebody scrolls it,
+    and because the first question a reviewer asks across a room is answered by
+    two lines of text. Coverage is shown at the same weight as the verdict on
+    purpose: NO DEFICIENCIES FOUND over seven of fifteen checks is not the same
+    statement as NO DEFICIENCIES FOUND over all fifteen, and showing the headline
+    without the number would be worse than showing neither.
+
+    Reads the composed payload rather than recomputing anything. The rules
+    produced these numbers; this only positions them.
+    """
+    headline = payload.get("headline", "")
+    coverage = payload.get("coverage") or {}
+    counts = payload.get("counts") or {}
+    text = coverage.get("text") or (
+        f"{counts.get('pass', 0) + counts.get('fail', 0)} of "
+        f"{sum(counts.get(k, 0) for k in ('pass', 'fail', 'unknown'))} checks ran"
+    )
+    fg, bg = BANNER_COLOR.get(headline, ("#111827", "#f3f4f6"))
+    unknown = counts.get("unknown", 0)
+    tail = (
+        f"{unknown} could not be evaluated, itemised in the report below"
+        if unknown else "every check in the rule set ran"
+    )
+    return (
+        f"<div class='banner' style='color:{fg};background:{bg}'>"
+        f"<div class='banner-verdict'>{headline}</div>"
+        f"<div class='banner-coverage'>{text}</div>"
+        f"<div class='banner-tail'>{counts.get('fail', 0)} failed, "
+        f"{counts.get('pass', 0)} passed, {tail}</div>"
+        f"</div>"
+    )
+
+
 def estimate_height(payload: dict) -> int:
     """Pick an iframe height that fits the report without an inner scrollbar.
 
@@ -234,6 +291,7 @@ if uploaded is not None:
                 f" &nbsp;|&nbsp; reviewed in {elapsed * 1000:.0f} ms</div>",
                 unsafe_allow_html=True,
             )
+            st.markdown(banner(payload), unsafe_allow_html=True)
             components.html(html, height=estimate_height(payload), scrolling=True)
     else:
         st.info(

@@ -182,32 +182,66 @@ class TestCoerceNumber:
 
 
 class TestVerdict:
-    def test_failed_return_rule_gives_likely_return(self):
-        evs = [evaluate_rule(rule(threshold=100), {"widgets": 1})]
-        assert decide(evs) is Verdict.LIKELY_RETURN
+    """The verdict answers one question: is anything wrong with this packet.
 
-    def test_unknown_gives_cannot_verify(self):
+    How much of the packet could be checked is coverage, reported separately and
+    asserted in TestCoverage below. Three premises in this class moved when the
+    two questions were split apart, and each moved test says so in its docstring.
+    """
+
+    def test_failed_rule_gives_deficiencies_found(self):
+        evs = [evaluate_rule(rule(threshold=100), {"widgets": 1})]
+        assert decide(evs) is Verdict.DEFICIENCIES_FOUND
+
+    def test_nothing_evaluated_gives_cannot_verify(self):
+        """CANNOT VERIFY now means no check reached a decision at all.
+
+        It used to mean any check failed to reach one, which on a real packet was
+        always true, so the verdict never said anything else.
+        """
         evs = [evaluate_rule(rule(verified=False), {"widgets": 1})]
         assert decide(evs) is Verdict.CANNOT_VERIFY
 
-    def test_all_pass_gives_ready_to_submit(self):
+    def test_all_pass_gives_no_deficiencies(self):
         evs = [evaluate_rule(rule(threshold=1), {"widgets": 5})]
-        assert decide(evs) is Verdict.READY_TO_SUBMIT
+        assert decide(evs) is Verdict.NO_DEFICIENCIES
 
-    def test_return_outranks_unknown(self):
+    def test_a_pass_alongside_an_unknown_still_gives_no_deficiencies(self):
+        """The change this class exists for.
+
+        A packet where one check passed and one could not be evaluated has nothing
+        wrong with it that this tool found, and saying so is more useful than
+        refusing to answer. The unevaluated check is not counted as a pass, it is
+        counted against coverage, which travels with the verdict.
+        """
+        evs = [
+            evaluate_rule(rule(id="A", threshold=1), {"widgets": 5}),
+            evaluate_rule(rule(id="B", parameter="unread"), {"widgets": 5}),
+        ]
+        assert decide(evs) is Verdict.NO_DEFICIENCIES
+
+    def test_failure_outranks_an_unevaluated_check(self):
         evs = [
             evaluate_rule(rule(id="A", threshold=100), {"widgets": 1}),
             evaluate_rule(rule(id="B", verified=False), {"widgets": 1}),
         ]
-        assert decide(evs) is Verdict.LIKELY_RETURN
+        assert decide(evs) is Verdict.DEFICIENCIES_FOUND
 
-    def test_advisory_failure_does_not_force_return(self):
+    def test_advisory_failure_still_reports_a_deficiency(self):
+        """Moved premise: an advisory failure used not to reach the verdict.
+
+        Under the old rule a failure only counted if its severity was return, so
+        an advisory failure could be itemised in a report headlined as though
+        nothing had been found. A report that contradicts itself is worse than one
+        that overstates severity, and severity is still reported per finding and
+        still orders them.
+        """
         evs = [
             evaluate_rule(
                 rule(threshold=100, severity=Severity.ADVISORY), {"widgets": 1}
             )
         ]
-        assert decide(evs) is Verdict.CANNOT_VERIFY or decide(evs) is Verdict.READY_TO_SUBMIT
+        assert decide(evs) is Verdict.DEFICIENCIES_FOUND
         assert not evs[0].is_return_reason
 
     def test_no_rules_gives_cannot_verify(self):
@@ -220,6 +254,54 @@ class TestVerdict:
         second = evaluate(facts, rules)
         assert first.verdict is second.verdict
         assert first.counts() == second.counts()
+        assert first.coverage() == second.coverage()
+
+
+class TestCoverage:
+    """Coverage is the other half of the answer and has to be exact.
+
+    A verdict of NO DEFICIENCIES FOUND over 7 of 15 checks is a different
+    statement from the same verdict over 15 of 15, so the number has to be
+    correct and it has to be phrased once, here, for every surface to reuse.
+    """
+
+    def test_counts_only_checks_that_reached_a_decision(self):
+        rules = [
+            rule(id="A", threshold=1),                  # passes
+            rule(id="B", threshold=100),                # fails
+            rule(id="C", parameter="unread"),           # unknown
+            rule(id="D", verified=False),               # unknown
+        ]
+        report = evaluate({"widgets": 5}, rules)
+        coverage = report.coverage()
+        assert coverage["evaluated"] == 2
+        assert coverage["total"] == 4
+        assert coverage["not_evaluated"] == 2
+        assert coverage["text"] == "2 of 4 checks ran"
+
+    def test_an_unevaluated_check_is_never_counted_as_a_pass(self):
+        rules = [rule(id="A", threshold=1), rule(id="B", parameter="unread")]
+        report = evaluate({"widgets": 5}, rules)
+        assert report.counts()["pass"] == 1
+        assert report.counts()["unknown"] == 1
+        assert report.coverage()["evaluated"] == 1
+
+    def test_full_coverage_reads_as_all_checks(self):
+        rules = [rule(id="A", threshold=1), rule(id="B", threshold=2)]
+        report = evaluate({"widgets": 5}, rules)
+        assert report.coverage()["text"] == "2 of 2 checks ran"
+        assert report.coverage()["not_evaluated"] == 0
+
+    def test_zero_coverage_accompanies_cannot_verify(self):
+        rules = [rule(id="A", parameter="unread")]
+        report = evaluate({}, rules)
+        assert report.verdict is Verdict.CANNOT_VERIFY
+        assert report.coverage()["evaluated"] == 0
+        assert report.coverage()["text"] == "0 of 1 checks ran"
+
+    def test_coverage_is_in_the_json_payload(self):
+        report = evaluate({"widgets": 5}, [rule(threshold=1)])
+        assert report.to_json()["coverage"]["text"] == "1 of 1 checks ran"
 
 
 class TestSchemaValidation:
@@ -297,7 +379,8 @@ class TestShippedRuleSet:
             "a rule could not be evaluated even with every fact supplied: "
             f"{[e.rule.id for e in report.unknowns]}"
         )
-        assert report.verdict is Verdict.LIKELY_RETURN
+        assert report.verdict is Verdict.DEFICIENCIES_FOUND
+        assert report.coverage()["not_evaluated"] == 0
 
     def test_every_shipped_rule_carries_a_real_citation(self):
         """A staged rule a human cannot look up is not reviewable."""
@@ -316,13 +399,22 @@ class TestShippedRuleSet:
             if r.operator.is_numeric:
                 assert r.units, f"{r.id} has a numeric threshold but no units"
 
-    def test_a_packet_missing_most_values_cannot_be_cleared(self):
-        """A near empty packet must not come back clean.
+    def test_a_packet_missing_most_values_reports_low_coverage(self):
+        """A near empty packet must not read as a clean one.
 
-        Facts this thin leave most rules unevaluable, and a rule that could not
-        be checked is not a rule that passed. The verdict has to say so rather
-        than reporting no deficiencies.
+        Moved premise. This used to assert the verdict was CANNOT VERIFY, because
+        any unevaluable rule forced that. It no longer does: one check passing is
+        enough for the verdict to say nothing was found. What has to hold instead
+        is that the report cannot hide how little ran, so the assertion is now on
+        coverage, which is shown next to the verdict on every surface. A check
+        that did not run is still never counted as a pass.
         """
         report = evaluate({"site_plan": "yes", "perc_rate": 30, "lot_area": 20000})
-        assert report.verdict is Verdict.CANNOT_VERIFY
+        coverage = report.coverage()
         assert report.unknowns, "expected unevaluable rules to be reported"
+        assert coverage["evaluated"] < coverage["total"] / 2, (
+            f"expected most checks to be unevaluable on a packet this thin, got "
+            f"{coverage['text']}"
+        )
+        assert coverage["evaluated"] == len(report.passes) + len(report.failures)
+        assert coverage["not_evaluated"] == len(report.unknowns)

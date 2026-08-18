@@ -67,6 +67,45 @@ class TestConsoleModule:
         for banned in ("chat_input", "chat_message", "st.chat"):
             assert banned not in source, f"app.py uses {banned}"
 
+    def test_console_banner_shows_coverage_with_the_verdict(self):
+        """The screen may not show a headline without saying how much ran.
+
+        The console is the surface a reviewer sees first and from furthest away.
+        It reads both numbers out of the composed payload, so it cannot disagree
+        with the report body embedded underneath it.
+        """
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        assert "def banner(payload: dict) -> str:" in source
+        assert "st.markdown(banner(payload), unsafe_allow_html=True)" in source
+        banner_body = source.split("def banner(payload: dict) -> str:")[1].split(
+            "\ndef "
+        )[0]
+        assert 'payload.get("headline"' in banner_body
+        assert 'payload.get("coverage")' in banner_body
+        assert "banner-coverage" in banner_body
+
+    def test_console_banner_reads_the_same_coverage_the_report_shows(self):
+        """One number, produced by the rules, positioned twice.
+
+        Guards the drift the module docstring warns about: if the banner ever
+        computed coverage itself it could disagree with the report body a few
+        pixels below it.
+        """
+        from septic.rules.schema import Citation, Operator, Rule, Severity
+
+        rule = Rule(
+            id="T", description="d",
+            citation=Citation(section="TEST-0.0", page=1, quote="q"),
+            parameter="p", operator=Operator.GE, threshold=1, units="feet",
+            severity=Severity.RETURN, verified=True, remedy="r", notes="n",
+        )
+        payload = compose_mod.compose(
+            engine.evaluate({"p": 5}, [rule])
+        ).to_json()
+        assert payload["coverage"]["text"] == "1 of 1 checks ran"
+        html = render_html(payload)
+        assert payload["coverage"]["text"] in html
+
 
 class TestOfflineReviewPath:
     """The exact chain the console runs, with no AWS client constructed."""
