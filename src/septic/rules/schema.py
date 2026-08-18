@@ -54,6 +54,32 @@ class Outcome(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+class Applicability(str, Enum):
+    """Whether a rule's applies_to conditions were met by the facts.
+
+    This is deliberately not a fourth Outcome. The three valued outcome
+    vocabulary is the product claim and every surface is built on it. What this
+    records is a different question, asked before the comparison happens: was
+    this rule ever applied to this packet at all.
+
+    It has to be carried on the Evaluation rather than recovered afterwards. A
+    rule that does not apply still reports PASS, so without this field the only
+    way to tell "the trench slope is under 25 percent" from "there is no trench"
+    is to match on the reason text, and a reporting layer that reads prose to
+    decide what a number means is the kind of fragility this project has already
+    been bitten by.
+
+        APPLIES        the rule was applied and a value was compared
+        NOT_APPLICABLE the packet is not the kind of system this rule governs
+        UNDETERMINED   the fact that gates the rule could not be read, so
+                       whether the rule applies was never established
+    """
+
+    APPLIES = "applies"
+    NOT_APPLICABLE = "not_applicable"
+    UNDETERMINED = "undetermined"
+
+
 @dataclass(frozen=True)
 class Citation:
     """Where in the regulation a rule comes from."""
@@ -158,21 +184,50 @@ class Rule:
 
 @dataclass
 class Evaluation:
-    """Result of applying one rule to one application."""
+    """Result of applying one rule to one application.
+
+    applicability records whether the rule was applied at all, and
+    applicability_parameter names the fact that settled it, so a report can say
+    which value took the rule out of scope and where that value was read from.
+    Both default to "applied normally", which is what every comparison path
+    produces.
+    """
 
     rule: Rule
     outcome: Outcome
     reason: str
     observed: Any = None
+    applicability: Applicability = Applicability.APPLIES
+    applicability_parameter: str | None = None
 
     @property
     def is_return_reason(self) -> bool:
         return self.outcome is Outcome.FAIL and self.rule.severity is Severity.RETURN
 
+    @property
+    def is_not_applicable(self) -> bool:
+        """A PASS that compared nothing, because the rule does not govern this system."""
+        return self.applicability is Applicability.NOT_APPLICABLE
+
+    @property
+    def compared_a_value(self) -> bool:
+        """The rule ran: a value off the packet was compared against a threshold.
+
+        This is the number a reviewer reads as coverage. It is not the same as
+        "did not come back UNKNOWN", which is what coverage used to count and why
+        37 percent of the passes in the corpus were checks that never ran.
+        """
+        return (
+            self.outcome in (Outcome.PASS, Outcome.FAIL)
+            and not self.is_not_applicable
+        )
+
     def to_json(self) -> dict:
         return {
             "rule_id": self.rule.id,
             "outcome": self.outcome.value,
+            "applicability": self.applicability.value,
+            "applicability_parameter": self.applicability_parameter,
             "reason": self.reason,
             "observed": self.observed,
             "threshold": self.rule.threshold,

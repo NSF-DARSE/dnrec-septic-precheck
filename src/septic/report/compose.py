@@ -65,23 +65,42 @@ def coverage_sentence(coverage: dict) -> str:
     Every surface shows coverage["text"] verbatim as the headline number. This is
     the longer form that says what the number means, so a reviewer who has never
     seen the tool before does not have to infer it.
+
+    The two reasons a check did not run are named separately, because they mean
+    opposite things to a reviewer. A rule that does not govern this kind of system
+    is nothing to chase. A rule whose value could not be read is the reviewer's
+    own next task.
     """
     evaluated = coverage.get("evaluated", 0)
     total = coverage.get("total", 0)
-    not_evaluated = coverage.get("not_evaluated", 0)
+    not_applicable = coverage.get("not_applicable", 0)
+    unreadable = coverage.get("unreadable", 0)
     if not total:
         return "No rules were applied to this packet."
-    if not not_evaluated:
+    if not not_applicable and not unreadable:
         return (
             f"All {total} checks in the rule set ran against this packet, so the "
             f"verdict covers everything this tool checks."
         )
-    return (
-        f"{evaluated} of the {total} checks in the rule set ran against this "
-        f"packet. The other {not_evaluated} could not be evaluated and are "
-        f"itemised below with the reason for each. A check that did not run is "
-        f"not a check that passed."
-    )
+
+    sentences = [
+        f"{evaluated} of the {total} checks in the rule set compared a value off "
+        f"this packet against the regulation."
+    ]
+    if not_applicable:
+        sentences.append(
+            f"{not_applicable} do not govern this kind of system and were not "
+            f"applied to it. They are listed separately below, with the value "
+            f"that took each one out of scope, and they are not requirements this "
+            f"packet met."
+        )
+    if unreadable:
+        sentences.append(
+            f"{unreadable} could not be read and are itemised below with the "
+            f"reason for each. A check that did not run is not a check that "
+            f"passed."
+        )
+    return " ".join(sentences)
 
 
 @dataclass
@@ -106,6 +125,11 @@ class Finding:
     definitions: list[dict] = field(default_factory=list)
     exceptions: list[dict] = field(default_factory=list)
     caveats: str | None = None
+    applicability: str = "applies"
+    # The fact that took this rule out of scope: its name, the value read, and
+    # where that value came from. Carried through from the Evaluation rather than
+    # recovered from the reason text.
+    excluded_by: dict | None = None
 
     @property
     def citation(self) -> str:
@@ -115,6 +139,8 @@ class Finding:
         return {
             "rule_id": self.rule_id,
             "outcome": self.outcome,
+            "applicability": self.applicability,
+            "excluded_by": self.excluded_by,
             "requirement": self.requirement,
             "reason": self.reason,
             "observed": self.observed,
@@ -148,6 +174,10 @@ class Composed:
     deficiencies: list[Finding] = field(default_factory=list)
     unresolved: list[Finding] = field(default_factory=list)
     satisfied: list[Finding] = field(default_factory=list)
+    # Rules this packet is out of scope for. Separate from satisfied on purpose:
+    # "does not apply because system_type is 'pressure dosed'" is not a
+    # requirement that was met, and a reviewer must never read it as one.
+    not_applicable: list[Finding] = field(default_factory=list)
     missing_information: list[dict] = field(default_factory=list)
     discarded_readings: list[dict] = field(default_factory=list)
     facts_read: list[dict] = field(default_factory=list)
@@ -168,6 +198,7 @@ class Composed:
             "deficiencies": [f.to_json() for f in self.deficiencies],
             "unresolved": [f.to_json() for f in self.unresolved],
             "satisfied": [f.to_json() for f in self.satisfied],
+            "not_applicable": [f.to_json() for f in self.not_applicable],
             "missing_information": self.missing_information,
             "discarded_readings": self.discarded_readings,
             "facts_read": self.facts_read,
@@ -238,7 +269,8 @@ def _graph_context(graph, section: str) -> dict:
     }
 
 
-def _finding_from(evaluation, graph, provenance: dict) -> Finding:
+def _finding_from(evaluation, graph, provenance: dict,
+                  facts: dict | None = None) -> Finding:
     rule = evaluation.rule
     units = f" {rule.units}" if rule.units else ""
     if rule.threshold is None:
@@ -256,6 +288,20 @@ def _finding_from(evaluation, graph, provenance: dict) -> Finding:
         # through matters most on the isolation distances, where several
         # reductions are available by Department approval.
         caveats = " ".join(rule.notes.split())
+
+    # A rule taken out of scope was excluded by a fact that is usually not the
+    # one it would have compared, so its own provenance is the wrong thing to
+    # show. SLOPE-001 compares disposal_slope and is excluded by system_type. The
+    # gating fact comes off the Evaluation, so this never parses the reason text.
+    excluded_by = None
+    gating = getattr(evaluation, "applicability_parameter", None)
+    if gating:
+        gating_fact = provenance.get(gating)
+        excluded_by = {
+            "parameter": gating,
+            "value": (facts or {}).get(gating),
+            "where": gating_fact.describe() if gating_fact else None,
+        }
 
     return Finding(
         rule_id=rule.id,
@@ -276,6 +322,10 @@ def _finding_from(evaluation, graph, provenance: dict) -> Finding:
         definitions=ctx["definitions"],
         exceptions=ctx["exceptions"],
         caveats=caveats,
+        applicability=getattr(
+            getattr(evaluation, "applicability", None), "value", "applies"
+        ),
+        excluded_by=excluded_by,
     )
 
 
@@ -304,11 +354,22 @@ def compose(
 
     verdict = report.verdict
     coverage = report.coverage()
-    findings = [_finding_from(e, graph, provenance) for e in report.evaluations]
+    findings = [
+        _finding_from(e, graph, provenance, report.facts) for e in report.evaluations
+    ]
+    by_rule = {f.rule_id: f for f in findings}
 
     deficiencies = [f for f in findings if f.outcome == Outcome.FAIL.value]
     unresolved = [f for f in findings if f.outcome == Outcome.UNKNOWN.value]
-    satisfied = [f for f in findings if f.outcome == Outcome.PASS.value]
+    # The engine decides which passes are rules that never applied. Grouping reads
+    # that decision off the evaluations rather than re-deriving it here, so the
+    # report and the verdict cannot disagree about what ran.
+    not_applicable = [by_rule[e.rule.id] for e in report.not_applicable]
+    excluded_ids = {f.rule_id for f in not_applicable}
+    satisfied = [
+        f for f in findings
+        if f.outcome == Outcome.PASS.value and f.rule_id not in excluded_ids
+    ]
 
     # Return severity first, so the items that would actually get the application
     # returned are read first.
@@ -386,6 +447,7 @@ def compose(
         deficiencies=deficiencies,
         unresolved=unresolved,
         satisfied=satisfied,
+        not_applicable=not_applicable,
         missing_information=missing_information,
         discarded_readings=list(getattr(extraction, "rejected", []) or []),
         facts_read=facts_read,

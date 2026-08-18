@@ -701,7 +701,8 @@ class TestVerdictProvenance:
         assert composed.headline == "CANNOT VERIFY"
         assert len(composed.unresolved) == 1
         assert not composed.satisfied
-        assert composed.coverage["text"] == "0 of 1 checks ran"
+        assert not composed.not_applicable
+        assert composed.coverage["text"] == "0 of 1 checks ran, 1 could not be read"
 
     def test_missing_parameter_is_reported_explicitly(self):
         rules = [_verified_rule()]
@@ -876,7 +877,9 @@ class TestCoverageIsShownWithTheVerdict:
 
     def test_the_verdict_is_no_deficiencies_on_partial_coverage(self, partly_checked):
         assert partly_checked.headline == "NO DEFICIENCIES FOUND"
-        assert partly_checked.coverage["text"] == "1 of 3 checks ran"
+        assert partly_checked.coverage["text"] == (
+            "1 of 3 checks ran, 2 could not be read"
+        )
 
     def test_text_report_puts_coverage_under_the_verdict(self, partly_checked):
         text = render_mod.render_text(partly_checked)
@@ -892,7 +895,7 @@ class TestCoverageIsShownWithTheVerdict:
         assert "1 of 3 checks ran" in box
 
     def test_the_explanation_says_what_did_not_run(self, partly_checked):
-        assert "2 could not be evaluated" in partly_checked.explanation
+        assert "2 could not be read" in partly_checked.explanation
         assert "not a check that passed" in partly_checked.explanation
 
     def test_full_coverage_says_so_rather_than_going_quiet(self):
@@ -901,3 +904,117 @@ class TestCoverageIsShownWithTheVerdict:
         assert composed.coverage["text"] == "1 of 1 checks ran"
         assert "1 of 1 checks ran" in render_mod.render_html(composed)
         assert "1 OF 1 CHECKS RAN" in render_mod.render_text(composed)
+
+
+class TestRulesThatNeverApplied:
+    """A rule that was never applied must not read as a requirement that was met.
+
+    The engine reports it as a PASS, which is right for the verdict and wrong for
+    the report: "does not apply because system_type is 'pressure dosed'" is not
+    evidence the packet complies with anything. Measured across the 124 cached
+    documents, 266 of 727 passes were rules that never ran, concentrated in the
+    three that gate on system type, and every one of them was being printed in the
+    satisfied list.
+    """
+
+    @pytest.fixture
+    def mixed(self):
+        """One rule compares a value, one is out of scope, one cannot be read."""
+        rules = [
+            _verified_rule(id="RAN", parameter="p_ran"),
+            _verified_rule(
+                id="OUT", parameter="p_out",
+                applies_to={"system_type": "elevated sand mound"},
+            ),
+            _verified_rule(id="UNREAD", parameter="p_unread"),
+        ]
+        report = engine.evaluate(
+            {"p_ran": 150, "p_out": 10, "system_type": "pressure dosed"}, rules
+        )
+        return compose_mod.compose(report)
+
+    def test_it_is_grouped_separately_from_satisfied(self, mixed):
+        assert [f.rule_id for f in mixed.satisfied] == ["RAN"]
+        assert [f.rule_id for f in mixed.not_applicable] == ["OUT"]
+        assert [f.rule_id for f in mixed.unresolved] == ["UNREAD"]
+
+    def test_coverage_counts_it_in_neither_bucket(self, mixed):
+        assert mixed.coverage["evaluated"] == 1
+        assert mixed.coverage["not_applicable"] == 1
+        assert mixed.coverage["unreadable"] == 1
+        assert mixed.coverage["text"] == (
+            "1 of 3 checks ran, 1 not applicable to this system, "
+            "1 could not be read"
+        )
+
+    def test_the_group_states_the_rule_the_reason_and_the_excluding_fact(self, mixed):
+        finding = mixed.not_applicable[0]
+        assert finding.rule_id == "OUT"
+        assert finding.requirement
+        assert "does not apply" in finding.reason
+        assert finding.applicability == "not_applicable"
+        assert finding.excluded_by["parameter"] == "system_type"
+        assert finding.excluded_by["value"] == "pressure dosed"
+        assert finding.citation
+
+    def test_nothing_infers_applicability_from_the_reason_text(self, mixed):
+        """The grouping must survive a reworded reason.
+
+        The measurement that found this bug had to substring match the reason,
+        and that fragility is what the applicability field exists to remove.
+        """
+        for finding in mixed.not_applicable:
+            finding.reason = "reworded by a later pass"
+        payload = mixed.to_json()
+        assert [f["rule_id"] for f in payload["not_applicable"]] == ["OUT"]
+        assert [f["rule_id"] for f in payload["satisfied"]] == ["RAN"]
+
+    def test_the_html_report_keeps_them_visibly_apart(self, mixed):
+        html = render_mod.render_html(mixed)
+        assert "Not applicable to this system (1)" in html
+        assert "Requirements met (1)" in html
+        assert "class='out-of-scope'" in html
+        out_of_scope = html.split("class='out-of-scope'")[1].split("</table>")[0]
+        assert "OUT" in out_of_scope
+        assert "system_type" in out_of_scope
+        assert "RAN" not in out_of_scope
+        met = html.split("class='met'")[1].split("</table>")[0]
+        assert "RAN" in met
+        assert "OUT" not in met
+
+    def test_the_text_report_keeps_them_visibly_apart(self, mixed):
+        text = render_mod.render_text(mixed)
+        assert "NOT APPLICABLE TO THIS SYSTEM (1)" in text
+        assert "REQUIREMENTS MET (1)" in text
+        out_of_scope = text.split("NOT APPLICABLE TO THIS SYSTEM (1)")[1].split(
+            "REQUIREMENTS MET"
+        )[0]
+        assert "OUT" in out_of_scope
+        assert "system_type read as 'pressure dosed'" in out_of_scope
+
+    def test_neither_renderer_reports_it_as_a_check_that_ran(self, mixed):
+        """The count next to the verdict is the one a room reads."""
+        for rendered in (render_mod.render_text(mixed),
+                         render_mod.render_html(mixed)):
+            assert "1 of 3 checks ran" in rendered.lower()
+            assert "3 of 3 checks ran" not in rendered.lower()
+
+    def test_a_packet_where_only_out_of_scope_rules_passed_cannot_be_verified(self):
+        rules = [
+            _verified_rule(
+                id="OUT", parameter="p_out",
+                applies_to={"system_type": "elevated sand mound"},
+            ),
+            _verified_rule(id="UNREAD", parameter="p_unread"),
+        ]
+        composed = compose_mod.compose(
+            engine.evaluate({"p_out": 10, "system_type": "pressure dosed"}, rules)
+        )
+        assert composed.headline == "CANNOT VERIFY"
+        assert not composed.satisfied
+        assert len(composed.not_applicable) == 1
+        assert composed.coverage["evaluated"] == 0
+
+    def test_the_explanation_says_they_are_not_requirements_met(self, mixed):
+        assert "do not govern this kind of system" in mixed.explanation
+        assert "not requirements this packet met" in mixed.explanation

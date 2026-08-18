@@ -90,21 +90,66 @@ class TestConsoleModule:
         Guards the drift the module docstring warns about: if the banner ever
         computed coverage itself it could disagree with the report body a few
         pixels below it.
+
+        The string pinned here is now the three way figure, because that is the
+        one a reviewer reads on a real packet: a check that compared a value, a
+        rule that does not govern this system, and a value that could not be read
+        are three different things and the banner has to say which is which. The
+        single rule case still reads "1 of 1 checks ran", since a count of zero is
+        left out of the phrasing rather than printed as a zero.
         """
         from septic.rules.schema import Citation, Operator, Rule, Severity
 
-        rule = Rule(
-            id="T", description="d",
-            citation=Citation(section="TEST-0.0", page=1, quote="q"),
-            parameter="p", operator=Operator.GE, threshold=1, units="feet",
-            severity=Severity.RETURN, verified=True, remedy="r", notes="n",
-        )
-        payload = compose_mod.compose(
-            engine.evaluate({"p": 5}, [rule])
+        def make(rule_id, parameter, **overrides):
+            defaults = dict(
+                id=rule_id, description="d",
+                citation=Citation(section="TEST-0.0", page=1, quote="q"),
+                parameter=parameter, operator=Operator.GE, threshold=1,
+                units="feet", severity=Severity.RETURN, verified=True,
+                remedy="r", notes="n",
+            )
+            defaults.update(overrides)
+            return Rule(**defaults)
+
+        simple = compose_mod.compose(
+            engine.evaluate({"p": 5}, [make("T", "p")])
         ).to_json()
-        assert payload["coverage"]["text"] == "1 of 1 checks ran"
+        assert simple["coverage"]["text"] == "1 of 1 checks ran"
+        assert simple["coverage"]["text"] in render_html(simple)
+
+        rules = [
+            make("RAN", "p_ran"),
+            make("OUT", "p_out", applies_to={"system_type": "mound"}),
+            make("UNREAD", "p_unread"),
+        ]
+        payload = compose_mod.compose(
+            engine.evaluate({"p_ran": 5, "system_type": "gravity"}, rules)
+        ).to_json()
+        assert payload["coverage"]["text"] == (
+            "1 of 3 checks ran, 1 not applicable to this system, "
+            "1 could not be read"
+        )
         html = render_html(payload)
         assert payload["coverage"]["text"] in html
+
+    def test_the_banner_computes_no_coverage_number_of_its_own(self):
+        """It may position the rules' numbers. It may never derive one.
+
+        counts["pass"] includes the rules that were never applied, so any surface
+        that adds up the outcome tally to describe coverage overstates what ran.
+        The banner reads coverage["text"] verbatim and its supporting sentence
+        carries no figures at all.
+        """
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        banner_body = source.split("def banner(payload: dict) -> str:")[1].split(
+            "\ndef "
+        )[0]
+        assert 'coverage.get("text"' in banner_body
+        assert 'payload.get("counts")' not in banner_body, (
+            "the banner is reading the outcome tally, which double counts the "
+            "rules that never applied"
+        )
+        assert "counts.get(" not in banner_body
 
 
 class TestOfflineReviewPath:
@@ -157,6 +202,12 @@ class TestOfflineReviewPath:
         live on a scanned drawing that cannot be measured, so those rules come
         back unevaluated, and folding them into the passes would tell a reviewer
         an application is clean when most of it was never checked.
+
+        Moved premise: satisfied used to be asserted equal to every PASS. It no
+        longer is, because a rule that does not govern this system is also a PASS
+        internally and must not appear beside requirements that were met. The two
+        groups together account for every PASS, and neither may hold the other's
+        findings.
         """
         pdfs = cached_examples()
         if not pdfs:
@@ -170,7 +221,14 @@ class TestOfflineReviewPath:
         counts = composed.counts
         assert counts["unknown"] > 0, "expected some checks to be unevaluable"
         assert len(composed.unresolved) == counts["unknown"]
-        assert len(composed.satisfied) == counts["pass"]
+        assert len(composed.satisfied) + len(composed.not_applicable) == counts["pass"]
+        assert all(f.applicability == "applies" for f in composed.satisfied)
+        assert all(
+            f.applicability == "not_applicable" for f in composed.not_applicable
+        )
+        assert composed.coverage["evaluated"] == len(composed.satisfied) + len(
+            composed.deficiencies
+        )
         html = render_html(composed)
         assert "could not be evaluated" in html.lower()
 

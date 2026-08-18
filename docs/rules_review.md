@@ -58,7 +58,7 @@ Graph backing this document: 2102 sections, 40 exhibits, 19 definitions, 2927 ed
 - Citation: **Exhibit C, page 173**
 - Severity if failed: return
 - Applies when: `system_scale` = small
-- Verified: **False**
+- Verified: **True**
 
 The disposal area must be at least 100 feet from a well.
 
@@ -142,7 +142,7 @@ Move the disposal area so it is at least 100 feet from every well shown on the s
 - Citation: **Exhibit C, page 173**
 - Severity if failed: return
 - Applies when: `system_scale` = small
-- Verified: **False**
+- Verified: **True**
 
 The disposal area must be at least 100 feet from a watercourse.
 
@@ -226,7 +226,7 @@ Move the disposal area so it is at least 100 feet from the watercourse, or docum
 - Citation: **Exhibit C, page 173**
 - Severity if failed: return
 - Applies when: `system_scale` = small
-- Verified: **False**
+- Verified: **True**
 
 The disposal area must be at least 10 feet from dwellings and property lines.
 
@@ -310,7 +310,7 @@ Move the disposal area so it is at least 10 feet from every property line and dw
 - Citation: **Exhibit C, page 173**
 - Severity if failed: return
 - Applies when: `system_scale` = small
-- Verified: **False**
+- Verified: **True**
 
 The disposal area must be at least 15 feet from the top of a bank or an escarpment steeper than 25 percent.
 
@@ -394,7 +394,7 @@ Move the disposal area so it is at least 15 feet from the top of the bank or esc
 - Citation: **Exhibit C, page 173**
 - Severity if failed: return
 - Applies when: `system_scale` = small
-- Verified: **False**
+- Verified: **True**
 
 The septic tank must be at least 50 feet from a well.
 
@@ -478,7 +478,7 @@ Move the septic tank so it is at least 50 feet from every well shown on the site
 - Citation: **Exhibit C, page 173**
 - Severity if failed: return
 - Applies when: `system_scale` = small
-- Verified: **False**
+- Verified: **True**
 
 The septic tank must be at least 25 feet from a watercourse.
 
@@ -562,7 +562,7 @@ Move the septic tank so it is at least 25 feet from the watercourse.
 - Citation: **5.2.4.2.5.7, page 52**
 - Severity if failed: return
 - Applies when: always, the requirement is unconditional
-- Verified: **False**
+- Verified: **True**
 
 A system may not be placed on soil with a percolation rate slower than 120 minutes per inch.
 
@@ -608,7 +608,7 @@ The soil in the proposed disposal area percolates too slowly for any system unde
 - Citation: **5.2.4.2.2, page 51**
 - Severity if failed: return
 - Applies when: always, the requirement is unconditional
-- Verified: **False**
+- Verified: **True**
 
 A soil percolation test must consist of three test holes.
 
@@ -645,7 +645,7 @@ Record the results of all three percolation test holes on the application.
 - Citation: **5.3.12.1.3, page 61**
 - Severity if failed: return
 - Applies when: `system_type` = conventional, gravity
-- Verified: **False**
+- Verified: **True**
 
 For a gravity trench or bed system, the limiting zone must be at least 3 feet below the bottom of the trench.
 
@@ -685,8 +685,8 @@ Raise the trench bottom or relocate the disposal area so at least 36 inches of s
 - Parameter checked: `limiting_zone_depth`
 - Citation: **5.2.4.2.4.2, page 51**
 - Severity if failed: return
-- Applies when: `system_type` = conventional, gravity
-- Verified: **False**
+- Applies when: `system_type` = conventional, gravity; `construction_type` = new construction
+- Verified: **True**
 
 A site whose limiting zone is shallower than 20 inches is unsuitable for a conventional system.
 
@@ -714,7 +714,7 @@ Dependency check: every section and exhibit this rule depends on has been read.
 
 **What was read, and what to watch for**
 
-Read page 51. The sentence states the direction in words, so it does not depend on a symbol. The same section carries an explicit exception a reviewer must apply: when replacing a failing or malfunctioning system, Section 5.2.4.2.4.1 is used "without regard for the 20 inch limiting condition", so this rule must not fire on a repair or replacement application. applies_to cannot express that yet because it tests equality against facts and the condition needed is the absence of a replacement flag. Until the extractor supplies a construction type fact, a reviewer should read a failure of this rule on a replacement application as not applicable. This is the clearest case in the set where applies_to is too weak for the regulation, and it should be raised before certification.
+Read page 51. The sentence states the direction in words, so it does not depend on a symbol. The same section carries an explicit exception a reviewer must apply: when replacing a failing or malfunctioning system, Section 5.2.4.2.4.1 is used "without regard for the 20 inch limiting condition", so this rule must not fire on a repair or replacement application. That exception is now expressed in applies_to. The extractor reads the construction type from the ticked box on the construction permit application, where the options are New Construction, Replacement, Component Replacement, Repair to Existing System and Authorization to Use Existing System, so the rule is scoped to new construction and reports UNKNOWN rather than a deficiency when the box cannot be read. Nothing about the threshold, the citation or the direction of the comparison changed when that scope was added.
 
 **Remedy shown to the applicant**
 
@@ -737,7 +737,7 @@ The site is unsuitable for a conventional system at this limiting zone depth. Co
 - Citation: **5.3.3.3, page 56**
 - Severity if failed: return
 - Applies when: `use_type` = residential
-- Verified: **False**
+- Verified: **True**
 
 The design flow for a residential dwelling must be at least 240 gallons per day.
 
@@ -783,7 +783,7 @@ Size the system for at least 240 gallons per day, which is the floor for a resid
 - Citation: **5.3.3.3, page 56**
 - Severity if failed: return
 - Applies when: `use_type` = residential
-- Verified: **False**
+- Verified: **True**
 
 The design flow for a residential dwelling must be at least 120 gallons per day per bedroom.
 
@@ -829,7 +829,7 @@ Size the system for at least 120 gallons per day for each bedroom in the dwellin
 - Citation: **5.3.12.1.2, page 60**
 - Severity if failed: return
 - Applies when: `system_type` = conventional, gravity; `absorption_type` = bed
-- Verified: **False**
+- Verified: **True**
 
 A bed system may not be sited on a slope steeper than 2 percent.
 
@@ -870,7 +870,7 @@ Relocate the bed to ground at 2 percent slope or flatter, change to a trench sys
 - Citation: **5.2.1.1, page 43**
 - Severity if failed: return
 - Applies when: always, the requirement is unconditional
-- Verified: **False**
+- Verified: **True**
 
 A site evaluation report prepared by a Class D soil scientist must be obtained before a construction permit.
 
@@ -916,7 +916,7 @@ Attach the site evaluation report prepared by a Class D soil scientist.
 - Citation: **5.2.1.5, page 44**
 - Severity if failed: return
 - Applies when: always, the requirement is unconditional
-- Verified: **False**
+- Verified: **True**
 
 The site drawing must show every on-site and adjacent well within 150 feet of the approved soils area.
 

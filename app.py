@@ -178,28 +178,32 @@ def banner(payload: dict) -> str:
     statement as NO DEFICIENCIES FOUND over all fifteen, and showing the headline
     without the number would be worse than showing neither.
 
-    Reads the composed payload rather than recomputing anything. The rules
-    produced these numbers; this only positions them.
+    Every number here is read out of the composed payload. Nothing on this screen
+    counts anything: the coverage line is coverage["text"] verbatim, which is the
+    same string the report body a few pixels below it renders, and the sentence
+    under it carries no figures at all so it cannot drift from them.
     """
     headline = payload.get("headline", "")
     coverage = payload.get("coverage") or {}
-    counts = payload.get("counts") or {}
-    text = coverage.get("text") or (
-        f"{counts.get('pass', 0) + counts.get('fail', 0)} of "
-        f"{sum(counts.get(k, 0) for k in ('pass', 'fail', 'unknown'))} checks ran"
-    )
+    text = coverage.get("text", "")
     fg, bg = BANNER_COLOR.get(headline, ("#111827", "#f3f4f6"))
-    unknown = counts.get("unknown", 0)
-    tail = (
-        f"{unknown} could not be evaluated, itemised in the report below"
-        if unknown else "every check in the rule set ran"
-    )
+    if coverage.get("unreadable"):
+        tail = (
+            "The checks that could not be read are itemised in the report below. "
+            "A check that did not run is not a check that passed."
+        )
+    elif coverage.get("not_applicable"):
+        tail = (
+            "The checks that do not govern this kind of system are listed "
+            "separately below, and are not requirements this packet met."
+        )
+    else:
+        tail = "Every check in the rule set ran against this packet."
     return (
         f"<div class='banner' style='color:{fg};background:{bg}'>"
         f"<div class='banner-verdict'>{headline}</div>"
         f"<div class='banner-coverage'>{text}</div>"
-        f"<div class='banner-tail'>{counts.get('fail', 0)} failed, "
-        f"{counts.get('pass', 0)} passed, {tail}</div>"
+        f"<div class='banner-tail'>{tail}</div>"
         f"</div>"
     )
 
@@ -217,6 +221,7 @@ def estimate_height(payload: dict) -> int:
     height += 30 * len(payload.get("missing_information") or [])
     height += 30 * len(payload.get("discarded_readings") or [])
     height += 300 * len(payload.get("satisfied") or [])
+    height += 40 * len(payload.get("not_applicable") or [])
     height += 30 * len(payload.get("facts_read") or [])
     height += 120 * len(payload.get("notices") or [])
     return min(height, 26000)

@@ -439,7 +439,8 @@ def survey_packet(permit_number: str, rows: list[dict],
             )
             for e in report.failures
         ],
-        "passed_rules": [e.rule.id for e in report.passes],
+        "passed_rules": [e.rule.id for e in report.satisfied],
+        "not_applicable_rules": [e.rule.id for e in report.not_applicable],
         "unknown_rules": [e.rule.id for e in report.unknowns],
         "unknown_parameters": sorted({
             e.rule.parameter for e in report.unknowns
@@ -524,17 +525,26 @@ def summarise(rows: list[dict]) -> dict:
     surveyed = [r for r in rows if r.get("status") == "surveyed"]
     by_verdict: dict[str, int] = {}
     blocked: dict[str, int] = {}
+    out_of_scope: dict[str, int] = {}
     failed: dict[str, int] = {}
     parameters: dict[str, int] = {}
     for row in surveyed:
         by_verdict[row["verdict"]] = by_verdict.get(row["verdict"], 0) + 1
         for rule_id in row.get("unknown_rules", []):
             blocked[rule_id] = blocked.get(rule_id, 0) + 1
+        for rule_id in row.get("not_applicable_rules", []):
+            out_of_scope[rule_id] = out_of_scope.get(rule_id, 0) + 1
         for rule_id in row.get("failed_rules", []):
             failed[rule_id] = failed.get(rule_id, 0) + 1
         for parameter in row.get("unknown_parameters", []):
             parameters[parameter] = parameters.get(parameter, 0) + 1
     coverages = [r["coverage"]["evaluated"] for r in surveyed]
+    not_applicable = [r["coverage"].get("not_applicable", 0) for r in surveyed]
+    unreadable = [r["coverage"].get("unreadable", 0) for r in surveyed]
+
+    def mean(values: list[int]) -> float:
+        return round(sum(values) / len(values), 2) if values else 0
+
     return {
         "packets_total": len(rows),
         "packets_surveyed": len(surveyed),
@@ -542,14 +552,17 @@ def summarise(rows: list[dict]) -> dict:
         "by_verdict": dict(sorted(by_verdict.items())),
         "failures_by_rule": dict(sorted(failed.items(), key=lambda kv: -kv[1])),
         "unknowns_by_rule": dict(sorted(blocked.items(), key=lambda kv: -kv[1])),
+        "not_applicable_by_rule": dict(
+            sorted(out_of_scope.items(), key=lambda kv: -kv[1])
+        ),
         "unknown_parameters": dict(
             sorted(parameters.items(), key=lambda kv: -kv[1])
         ),
         "coverage_best": max(coverages) if coverages else 0,
         "coverage_worst": min(coverages) if coverages else 0,
-        "coverage_mean": (
-            round(sum(coverages) / len(coverages), 2) if coverages else 0
-        ),
+        "coverage_mean": mean(coverages),
+        "not_applicable_mean": mean(not_applicable),
+        "unreadable_mean": mean(unreadable),
         "packets_with_conflicts": sum(1 for r in surveyed if r.get("conflicts")),
         "pages": sum(r.get("pages") or 0 for r in surveyed),
     }
@@ -580,22 +593,32 @@ def render(payload: dict) -> str:
     for verdict, count in summary["by_verdict"].items():
         add(f"  {verdict:<24}{count}")
     add("")
-    add(f"coverage best {summary['coverage_best']} of {total_rules}, "
+    add(f"checks that ran      best {summary['coverage_best']} of {total_rules}, "
         f"worst {summary['coverage_worst']} of {total_rules}, "
         f"mean {summary['coverage_mean']} of {total_rules}")
+    add(f"not applicable      mean {summary.get('not_applicable_mean', 0)} "
+        f"of {total_rules}")
+    add(f"could not be read   mean {summary.get('unreadable_mean', 0)} "
+        f"of {total_rules}")
+    add("")
+    add("A check that ran compared a value off the packet against a threshold. A")
+    add("rule that does not govern the system on the packet was never applied to")
+    add("it, and is counted on its own line rather than as a check that ran.")
     add("")
 
     add(bar)
     add("PER PACKET")
     add(bar)
     add(f"{'permit':<9}{'docs':>5}{'pages':>6}  {'verdict':<22}"
-        f"{'pass':>5}{'fail':>5}{'unk':>5}  failures")
+        f"{'ran':>5}{'fail':>5}{'n/a':>5}{'unrd':>6}  failures")
     add("-" * 100)
     for row in surveyed:
+        coverage = row.get("coverage") or {}
         add(f"{row['permit_number']:<9}{row.get('documents_read', 0):>5}"
             f"{row.get('pages', 0):>6}  {row['verdict']:<22}"
-            f"{row['counts']['pass']:>5}{row['counts']['fail']:>5}"
-            f"{row['counts']['unknown']:>5}  "
+            f"{coverage.get('evaluated', 0):>5}{row['counts']['fail']:>5}"
+            f"{coverage.get('not_applicable', 0):>5}"
+            f"{coverage.get('unreadable', 0):>6}  "
             f"{', '.join(row['failed_rules'])}")
     add("")
 
@@ -654,6 +677,19 @@ def render(payload: dict) -> str:
     add("UNKNOWNS BY RULE, MOST PACKETS BLOCKED FIRST")
     add(bar)
     for rule_id, count in summary["unknowns_by_rule"].items():
+        share = count / len(surveyed) * 100 if surveyed else 0
+        add(f"  {count:>4} packets  {share:>5.1f}%  {rule_id}")
+    add("")
+
+    add(bar)
+    add("NOT APPLICABLE BY RULE, RULES THAT NEVER RAN ON MOST PACKETS")
+    add(bar)
+    add("")
+    add("These are not gaps. The rule governs a kind of system the packet is not,")
+    add("so it was never applied. They are listed because they used to be counted")
+    add("as checks that ran and as requirements met, which overstated coverage.")
+    add("")
+    for rule_id, count in (summary.get("not_applicable_by_rule") or {}).items():
         share = count / len(surveyed) * 100 if surveyed else 0
         add(f"  {count:>4} packets  {share:>5.1f}%  {rule_id}")
     add("")

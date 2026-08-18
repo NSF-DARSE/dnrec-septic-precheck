@@ -13,13 +13,15 @@ PASS would hide a problem while collapsing them into a FAIL would invent one.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import re
 
-from .schema import Evaluation, Outcome, Rule, Severity, Verdict
+# Applicability lives in schema next to the Evaluation that carries it. It is
+# imported here rather than defined here so engine.Applicability keeps resolving
+# for the callers that already use it.
+from .schema import Applicability, Evaluation, Outcome, Rule, Severity, Verdict
 
 try:
     import yaml
@@ -92,14 +94,14 @@ def coerce_number(value: Any) -> float | None:
         return None
 
 
-class Applicability(str, Enum):
-    APPLIES = "applies"
-    NOT_APPLICABLE = "not_applicable"
-    UNDETERMINED = "undetermined"
-
-
-def _applies(rule: Rule, facts: dict[str, Any]) -> tuple[Applicability, str]:
+def _applies(rule: Rule, facts: dict[str, Any]
+             ) -> tuple[Applicability, str, str | None]:
     """Whether a rule's applies_to conditions are satisfied by the facts.
+
+    Returns the verdict on applicability, the reason a reviewer reads, and the
+    name of the fact that settled it. The third value exists so the report can
+    show which value took the rule out of scope, and where it was read from,
+    without parsing the reason string.
 
     Undetermined is separate from not applicable: if the fact that gates the rule
     is unreadable, we cannot claim the rule passed.
@@ -109,6 +111,7 @@ def _applies(rule: Rule, facts: dict[str, Any]) -> tuple[Applicability, str]:
             return (
                 Applicability.UNDETERMINED,
                 f"cannot tell whether this rule applies because {key} is unknown",
+                key,
             )
         actual = facts[key]
         if isinstance(expected, (list, tuple, set)):
@@ -121,8 +124,9 @@ def _applies(rule: Rule, facts: dict[str, Any]) -> tuple[Applicability, str]:
             return (
                 Applicability.NOT_APPLICABLE,
                 f"does not apply because {key} is {actual!r}",
+                key,
             )
-    return Applicability.APPLIES, ""
+    return Applicability.APPLIES, "", None
 
 
 def evaluate_rule(rule: Rule, facts: dict[str, Any]) -> Evaluation:
@@ -135,13 +139,24 @@ def evaluate_rule(rule: Rule, facts: dict[str, Any]) -> Evaluation:
                 "threshold has not been verified against the regulation, so this "
                 "check is not evaluated"
             ),
+            applicability=Applicability.UNDETERMINED,
         )
 
-    applicability, why = _applies(rule, facts)
+    applicability, why, gating = _applies(rule, facts)
     if applicability is Applicability.UNDETERMINED:
-        return Evaluation(rule=rule, outcome=Outcome.UNKNOWN, reason=why)
+        return Evaluation(
+            rule=rule, outcome=Outcome.UNKNOWN, reason=why,
+            applicability=applicability, applicability_parameter=gating,
+        )
     if applicability is Applicability.NOT_APPLICABLE:
-        return Evaluation(rule=rule, outcome=Outcome.PASS, reason=why)
+        # Still a PASS internally: nothing about this packet violates a rule that
+        # was never written for it, so it must not lower the verdict. What it
+        # must not do is count as a check that ran, or appear in the report
+        # beside requirements that were actually met.
+        return Evaluation(
+            rule=rule, outcome=Outcome.PASS, reason=why,
+            applicability=applicability, applicability_parameter=gating,
+        )
 
     op = rule.operator
     present = rule.parameter in facts and facts[rule.parameter] not in (None, "")
@@ -268,7 +283,32 @@ class Report:
     def passes(self) -> list[Evaluation]:
         return [e for e in self.evaluations if e.outcome is Outcome.PASS]
 
+    @property
+    def not_applicable(self) -> list[Evaluation]:
+        """Rules this packet is out of scope for. A subset of passes."""
+        return [e for e in self.evaluations if e.is_not_applicable]
+
+    @property
+    def satisfied(self) -> list[Evaluation]:
+        """Passes that actually compared a value. What a reviewer reads as met."""
+        return [
+            e for e in self.evaluations
+            if e.outcome is Outcome.PASS and not e.is_not_applicable
+        ]
+
+    @property
+    def compared(self) -> list[Evaluation]:
+        """Every check that ran: a value off the packet against a threshold."""
+        return [e for e in self.evaluations if e.compared_a_value]
+
     def counts(self) -> dict[str, int]:
+        """Raw outcome tally. pass includes the rules that did not apply.
+
+        Kept raw on purpose: this mirrors the outcomes the engine produced, and
+        sum(pass, fail, unknown) is the size of the rule set. The split a
+        reviewer needs, between a pass that compared something and a pass that
+        never ran, is coverage() below.
+        """
         return {
             "pass": len(self.passes),
             "fail": len(self.failures),
@@ -285,14 +325,40 @@ class Report:
         next to the headline. text is the phrasing every surface uses, so the
         console banner, the HTML report and the text report cannot word it
         differently.
+
+        Three counts, because there are three ways a check can end up and only
+        one of them is a check that ran:
+
+            evaluated       a value off the packet was compared to a threshold
+            not_applicable  the rule does not govern this kind of system
+            unreadable      the value could not be read, or the threshold has
+                            not been confirmed by a person
+
+        evaluated used to be every PASS and FAIL, which counted rules that were
+        never applied. Across the 124 cached packets that inflated the mean from
+        3.72 to 5.86 and, worse, put those rules in the report's satisfied list
+        where a reviewer reads them as requirements that were met.
+
+        A count of zero is left out of text rather than printed as a zero. The
+        banner is the largest thing on a projected screen and "15 of 15 checks
+        ran" says everything "15 of 15 checks ran, 0 not applicable to this
+        system, 0 could not be read" says.
         """
-        evaluated = len(self.passes) + len(self.failures)
+        evaluated = len(self.compared)
+        not_applicable = len(self.not_applicable)
+        unreadable = len(self.unknowns)
         total = len(self.evaluations)
+        parts = [f"{evaluated} of {total} checks ran"]
+        if not_applicable:
+            parts.append(f"{not_applicable} not applicable to this system")
+        if unreadable:
+            parts.append(f"{unreadable} could not be read")
         return {
             "evaluated": evaluated,
+            "not_applicable": not_applicable,
+            "unreadable": unreadable,
             "total": total,
-            "not_evaluated": total - evaluated,
-            "text": f"{evaluated} of {total} checks ran",
+            "text": ", ".join(parts),
         }
 
     def to_json(self) -> dict:
@@ -314,8 +380,16 @@ def decide(evaluations: list[Evaluation]) -> Verdict:
     mean anything.
 
         DEFICIENCIES FOUND     at least one rule failed
-        NO DEFICIENCIES FOUND  nothing failed and at least one rule was evaluated
-        CANNOT VERIFY          no rule reached a decision at all
+        NO DEFICIENCIES FOUND  nothing failed and at least one rule compared a
+                               value off the packet against a threshold
+        CANNOT VERIFY          no rule compared anything at all
+
+    A rule that does not apply to this system does not count toward "something
+    was checked". It reports PASS internally, because nothing about the packet
+    violates a rule that was never written for it, but a packet whose only passes
+    are rules that never ran has had nothing checked, and reporting NO
+    DEFICIENCIES FOUND on it would say the opposite. Such a packet correctly
+    reads CANNOT VERIFY.
 
     An unevaluated check is still never counted as a pass. It is counted nowhere:
     it lowers coverage, and coverage travels with the verdict everywhere the
@@ -333,7 +407,7 @@ def decide(evaluations: list[Evaluation]) -> Verdict:
     """
     if any(e.outcome is Outcome.FAIL for e in evaluations):
         return Verdict.DEFICIENCIES_FOUND
-    if any(e.outcome is Outcome.PASS for e in evaluations):
+    if any(e.compared_a_value for e in evaluations):
         return Verdict.NO_DEFICIENCIES
     return Verdict.CANNOT_VERIFY
 

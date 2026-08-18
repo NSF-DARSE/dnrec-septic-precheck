@@ -320,15 +320,14 @@ def evaluate_group(name: str, statuses: list[str], df, rules, limit: int = 0
             # A PASS can mean two different things and they must not be pooled.
             # The engine reports a rule that does not apply as a PASS, which is
             # right for a verdict but wrong for this table: "no bed system, so the
-            # bed slope rule is irrelevant" is not evidence the rule works.
-            # engine._applies is reused rather than reimplemented, because a second
-            # copy of the applicability logic would eventually disagree with the
-            # engine and this harness would silently measure the wrong thing.
+            # bed slope rule is irrelevant" is not evidence the rule works. The
+            # engine now carries that distinction on the evaluation itself, so it
+            # is read here rather than recomputed. A second copy of the
+            # applicability logic would eventually disagree with the engine and
+            # this harness would silently measure the wrong thing.
             bucket = outcome.value
-            if outcome is Outcome.PASS:
-                applicability, _why = engine._applies(rule, facts)
-                if applicability is engine.Applicability.NOT_APPLICABLE:
-                    bucket = "NOT_APPLICABLE"
+            if evaluation.is_not_applicable:
+                bucket = "NOT_APPLICABLE"
             result.per_rule[rule.id][bucket] += 1
 
             if outcome is Outcome.FAIL:
@@ -336,8 +335,12 @@ def evaluate_group(name: str, statuses: list[str], df, rules, limit: int = 0
                 all_unknown = False
                 if rule.id in testable_ids:
                     tripped_testable = True
-            elif outcome is Outcome.PASS:
+            elif evaluation.compared_a_value:
                 all_unknown = False
+            elif evaluation.is_not_applicable:
+                # Out of scope, so it neither reached a decision nor failed to
+                # read anything. Counted in its own bucket above and nowhere else.
+                pass
             else:
                 # Separate the two reasons a check did not run. They call for
                 # different fixes: one needs a person, the other needs data.

@@ -27,8 +27,8 @@ exceed, or prohibited.
 | | count |
 | --- | --- |
 | Rules in the rule set | 15 |
-| Verified by a person | 0 |
-| Staged, awaiting verification | 15 |
+| Verified by a person | 15 |
+| Staged, awaiting verification | 0 |
 | Sections cited by at least one rule | 8 |
 | Exhibits cited by at least one rule | 1 |
 | Obligation sections cited by at least one rule | 7 |
@@ -58,21 +58,21 @@ Obligation sections matching no topic above: 827.
 
 | rule | requirement | citation | verified |
 | --- | --- | --- | --- |
-| `ISO-001-disposal-area-to-well` | >= 100 feet | Exhibit C p.173 | False |
-| `ISO-002-disposal-area-to-watercourse` | >= 100 feet | Exhibit C p.173 | False |
-| `ISO-003-disposal-area-to-property-line` | >= 10 feet | Exhibit C p.173 | False |
-| `ISO-004-disposal-area-to-escarpment` | >= 15 feet | Exhibit C p.173 | False |
-| `ISO-005-septic-tank-to-well` | >= 50 feet | Exhibit C p.173 | False |
-| `ISO-006-septic-tank-to-watercourse` | >= 25 feet | Exhibit C p.173 | False |
-| `PERC-001-site-maximum-percolation-rate` | <= 120 minutes per inch | 5.2.4.2.5.7 p.52 | False |
-| `PERC-002-percolation-test-hole-count` | >= 3 holes | 5.2.4.2.2 p.51 | False |
-| `SEP-001-limiting-zone-below-trench-bottom` | >= 36 inches | 5.3.12.1.3 p.61 | False |
-| `SEP-002-conventional-limiting-zone-minimum-depth` | >= 20 inches | 5.2.4.2.4.2 p.51 | False |
-| `FLOW-001-residential-minimum-design-flow` | >= 240 gallons per day | 5.3.3.3 p.56 | False |
-| `FLOW-002-residential-flow-per-bedroom` | >= 120 gallons per day per bedroom | 5.3.3.3 p.56 | False |
-| `SLOPE-001-gravity-bed-maximum-slope` | <= 2 percent | 5.3.12.1.2 p.60 | False |
-| `SITE-001-site-evaluation-report-present` | presence check | 5.2.1.1 p.43 | False |
-| `SITE-002-wells-within-150-feet-shown` | presence check | 5.2.1.5 p.44 | False |
+| `ISO-001-disposal-area-to-well` | >= 100 feet | Exhibit C p.173 | True |
+| `ISO-002-disposal-area-to-watercourse` | >= 100 feet | Exhibit C p.173 | True |
+| `ISO-003-disposal-area-to-property-line` | >= 10 feet | Exhibit C p.173 | True |
+| `ISO-004-disposal-area-to-escarpment` | >= 15 feet | Exhibit C p.173 | True |
+| `ISO-005-septic-tank-to-well` | >= 50 feet | Exhibit C p.173 | True |
+| `ISO-006-septic-tank-to-watercourse` | >= 25 feet | Exhibit C p.173 | True |
+| `PERC-001-site-maximum-percolation-rate` | <= 120 minutes per inch | 5.2.4.2.5.7 p.52 | True |
+| `PERC-002-percolation-test-hole-count` | >= 3 holes | 5.2.4.2.2 p.51 | True |
+| `SEP-001-limiting-zone-below-trench-bottom` | >= 36 inches | 5.3.12.1.3 p.61 | True |
+| `SEP-002-conventional-limiting-zone-minimum-depth` | >= 20 inches | 5.2.4.2.4.2 p.51 | True |
+| `FLOW-001-residential-minimum-design-flow` | >= 240 gallons per day | 5.3.3.3 p.56 | True |
+| `FLOW-002-residential-flow-per-bedroom` | >= 120 gallons per day per bedroom | 5.3.3.3 p.56 | True |
+| `SLOPE-001-gravity-bed-maximum-slope` | <= 2 percent | 5.3.12.1.2 p.60 | True |
+| `SITE-001-site-evaluation-report-present` | presence check | 5.2.1.1 p.43 | True |
+| `SITE-002-wells-within-150-feet-shown` | presence check | 5.2.1.5 p.44 | True |
 
 ## Parameters the rules require
 

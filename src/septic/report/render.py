@@ -91,11 +91,9 @@ def render_text(composed) -> str:
 
     coverage = c.get("coverage") or {}
     counts = c.get("counts") or {}
-    coverage_text = coverage.get("text") or (
-        f"{counts.get('pass', 0) + counts.get('fail', 0)} of "
-        f"{counts.get('pass', 0) + counts.get('fail', 0) + counts.get('unknown', 0)}"
-        f" checks ran"
-    )
+    # Read verbatim. Deriving this from counts would double count the rules that
+    # did not apply, because the engine reports those as passes.
+    coverage_text = coverage.get("text", "")
 
     add(f"VERDICT:  {c['headline']}")
     add(f"COVERAGE: {coverage_text.upper()}")
@@ -104,8 +102,10 @@ def render_text(composed) -> str:
         add(line)
     add("")
 
-    add(f"checks: {counts.get('pass', 0)} passed, {counts.get('fail', 0)} failed, "
-        f"{counts.get('unknown', 0)} could not be evaluated")
+    add(f"checks: {coverage.get('evaluated', 0)} compared a value, "
+        f"{counts.get('fail', 0)} of those failed, "
+        f"{coverage.get('not_applicable', 0)} not applicable to this system, "
+        f"{coverage.get('unreadable', 0)} could not be read")
     add("")
 
     for notice in c.get("notices") or []:
@@ -201,6 +201,33 @@ def render_text(composed) -> str:
             add(f"  {d['parameter']}{page}")
             for line in _wrap(d["reason"], indent="    "):
                 add(line)
+        add("")
+
+    not_applicable = c.get("not_applicable") or []
+    if not_applicable:
+        add(RULE)
+        add(f"NOT APPLICABLE TO THIS SYSTEM ({len(not_applicable)})")
+        add(RULE)
+        add("")
+        for line in _wrap(
+            "These rules were not applied to this packet, because they govern a "
+            "different kind of system. They are not requirements this application "
+            "met, and they are not counted as checks that ran. The value that "
+            "took each one out of scope is shown, so a reviewer who reads that "
+            "value differently knows exactly which check to bring back."
+        ):
+            add(line)
+        add("")
+        for f in not_applicable:
+            add(f"  {f['rule_id']}: {f['requirement']}")
+            add(f"    {f['reason']}")
+            excluded = f.get("excluded_by") or {}
+            if excluded.get("parameter"):
+                add(f"    {excluded['parameter']} read as "
+                    f"{excluded.get('value')!r}")
+                if excluded.get("where"):
+                    add(f"    value came from {excluded['where']}")
+            add(f"    citation {f['citation']}")
         add("")
 
     satisfied = c.get("satisfied") or []
@@ -357,6 +384,17 @@ h3 {
 table { border-collapse:collapse; width:100%; font-size:16.5px; }
 th,td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
 th { font-size:13.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); }
+/* A rule that was never applied must not look like a requirement that was met.
+   The met table carries the same green the passing findings use. The out of
+   scope table is deliberately grey and set back, because it is context, not a
+   result: nothing on this packet was compared against these rules. */
+table.met { border-left:7px solid #15803d; }
+table.out-of-scope {
+  border-left:7px solid #6b7280; background:#f3f4f6; color:#374151;
+}
+table.met th, table.met td,
+table.out-of-scope th, table.out-of-scope td { padding-left:16px; }
+table.out-of-scope code { color:#374151; }
 code { font:15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
 .caveat { font-size:16px; color:var(--muted); max-width:84ch; margin:0 0 14px; }
 footer {
@@ -396,18 +434,17 @@ def render_html(composed) -> str:
     add(f"<h2>{_esc(c['headline'])}</h2>")
     coverage = c.get("coverage") or {}
     counts = c.get("counts") or {}
-    evaluated = coverage.get("evaluated", counts.get("pass", 0) + counts.get("fail", 0))
-    total = coverage.get(
-        "total",
-        counts.get("pass", 0) + counts.get("fail", 0) + counts.get("unknown", 0),
-    )
-    coverage_text = coverage.get("text") or f"{evaluated} of {total} checks ran"
+    # Verbatim, like every other surface. Deriving it from counts would count the
+    # rules that never applied, since the engine reports those as passes.
+    coverage_text = coverage.get("text", "")
     add(f"<p class='coverage'>{_esc(coverage_text)}</p>")
     add(f"<p>{_esc(c['explanation'])}</p></div>")
 
-    add(f"<p class='counts'><b>{counts.get('pass', 0)}</b> passed &nbsp; "
-        f"<b>{counts.get('fail', 0)}</b> failed &nbsp; "
-        f"<b>{counts.get('unknown', 0)}</b> could not be evaluated</p>")
+    add(f"<p class='counts'><b>{coverage.get('evaluated', 0)}</b> compared a "
+        f"value &nbsp; <b>{counts.get('fail', 0)}</b> of those failed &nbsp; "
+        f"<b>{coverage.get('not_applicable', 0)}</b> not applicable to this "
+        f"system &nbsp; <b>{coverage.get('unreadable', 0)}</b> could not be "
+        f"read</p>")
 
     for notice in c.get("notices") or []:
         add(f"<div class='notice'>{_esc(notice)}</div>")
@@ -480,10 +517,40 @@ def render_html(composed) -> str:
                 f"<td>{_esc(d['reason'])}</td></tr>")
         add("</table>")
 
+    not_applicable = c.get("not_applicable") or []
+    if not_applicable:
+        add(f"<h3>Not applicable to this system ({len(not_applicable)})</h3>")
+        add("<p class='caveat'>These rules were not applied to this packet, "
+            "because they govern a different kind of system. They are not "
+            "requirements this application met, and they are not counted as "
+            "checks that ran. The value that took each one out of scope is shown "
+            "with it, so a reviewer who reads that value differently knows which "
+            "check to bring back.</p>")
+        add("<table class='out-of-scope'><tr><th>rule</th><th>requirement</th>"
+            "<th>why it was not applied</th><th>value that excluded it</th>"
+            "<th>citation</th></tr>")
+        for f in not_applicable:
+            excluded = f.get("excluded_by") or {}
+            where = ""
+            if excluded.get("parameter"):
+                where = (f"{excluded['parameter']} = "
+                         f"{excluded.get('value')!r}")
+                if excluded.get("where"):
+                    where += f", from {excluded['where']}"
+            add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
+                f"<td>{_esc(f['requirement'])}</td>"
+                f"<td>{_esc(f['reason'])}</td>"
+                f"<td>{_esc(where)}</td>"
+                f"<td>{_esc(f['citation'])}</td></tr>")
+        add("</table>")
+
     satisfied = c.get("satisfied") or []
     if satisfied:
         add(f"<h3>Requirements met ({len(satisfied)})</h3>")
-        add("<table><tr><th>rule</th><th>result</th><th>citation</th></tr>")
+        add("<p class='caveat'>Each of these compared a value read off the packet "
+            "against the threshold in the regulation.</p>")
+        add("<table class='met'><tr><th>rule</th><th>result</th>"
+            "<th>citation</th></tr>")
         for f in satisfied:
             add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
                 f"<td>{_esc(f['reason'])}</td><td>{_esc(f['citation'])}</td></tr>")

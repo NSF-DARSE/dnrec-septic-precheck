@@ -15,6 +15,7 @@ from septic.rules.engine import (
     load_rules,
 )
 from septic.rules.schema import (
+    Applicability,
     Citation,
     Operator,
     Outcome,
@@ -144,6 +145,38 @@ class TestApplicability:
         assert ev.outcome is Outcome.PASS
         assert "does not apply" in ev.reason
 
+    def test_applicability_is_carried_on_the_evaluation(self):
+        """Downstream must never infer this by reading the reason text.
+
+        The reporting layer had to substring match "does not apply" to tell a
+        rule that compared a value from a rule that was never applied, which is
+        how 266 checks that never ran ended up in the report's satisfied list.
+        The engine states it instead, in a field.
+        """
+        r = rule(applies_to={"system_type": "mound"})
+        ev = evaluate_rule(r, {"system_type": "gravity", "widgets": 0})
+        assert ev.applicability is Applicability.NOT_APPLICABLE
+        assert ev.is_not_applicable
+        assert not ev.compared_a_value
+        assert ev.to_json()["applicability"] == "not_applicable"
+
+    def test_the_excluding_fact_is_named(self):
+        """A reviewer who reads the value differently needs to know which one.
+
+        SLOPE-001 compares disposal_slope and is excluded by system_type, so the
+        rule's own parameter is the wrong thing to show next to it.
+        """
+        r = rule(applies_to={"system_type": "mound"})
+        ev = evaluate_rule(r, {"system_type": "gravity", "widgets": 0})
+        assert ev.applicability_parameter == "system_type"
+
+    def test_an_applied_rule_reports_that_it_compared_a_value(self):
+        r = rule(applies_to={"system_type": "gravity"}, threshold=1)
+        ev = evaluate_rule(r, {"system_type": "gravity", "widgets": 5})
+        assert ev.applicability is Applicability.APPLIES
+        assert ev.compared_a_value
+        assert ev.applicability_parameter is None
+
     def test_applicable_rule_still_evaluates(self):
         r = rule(applies_to={"system_type": "gravity"})
         assert evaluate_rule(r, {"system_type": "gravity", "widgets": 0}).outcome is Outcome.FAIL
@@ -153,10 +186,57 @@ class TestApplicability:
         ev = evaluate_rule(r, {"widgets": 0})
         assert ev.outcome is Outcome.UNKNOWN
         assert "cannot tell whether this rule applies" in ev.reason
+        assert ev.applicability is Applicability.UNDETERMINED
+        assert not ev.is_not_applicable
+
+    def test_an_unverified_rule_never_claims_to_be_in_scope(self):
+        """It was not applied, so whether it applies was never established."""
+        ev = evaluate_rule(rule(verified=False), {"widgets": 1})
+        assert ev.applicability is Applicability.UNDETERMINED
+        assert not ev.compared_a_value
 
     def test_applies_to_accepts_a_list(self):
         r = rule(applies_to={"system_type": ["gravity", "mound"]})
         assert evaluate_rule(r, {"system_type": "mound", "widgets": 99}).outcome is Outcome.PASS
+
+    def test_a_packet_whose_only_passes_never_applied_cannot_be_verified(self):
+        """The verdict consequence of the fix, and the reason for it.
+
+        Nothing failed here, so the old threshold read NO DEFICIENCIES FOUND. But
+        neither rule was ever applied to this packet: one governs mound systems
+        and the other could not be read. A packet where nothing was checked must
+        not report that nothing is wrong.
+        """
+        rules = [
+            rule(id="A", applies_to={"system_type": "mound"}),
+            rule(id="B", parameter="unread"),
+        ]
+        report = evaluate({"system_type": "gravity", "widgets": 5}, rules)
+        assert not report.failures
+        assert report.passes, "the out of scope rule is still a PASS internally"
+        assert not report.satisfied
+        assert report.verdict is Verdict.CANNOT_VERIFY
+
+    def test_one_real_comparison_is_enough_for_a_verdict(self):
+        """The threshold moved, it did not tighten to nothing.
+
+        A single rule that genuinely compared a value still carries the verdict,
+        alongside any number of rules that did not apply.
+        """
+        rules = [
+            rule(id="A", threshold=1),
+            rule(id="B", applies_to={"system_type": "mound"}),
+        ]
+        report = evaluate({"system_type": "gravity", "widgets": 5}, rules)
+        assert report.verdict is Verdict.NO_DEFICIENCIES
+
+    def test_a_failure_still_outranks_everything(self):
+        rules = [
+            rule(id="A", threshold=100),
+            rule(id="B", applies_to={"system_type": "mound"}),
+        ]
+        report = evaluate({"system_type": "gravity", "widgets": 1}, rules)
+        assert report.verdict is Verdict.DEFICIENCIES_FOUND
 
 
 class TestCoerceNumber:
@@ -263,6 +343,12 @@ class TestCoverage:
     A verdict of NO DEFICIENCIES FOUND over 7 of 15 checks is a different
     statement from the same verdict over 15 of 15, so the number has to be
     correct and it has to be phrased once, here, for every surface to reuse.
+
+    Three counts rather than one, because a check can end up in three places and
+    only one of them is a check that ran. The first number counts comparisons
+    against a threshold and nothing else. It used to count every PASS, which
+    included rules that were never applied to the packet, and across the corpus
+    that overstated the mean by more than half.
     """
 
     def test_counts_only_checks_that_reached_a_decision(self):
@@ -276,8 +362,9 @@ class TestCoverage:
         coverage = report.coverage()
         assert coverage["evaluated"] == 2
         assert coverage["total"] == 4
-        assert coverage["not_evaluated"] == 2
-        assert coverage["text"] == "2 of 4 checks ran"
+        assert coverage["not_applicable"] == 0
+        assert coverage["unreadable"] == 2
+        assert coverage["text"] == "2 of 4 checks ran, 2 could not be read"
 
     def test_an_unevaluated_check_is_never_counted_as_a_pass(self):
         rules = [rule(id="A", threshold=1), rule(id="B", parameter="unread")]
@@ -286,18 +373,70 @@ class TestCoverage:
         assert report.counts()["unknown"] == 1
         assert report.coverage()["evaluated"] == 1
 
+    def test_a_rule_that_never_applied_is_not_a_check_that_ran(self):
+        """The Wave 0.5 fix, stated as one assertion.
+
+        SLOPE-001 was reported as a check that ran on 94 of the 124 cached
+        packets, and as a requirement met, on systems it was never written for.
+        A rule taken out of scope is counted in its own bucket and in no other:
+        not as a comparison, and not as something that could not be read.
+        """
+        rules = [
+            rule(id="A", threshold=1),
+            rule(id="B", applies_to={"system_type": "mound"}),
+        ]
+        report = evaluate({"widgets": 5, "system_type": "gravity"}, rules)
+        coverage = report.coverage()
+        assert coverage["evaluated"] == 1
+        assert coverage["not_applicable"] == 1
+        assert coverage["unreadable"] == 0
+        assert coverage["total"] == 2
+        assert coverage["text"] == (
+            "1 of 2 checks ran, 1 not applicable to this system"
+        )
+        assert [e.rule.id for e in report.not_applicable] == ["B"]
+        assert [e.rule.id for e in report.satisfied] == ["A"]
+
+    def test_the_three_counts_add_up_to_the_rule_set(self):
+        """No check may fall between the buckets or land in two of them."""
+        rules = [
+            rule(id="A", threshold=1),
+            rule(id="B", threshold=100),
+            rule(id="C", applies_to={"system_type": "mound"}),
+            rule(id="D", parameter="unread"),
+            rule(id="E", verified=False),
+        ]
+        coverage = evaluate({"widgets": 5, "system_type": "gravity"}, rules).coverage()
+        assert (
+            coverage["evaluated"]
+            + coverage["not_applicable"]
+            + coverage["unreadable"]
+            == coverage["total"] == 5
+        )
+
     def test_full_coverage_reads_as_all_checks(self):
         rules = [rule(id="A", threshold=1), rule(id="B", threshold=2)]
         report = evaluate({"widgets": 5}, rules)
         assert report.coverage()["text"] == "2 of 2 checks ran"
-        assert report.coverage()["not_evaluated"] == 0
+        assert report.coverage()["not_applicable"] == 0
+        assert report.coverage()["unreadable"] == 0
+
+    def test_zero_counts_are_left_out_of_the_phrasing(self):
+        """The banner is the largest text on a projected screen.
+
+        "15 of 15 checks ran" says everything "15 of 15 checks ran, 0 not
+        applicable to this system, 0 could not be read" says.
+        """
+        report = evaluate({"widgets": 5}, [rule(threshold=1)])
+        assert report.coverage()["text"] == "1 of 1 checks ran"
+        assert "0" not in report.coverage()["text"]
 
     def test_zero_coverage_accompanies_cannot_verify(self):
         rules = [rule(id="A", parameter="unread")]
         report = evaluate({}, rules)
         assert report.verdict is Verdict.CANNOT_VERIFY
         assert report.coverage()["evaluated"] == 0
-        assert report.coverage()["text"] == "0 of 1 checks ran"
+        assert report.coverage()["text"] == "0 of 1 checks ran, 1 could not be read"
 
     def test_coverage_is_in_the_json_payload(self):
         report = evaluate({"widgets": 5}, [rule(threshold=1)])
@@ -381,7 +520,13 @@ class TestShippedRuleSet:
             f"{[e.rule.id for e in report.unknowns]}"
         )
         assert report.verdict is Verdict.DEFICIENCIES_FOUND
-        assert report.coverage()["not_evaluated"] == 0
+        coverage = report.coverage()
+        assert coverage["unreadable"] == 0
+        assert coverage["not_applicable"] == 0, (
+            "a rule declined to apply even though every gating fact was supplied: "
+            f"{[e.rule.id for e in report.not_applicable]}"
+        )
+        assert coverage["evaluated"] == coverage["total"]
 
     def test_every_shipped_rule_carries_a_real_citation(self):
         """A staged rule a human cannot look up is not reviewable."""
@@ -417,5 +562,5 @@ class TestShippedRuleSet:
             f"expected most checks to be unevaluable on a packet this thin, got "
             f"{coverage['text']}"
         )
-        assert coverage["evaluated"] == len(report.passes) + len(report.failures)
-        assert coverage["not_evaluated"] == len(report.unknowns)
+        assert coverage["evaluated"] == len(report.satisfied) + len(report.failures)
+        assert coverage["unreadable"] == len(report.unknowns)
