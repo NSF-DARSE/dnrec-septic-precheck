@@ -308,20 +308,6 @@ html, body { font-family:$f_sans; }
   font-size:$t_caption; color:var(--ink);
 }
 .pdf-viewer-controls button:disabled { opacity:0.4; cursor:default; }
-.pdf-viewer-legend {
-  display:flex; flex-wrap:wrap; gap:$s_lg; margin-top:$s_sm;
-  font-size:$t_micro; color:var(--muted);
-}
-.pdf-viewer-legend-item {
-  display:flex; align-items:center; gap:$s_xs;
-}
-.pdf-viewer-legend-dot {
-  display:inline-block; width:12px; height:12px; border-radius:3px;
-  border:$b_hairline solid;
-}
-.pdf-viewer-coverage {
-  font-size:$t_caption; color:var(--muted); margin-top:$s_sm;
-}
 
 /* Attribution band */
 .band {
@@ -905,7 +891,7 @@ def render_findings(payload: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# PDF viewer: rasterise pages, overlay highlights, page controls.
+# PDF viewer: rasterise pages, page controls.
 # ---------------------------------------------------------------------------
 
 _PAGE_CACHE: dict[str, dict[int, str]] = {}
@@ -931,113 +917,17 @@ def _rasterise_page(pdf_bytes: bytes, page_num: int, doc_hash: str) -> str:
     return uri
 
 
-def _resolve_highlights(payload: dict, page_num: int) -> list[dict]:
-    """Collect highlight boxes for all findings whose fact is on this page.
-
-    Each entry carries left, top, width, height (normalised 0-1), colour token
-    name, rule_id, parameter, and observed value. The colour is chosen by outcome:
-    pass -> clear_edge, fail -> deficiency_edge, unknown -> unverified_edge.
-    A finding with outcome unknown is never painted in deficiency colour.
-    """
-    highlights = []
-    colour_map = {
-        "pass": "clear_edge",
-        "fail": "deficiency_edge",
-        "unknown": "unverified_edge",
-    }
-    all_findings = []
-    for group in ("deficiencies", "satisfied", "unresolved", "not_applicable"):
-        all_findings.extend(payload.get(group) or [])
-
-    # Group findings by parameter to detect multi-rule overlaps.
-    by_box_key: dict[str, list[dict]] = {}
-    for f in all_findings:
-        box = f.get("fact_box")
-        fp = f.get("fact_page")
-        if not box or fp != page_num:
-            continue
-        key = f"{box['left']},{box['top']},{box['width']},{box['height']}"
-        by_box_key.setdefault(key, []).append(f)
-
-    severity_order = {"fail": 0, "unknown": 1, "pass": 2}
-    for key, findings in by_box_key.items():
-        # Most serious outcome wins the colour.
-        findings.sort(key=lambda f: severity_order.get(f.get("outcome", ""), 3))
-        primary = findings[0]
-        outcome = primary.get("outcome", "unknown")
-        colour_token = colour_map.get(outcome, "unverified_edge")
-        box = primary["fact_box"]
-        tooltip_parts = []
-        for f in findings:
-            tooltip_parts.append(
-                f"{f.get('rule_id', '')}: {f.get('parameter', '')} = "
-                f"{f.get('observed', '')}"
-            )
-        highlights.append({
-            "left": box["left"],
-            "top": box["top"],
-            "width": box["width"],
-            "height": box["height"],
-            "colour": TOKENS["colour"][colour_token],
-            "tooltip": "; ".join(tooltip_parts),
-        })
-    return highlights
-
-
-def _viewer_html(page_uri: str, highlights: list[dict], page_num: int,
-                 total_pages: int) -> str:
-    """Build the self-contained HTML for the PDF viewer with overlays."""
-    overlay_divs = []
-    for h in highlights:
-        left_pct = h["left"] * 100
-        top_pct = h["top"] * 100
-        width_pct = h["width"] * 100
-        height_pct = h["height"] * 100
-        colour = h["colour"]
-        tooltip = html_lib.escape(h["tooltip"], quote=True)
-        overlay_divs.append(
-            f"<div title='{tooltip}' style='"
-            f"position:absolute;"
-            f"left:{left_pct:.3f}%;"
-            f"top:{top_pct:.3f}%;"
-            f"width:{width_pct:.3f}%;"
-            f"height:{height_pct:.3f}%;"
-            f"background:{colour}33;"
-            f"border:2px solid {colour};"
-            f"border-radius:2px;"
-            f"pointer-events:auto;"
-            f"cursor:help;"
-            f"box-sizing:border-box;"
-            f"'></div>"
-        )
-    overlays = "\n".join(overlay_divs)
+def _viewer_html(page_uri: str, page_num: int, total_pages: int) -> str:
+    """Build the self-contained HTML for the PDF viewer."""
     return (
         f"<div style='position:relative;width:100%;'>"
         f"<img src='{page_uri}' style='width:100%;display:block;'>"
-        f"{overlays}"
         f"</div>"
     )
 
 
-def _coverage_line(payload: dict, page_num: int) -> str:
-    """How many findings could be located on this page, of how many total."""
-    all_findings = []
-    for group in ("deficiencies", "satisfied", "unresolved", "not_applicable"):
-        all_findings.extend(payload.get(group) or [])
-    total = len(all_findings)
-    located_on_page = sum(
-        1 for f in all_findings
-        if f.get("fact_box") and f.get("fact_page") == page_num
-    )
-    located_total = sum(1 for f in all_findings if f.get("fact_box"))
-    return (
-        f"{located_on_page} of {total} findings located on this page. "
-        f"{located_total} of {total} have a location in the packet."
-    )
-
-
 def render_pdf_viewer(pdf_bytes: bytes, doc_hash: str, payload: dict) -> None:
-    """Render the PDF viewer pane with page controls and highlights."""
+    """Render the PDF viewer pane with page controls."""
     import pypdfium2 as pdfium
     doc = pdfium.PdfDocument(pdf_bytes)
     total_pages = len(doc)
@@ -1072,34 +962,9 @@ def render_pdf_viewer(pdf_bytes: bytes, doc_hash: str, payload: dict) -> None:
 
     # Rasterise and overlay
     page_uri = _rasterise_page(pdf_bytes, current_page, doc_hash)
-    highlights = _resolve_highlights(payload, current_page)
-    viewer_html = _viewer_html(page_uri, highlights, current_page, total_pages)
+    viewer_html = _viewer_html(page_uri, current_page, total_pages)
 
     components.html(viewer_html, height=900, scrolling=True)
-
-    # Legend
-    legend_items = [
-        (TOKENS["colour"]["clear_edge"], "Satisfied check"),
-        (TOKENS["colour"]["deficiency_edge"], "Deficiency found"),
-        (TOKENS["colour"]["unverified_edge"], "Could not be read"),
-    ]
-    legend_html = "<div class='pdf-viewer-legend'>"
-    for colour, label in legend_items:
-        legend_html += (
-            f"<span class='pdf-viewer-legend-item'>"
-            f"<span class='pdf-viewer-legend-dot' style='"
-            f"background:{colour}33;border-color:{colour}'></span>"
-            f"{html_lib.escape(label)}</span>"
-        )
-    legend_html += "</div>"
-    st.markdown(legend_html, unsafe_allow_html=True)
-
-    # Coverage line
-    st.markdown(
-        f"<div class='pdf-viewer-coverage'>"
-        f"{html_lib.escape(_coverage_line(payload, current_page))}</div>",
-        unsafe_allow_html=True,
-    )
 
 
 def jump_to_page(doc_hash: str, page: int) -> None:

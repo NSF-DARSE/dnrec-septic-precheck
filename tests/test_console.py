@@ -826,26 +826,6 @@ class TestPDFViewer:
                 "facts have boxes but no finding exposes fact_box"
             )
 
-    def test_no_unread_finding_rendered_in_deficiency_colour(self):
-        """An unread finding must never be painted red.
-
-        The deficiency colour means a requirement was positively violated. An
-        unresolved finding means the value could not be read at all. Painting
-        that amber rather than red is what separates absence of evidence from
-        evidence of absence, and the viewer must respect that boundary.
-        """
-        source = (ROOT / "app.py").read_text(encoding="utf-8")
-
-        # The _resolve_highlights function maps outcomes to colour tokens.
-        # Verify that "unknown" maps to unverified_edge, not deficiency_edge.
-        assert "\"unknown\": \"unverified_edge\"" in source, (
-            "unknown outcome is not mapped to unverified_edge in the highlight resolver"
-        )
-        # Verify deficiency_edge is only used for "fail" outcome.
-        assert "\"fail\": \"deficiency_edge\"" in source, (
-            "fail outcome is not mapped to deficiency_edge"
-        )
-
     def test_no_http_in_app(self):
         """The console must not reference any remote resource."""
         source = (ROOT / "app.py").read_text(encoding="utf-8")
