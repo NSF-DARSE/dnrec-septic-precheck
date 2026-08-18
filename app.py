@@ -56,6 +56,7 @@ from septic.report.assets import (  # noqa: E402
     logo_data_uri,
 )
 from septic.report.render import VERDICT_COLOR  # noqa: E402
+from septic.report.wording import UNREAD_INTRO  # noqa: E402
 from septic.rules import engine  # noqa: E402
 
 st.set_page_config(
@@ -73,10 +74,35 @@ st.set_page_config(
 
 STYLE_TEMPLATE = """
 :root { --ink:$c_ink; --muted:$c_muted; --line:$c_line; }
-.block-container { padding-top:$s_md; padding-bottom:$s_sm; max-width:1600px; }
-div[data-testid="stSidebar"] { min-width:340px; }
-div[data-testid="stSidebar"] .block-container { padding-top:$s_lg; }
-html, body, [class*="st-"] { font-family:$f_sans; }
+
+/* Clear the Streamlit toolbar. It is fixed to the top of the main column and
+   overlays the content rather than pushing it down, so the 12 pixels this used to
+   carry put the product title underneath it and cut the tool name off above the
+   viewport edge. The clearance is a token, measured against the toolbar's real
+   height, so content never sits under the top edge. */
+.block-container {
+  padding-top:$k_top_clearance; padding-bottom:$s_sm; max-width:1600px;
+}
+
+/* Streamlit's own elements are matched on the test id alone, never on the tag
+   name it happens to use. The sidebar is a section in this version and these
+   three rules were written as div[data-testid="stSidebar"], so all of them were
+   silently dead: the sidebar kept its own width, its inner padding was never
+   applied, and the print stylesheet below did not hide it. A selector that stops
+   working when somebody else changes an element name is not a selector worth
+   keeping. */
+[data-testid="stSidebar"] { min-width:${k_sidebar_width}px; }
+[data-testid="stSidebar"] .block-container { padding-top:$s_lg; }
+
+/* Our own markup only. This deliberately does not reach into Streamlit's
+   classes: the selector here used to be [class*="st-"], which matches every
+   emotion generated class, including the span Streamlit draws its icons in. Those
+   icons are ligatures in a bundled icon font, so overriding their family made
+   each one render as the text of its own ligature name, and the upload control
+   read uploadUpload. Streamlit's own body font is set from the same token in
+   .streamlit/config.toml instead, which is the supported way in and cannot reach
+   the icon font. */
+html, body { font-family:$f_sans; }
 
 /* The product identity band. The name of the tool and one line saying what it
    does, so somebody seeing the screen for the first time is not guessing. No
@@ -189,8 +215,8 @@ select:focus-visible, textarea:focus-visible,
 /* Printing the screen. The chrome goes, the finding stays. The embedded report
    carries its own print stylesheet. */
 @media print {
-  div[data-testid="stSidebar"], div[data-testid="stFileUploader"],
-  div[data-testid="stToolbar"], header[data-testid="stHeader"] { display:none; }
+  [data-testid="stSidebar"], [data-testid="stFileUploader"],
+  [data-testid="stToolbar"], [data-testid="stHeader"] { display:none; }
   .block-container { padding:0; max-width:none; }
   .banner, .band {
     -webkit-print-color-adjust:exact; print-color-adjust:exact;
@@ -221,6 +247,10 @@ def stylesheet() -> str:
         {f"lh_{name}": value for name, value in TOKENS["line_height"].items()}
     )
     values.update({f"w_{name}": value for name, value in TOKENS["weight"].items()})
+    # Measurements of the Streamlit shell, in pixels where they are used as a
+    # length and bare where the template appends the unit itself.
+    values["k_top_clearance"] = f"{TOKENS['chrome']['top_clearance']}px"
+    values["k_sidebar_width"] = TOKENS["chrome"]["sidebar_width"]
     values["f_sans"] = TOKENS["font"]["sans"]
     values["f_mono"] = TOKENS["font"]["mono"]
     values["circular_h"] = TOKENS["sponsor_strip"]["circular_logo_height"]
@@ -334,10 +364,7 @@ def banner(payload: dict) -> str:
         headline, (TOKENS["colour"]["ink"], TOKENS["colour"]["surface_sunken"])
     )
     if coverage.get("unreadable"):
-        tail = (
-            "The checks that could not be read are itemised in the report below. "
-            "A check that did not run is not a check that passed."
-        )
+        tail = UNREAD_INTRO
     elif coverage.get("not_applicable"):
         tail = (
             "The checks that do not govern this kind of system are listed "
@@ -538,18 +565,24 @@ elif show_rules:
     st.markdown(rules_reference(rules), unsafe_allow_html=True)
 
 else:
+    # One instruction, then what the three answers mean, and nothing else. This
+    # was five sentences and about ninety words, which is a wall of prose to hand
+    # somebody facing an empty screen. The three verdict names take their colours
+    # from the same table the banner reads, so the legend here and the real
+    # verdict a reviewer sees later cannot disagree about what a colour means.
+    legend = " ".join(
+        f"<b style='color:{BANNER_COLOR[name][0]}'>{name}</b>{rest}"
+        for name, rest in (
+            ("DEFICIENCIES FOUND", ", each item cited."),
+            ("NO DEFICIENCIES FOUND", ", which is not an approval."),
+            ("CANNOT VERIFY", ", when nothing could be checked."),
+        )
+    )
     st.markdown(
         "<div class='empty'>"
         "<div class='empty-title'>Drop an application packet into the panel on "
-        "the left to review it.</div>"
-        "<p>It is read from the local cache, checked against the "
-        f"{len(rules)} requirements taken from the 2014 regulation, and every "
-        "finding is shown with the section and page it comes from.</p>"
-        "<p>Three answers are possible. <b>DEFICIENCIES FOUND</b>, with each item "
-        "cited. <b>NO DEFICIENCIES FOUND</b> among the checks that ran, which is "
-        "not an approval. <b>CANNOT VERIFY</b>, when nothing could be checked at "
-        "all. The number of checks that ran is shown beside every one of "
-        "them.</p>"
+        "the left.</div>"
+        f"<p>Three answers are possible. {legend}</p>"
         "</div>",
         unsafe_allow_html=True,
     )

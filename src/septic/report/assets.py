@@ -150,6 +150,23 @@ TOKENS: dict[str, dict] = {
     "radius": {"sm": 6, "md": 9, "lg": 12},
     "border": {"hairline": 1, "rule": 3, "accent": 7},
     "font": {"sans": FONT_SANS, "mono": FONT_MONO},
+    # The Streamlit shell the console is drawn inside. These are measurements of
+    # somebody else's chrome rather than design choices, but they live here for
+    # the same reason the colours do: app.py is not allowed to carry a value of
+    # its own, and .streamlit/config.toml is generated from this table.
+    #
+    # header_height is measured, not assumed. Streamlit 1.61 draws a fixed
+    # toolbar across the top of the main column, 60 pixels tall in Chrome at
+    # 1400x900, and it overlays the content rather than pushing it down. The
+    # block container's padding-top was 12 pixels, so the product identity band
+    # sat underneath the toolbar and the tool name was cut off above the viewport
+    # edge. top_clearance carries the content past the toolbar and then leaves a
+    # space.lg gap, so nothing sits under the top edge at any window size.
+    "chrome": {
+        "header_height": 60,
+        "top_clearance": 76,
+        "sidebar_width": 340,
+    },
     # The sponsor strip. FSAII is a horizontal wordmark at roughly 1.95 to 1 and
     # the other three are circular. They share one height band with width left
     # free, so the strip has one baseline and one cap line, and the circular marks
@@ -196,6 +213,30 @@ CONTRAST_PAIRS: tuple[tuple[str, str, str, float], ...] = (
     ("nothing found edge", "clear_edge", "surface", 3.0),
     ("cannot verify edge", "unverified_edge", "surface", 3.0),
     ("out of scope edge on a sunken panel", "out_of_scope_edge", "surface_sunken", 3.0),
+)
+
+
+# The palette the Streamlit shell itself is drawn from, as a mapping from the
+# config option to the token it is taken from. .streamlit/config.toml is
+# generated from this table by scripts/build_theme.py, and tests/test_theme.py
+# fails if the committed file and these tokens ever disagree.
+#
+# Why the file has to exist at all. With no theme config, Streamlit renders its
+# own chrome from whatever the operating system reports. On a machine set to dark
+# mode that drew a near black shell and then painted this light palette on top of
+# it: body copy at #4b5563 on #0e1117 measures 1.7 to 1, and the three verdict
+# names, which are the most important words in the product, could not be read at
+# all. A light theme is the decision here, not a default to fall back to, so it
+# is pinned rather than inherited from whoever is presenting.
+STREAMLIT_THEME: tuple[tuple[str, str], ...] = (
+    ("primaryColor", "remedy_fg"),
+    ("backgroundColor", "surface"),
+    ("secondaryBackgroundColor", "surface_sunken"),
+    ("textColor", "ink"),
+    ("borderColor", "line"),
+    ("linkColor", "remedy_fg"),
+    ("codeBackgroundColor", "surface_quote"),
+    ("codeTextColor", "citation_fg"),
 )
 
 

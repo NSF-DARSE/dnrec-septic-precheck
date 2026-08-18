@@ -20,6 +20,7 @@ import html
 from string import Template
 
 from .assets import TOKENS
+from .wording import UNREAD_HEADING, UNREAD_INTRO, unread_note
 
 RULE = "=" * 78
 THIN = "-" * 78
@@ -162,21 +163,19 @@ def render_text(composed) -> str:
     unresolved = c.get("unresolved") or []
     if unresolved:
         add(RULE)
-        add(f"COULD NOT BE EVALUATED ({len(unresolved)})")
+        add(f"{UNREAD_HEADING.upper()} ({len(unresolved)})")
         add(RULE)
         add("")
-        for line in _wrap(
-            "These checks did not run. That is not the same as passing. A rule "
-            "listed here either needs a value the packet did not supply, or needs "
-            "a person to confirm its threshold against the regulation."
-        ):
+        for line in _wrap(UNREAD_INTRO):
             add(line)
         add("")
         for f in unresolved:
             add(f"  {f['rule_id']}")
-            add(f"    {f['reason']}")
-            add(f"    citation {f['citation']}")
-        add("")
+            # No separate citation line: the sentence already ends with it, and
+            # printing it twice reads as filler on a page a reviewer is scanning.
+            for line in _wrap(unread_note(f), indent="    "):
+                add(line)
+            add("")
 
     missing = c.get("missing_information") or []
     if missing:
@@ -193,6 +192,11 @@ def render_text(composed) -> str:
         for m in missing:
             add(f"  {m['parameter']}")
             add(f"    {m['means']}")
+            if m.get("normally_found"):
+                for line in _wrap(
+                    f"normally {m['normally_found']}", indent="    "
+                ):
+                    add(line)
             add(f"    blocks: {', '.join(m['blocks_rules'])}")
         add("")
 
@@ -618,14 +622,16 @@ def render_html(composed) -> str:
 
     unresolved = c.get("unresolved") or []
     if unresolved:
-        add(f"<h3>Could not be evaluated ({len(unresolved)})</h3>")
-        add("<p class='caveat'>These checks did not run, which is not the same as "
-            "passing. Each one either needs a value the packet did not supply, or "
-            "needs a person to confirm its threshold against the regulation.</p>")
-        add("<table><tr><th>rule</th><th>why</th><th>citation</th></tr>")
+        add(f"<h3>{_esc(UNREAD_HEADING)} ({len(unresolved)})</h3>")
+        add(f"<p class='caveat'>{_esc(UNREAD_INTRO)}</p>")
+        # No separate citation column. Every branch of the wording ends with the
+        # citation, so a column beside it would print the same section twice.
+        add("<table><tr><th>rule</th>"
+            "<th>what has to be read, where it is, and what it is measured "
+            "against</th></tr>")
         for f in unresolved:
             add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
-                f"<td>{_esc(f['reason'])}</td><td>{_esc(f['citation'])}</td></tr>")
+                f"<td>{_esc(unread_note(f))}</td></tr>")
         add("</table>")
 
     # The screening sits here, directly under the checks that could not run,
@@ -640,10 +646,12 @@ def render_html(composed) -> str:
         add("<p class='caveat'>Values the rules needed that this packet did not "
             "provide. A missing field is itself a reason an application gets "
             "returned.</p>")
-        add("<table><tr><th>value</th><th>meaning</th><th>blocks</th></tr>")
+        add("<table><tr><th>value</th><th>meaning</th><th>normally found</th>"
+            "<th>blocks</th></tr>")
         for m in missing:
             add(f"<tr><td><code>{_esc(m['parameter'])}</code></td>"
                 f"<td>{_esc(m['means'])}</td>"
+                f"<td>{_esc(m.get('normally_found') or '')}</td>"
                 f"<td><code>{_esc(', '.join(m['blocks_rules']))}</code></td></tr>")
         add("</table>")
 
