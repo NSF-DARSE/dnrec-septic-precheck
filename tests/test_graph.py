@@ -157,12 +157,64 @@ class TestUnresolved:
 
         pytest.skip("No section referencing an exhibit found")
 
-    def test_unresolved_existing_rules_have_section_tbd(self, regulation_graph):
-        """Existing placeholder rules cite 'TBD' so unresolved returns 0."""
+    def test_unknown_rule_id_reports_error(self, regulation_graph):
+        """An id that is not in the graph is an error, not an empty result.
+
+        Returning zero unresolved dependencies for a rule that does not exist
+        would read as "this rule is safe to promote", which is the opposite of
+        the truth.
+        """
         G = regulation_graph
-        result = unresolved(G, "EX001-site-plan-present")
-        # TBD section does not exist in graph, so CITES edge was never created
-        assert result["unresolved_count"] == 0
+        result = unresolved(G, "NO-SUCH-RULE")
+        assert "error" in result
+        assert "unresolved_count" not in result
+
+    def test_every_shipped_rule_resolves_to_a_cited_node(self, regulation_graph):
+        """Each rule must have a CITES edge to a node that exists.
+
+        A rule whose citation does not resolve is unreviewable through the graph,
+        and silently produces an empty unresolved() result.
+        """
+        from septic.rules.engine import load_rules
+
+        G = regulation_graph
+        for rule in load_rules():
+            node = f"rule:{rule.id}"
+            assert node in G, f"{rule.id} missing from graph"
+            cites = [
+                t for _, t, d in G.out_edges(node, data=True)
+                if d.get("type") == "CITES"
+            ]
+            assert cites, (
+                f"{rule.id} cites {rule.citation.section!r} which did not "
+                f"resolve to any graph node"
+            )
+            for target in cites:
+                assert target in G
+
+    def test_exhibit_citations_resolve_to_exhibit_nodes(self, regulation_graph):
+        """Exhibit C is cited by rule id, not by section number.
+
+        Section 5.3.4.1 creates the isolation distance obligation but holds no
+        numbers, so those rules cite Exhibit C directly. Resolving only section
+        style citations would leave them with no edge at all.
+        """
+        from septic.rules.engine import load_rules
+
+        G = regulation_graph
+        exhibit_rules = [
+            r for r in load_rules()
+            if r.citation.section.lower().startswith("exhibit")
+        ]
+        assert exhibit_rules, "expected some rules to cite an exhibit"
+        for rule in exhibit_rules:
+            cites = [
+                t for _, t, d in G.out_edges(f"rule:{rule.id}", data=True)
+                if d.get("type") == "CITES"
+            ]
+            assert any(t.startswith("exhibit:") for t in cites), (
+                f"{rule.id} cites {rule.citation.section} but has no exhibit edge"
+            )
 
 
 class TestJsonRoundTrip:

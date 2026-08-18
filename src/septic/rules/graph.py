@@ -31,8 +31,15 @@ HEADER_FRAGMENTS = (
     "7 Del.C. Ch.",
 )
 
-# Section heading: digits-dot-digits at start of line
-HEADING_RE = re.compile(r"^(\d{1,2}(?:\.\d{1,3}){0,4})\s+(.+)", re.MULTILINE)
+# Section heading: digits-dot-digits at start of line.
+#
+# The depth limit matters. This regulation nests six levels deep in places, for
+# example 5.2.4.2.5.7 (the 120 minutes per inch percolation limit) and
+# 5.2.4.2.4.2 (the 20 inch limiting zone rule). An earlier limit of five levels
+# silently dropped exactly those sections, which are where the specific numeric
+# thresholds live, so the graph looked healthy while missing the content rules
+# are drawn from. Kept at seven to leave headroom.
+HEADING_RE = re.compile(r"^(\d{1,2}(?:\.\d{1,3}){0,6})\s+(.+)", re.MULTILINE)
 
 # Cross references in body text
 XREF_SECTION_RE = re.compile(
@@ -268,12 +275,119 @@ def extract_headings(
 # Graph construction
 # ---------------------------------------------------------------------------
 
+# A line in the exhibits table of contents, for example "C. Minimum Isolation
+# Distances" or "AA. System Abandonment Report".
+EXHIBIT_TOC_ENTRY_RE = re.compile(r"^([A-Z]{1,2})\.\s+(.{4,90})$")
+
+# Words too common to identify an exhibit page by.
+TITLE_STOPWORDS = {
+    "and", "or", "of", "the", "for", "to", "a", "an", "in", "on", "with", "by",
+    "typical", "example", "design", "designs", "report", "guide", "based",
+    "upon", "system", "systems",
+}
+
+
+def normalize_dashes(text: str) -> str:
+    """Normalize the dash variants the PDF uses so titles compare cleanly."""
+    for bad in ("\u2013", "\u2014", "\u2212"):
+        text = text.replace(bad, "-")
+    return " ".join(text.split())
+
+
+def exhibit_titles(pages: list[tuple[int, str]]) -> tuple[dict[str, str], int]:
+    """Parse the exhibits table of contents into letter -> title.
+
+    Returns the mapping and the page it was found on, so the content search can be
+    restricted to pages after it.
+    """
+    titles: dict[str, str] = {}
+    toc_page = 0
+    for page_num, text in pages:
+        if "8.0 Exhibits" not in text or "Table of Contents" not in text:
+            continue
+        toc_page = page_num
+        for line in text.splitlines():
+            match = EXHIBIT_TOC_ENTRY_RE.match(line.strip())
+            if match:
+                titles[match.group(1).upper()] = normalize_dashes(match.group(2))
+        break
+    return titles, toc_page
+
+
+def locate_exhibit_content(
+    title: str, pages: list[tuple[int, str]], after_page: int
+) -> tuple[int | None, str]:
+    """Find the page holding an exhibit's content, or (None, "").
+
+    Every significant word of the exhibit title must appear on the page. Many
+    exhibits are scanned figures with no text layer, and those correctly return
+    nothing: an exhibit whose content cannot be read must stay visible as an
+    unread dependency rather than be quietly filled in from the wrong page.
+    """
+    significant = [
+        w for w in re.findall(r"[A-Za-z]{3,}", title.lower())
+        if w not in TITLE_STOPWORDS
+    ]
+    if not significant:
+        return None, ""
+
+    for page_num, text in pages:
+        if page_num <= after_page:
+            continue
+        haystack = text.lower()
+        if all(word in haystack for word in significant):
+            body = "\n".join(
+                line for line in text.splitlines()
+                if line.strip() and not _is_header_line(line)
+            )
+            return page_num, body
+    return None, ""
+
+
 def _parent_number(number: str) -> str | None:
     """Return the parent section number, or None for top-level."""
     parts = number.split(".")
     if len(parts) <= 1:
         return None
     return ".".join(parts[:-1])
+
+
+EXHIBIT_CITATION_RE = re.compile(r"^Exhibit\s+([A-Z][A-Z0-9]?(?:-\d+)?)$", re.I)
+
+
+def _resolve_citation(section: str | None) -> str | None:
+    """Map a rule citation string onto a graph node id.
+
+    Handles both "5.3.12.1.3" and "Exhibit C". Returns None for a placeholder or
+    an unrecognised form rather than guessing, so a citation that cannot be
+    resolved shows up as a rule with no outgoing CITES edge instead of an edge
+    pointing at the wrong node.
+    """
+    if not section or section.strip() in ("", "TBD"):
+        return None
+    section = section.strip()
+    exhibit = EXHIBIT_CITATION_RE.match(section)
+    if exhibit:
+        return f"exhibit:{exhibit.group(1).upper()}"
+    return f"section:{section}"
+
+
+def _has_readable_content(node_attrs: dict) -> bool:
+    """Whether a node's content has actually been extracted.
+
+    Sections in this regulation carry their first sentence in the heading line
+    itself, so a short section can have a meaningful title and an empty body. That
+    section has been read, and reporting it as an unread dependency would bury the
+    genuine cases in noise. Exhibits are the genuine cases: they are figures and
+    tables whose content is not in the text layer at all, so they have neither
+    body text nor a real title.
+    """
+    if node_attrs.get("text", "").strip():
+        return True
+    if node_attrs.get("type") == "Section":
+        # A title longer than a bare label means the content is in the heading.
+        return len(node_attrs.get("title", "").split()) >= 4
+    return False
 
 
 def _collect_section_texts(
@@ -378,19 +492,31 @@ def build_graph(
             )
 
     # --- Exhibit nodes ---
+    # Exhibits are referenced by letter throughout the body but their content sits
+    # in section 8.0 at the back. The letter to title mapping comes from the
+    # exhibits table of contents, and the content page is located by matching the
+    # title, so a text bearing exhibit such as C (the isolation distance table)
+    # becomes readable while a scanned figure stays correctly empty.
     exhibit_refs: set[str] = set()
     full_text = "\n".join(text for _, text in pages)
     for m in XREF_EXHIBIT_RE.finditer(full_text):
         exhibit_refs.add(m.group(1))
 
+    titles, toc_page = exhibit_titles(pages)
+    exhibit_refs.update(titles)
+
     for letter in sorted(exhibit_refs):
+        title = titles.get(letter, "")
+        page, body = (None, "")
+        if title:
+            page, body = locate_exhibit_content(title, pages, toc_page)
         G.add_node(
             f"exhibit:{letter}",
             type="Exhibit",
             letter=letter,
-            title=f"Exhibit {letter}",
-            page=None,
-            text="",
+            title=title or f"Exhibit {letter}",
+            page=page,
+            text=body[:4000],
         )
 
     # --- REFERENCES edges (section -> section or exhibit cross-refs) ---
@@ -505,11 +631,15 @@ def build_graph(
             citation_section=rule.citation.section,
             citation_page=rule.citation.page,
         )
-        # CITES edge from rule to cited section
-        if rule.citation.section and rule.citation.section != "TBD":
-            target_id = f"section:{rule.citation.section}"
-            if target_id in G:
-                G.add_edge(rule_id, target_id, type="CITES")
+        # CITES edge from rule to what it cites. A citation can name a section or
+        # an exhibit: several isolation distance rules cite Exhibit C directly,
+        # because Section 5.3.4.1 creates the obligation but holds no numbers and
+        # the values live in the exhibit table. Resolving only section citations
+        # would leave those rules with no outgoing edge, which would make
+        # unresolved() report nothing for exactly the dependency that matters.
+        target_id = _resolve_citation(rule.citation.section)
+        if target_id and target_id in G:
+            G.add_edge(rule_id, target_id, type="CITES")
 
     return G, stats
 
@@ -658,17 +788,24 @@ def context(G: nx.DiGraph, section_number: str) -> dict[str, Any]:
 
 
 def unresolved(G: nx.DiGraph, rule_id: str) -> dict[str, Any]:
-    """Sections and exhibits a rule transitively depends on that have no text.
+    """Sections and exhibits a rule transitively depends on that nobody has read.
 
-    A dependency is 'unresolved' if its text field is empty, meaning the content
-    has not been read or extracted. This flags exhibits and cross-referenced
-    sections that a reviewer must check before promoting the rule.
+    This is the check that stops a rule being promoted on a sentence that defers
+    its number elsewhere. Section 5.3.4.1 reads "The minimum isolation distances
+    set forth in Exhibit C shall be maintained" and contains no distance at all,
+    so a rule drawn from that sentence alone would ship a missing or invented
+    threshold. Walking CITES and REFERENCES from the rule surfaces Exhibit C as a
+    dependency whose content is not in the text layer, which is the signal to go
+    and read the exhibit before promoting anything.
+
+    A dependency counts as unread when its content was never extracted. A short
+    section whose whole sentence sits in the heading line is treated as read, since
+    flagging those would bury the real cases.
     """
     rule_node = f"rule:{rule_id}"
     if rule_node not in G:
         return {"error": f"rule {rule_id} not found in graph"}
 
-    # Find all nodes reachable from this rule
     visited: set[str] = set()
     queue = [rule_node]
     unresolved_nodes: list[dict[str, Any]] = []
@@ -685,8 +822,7 @@ def unresolved(G: nx.DiGraph, rule_id: str) -> dict[str, Any]:
                 if target not in visited:
                     queue.append(target)
                     target_data = G.nodes[target]
-                    # Check if the content is unresolved (empty text)
-                    if not target_data.get("text", "").strip():
+                    if not _has_readable_content(target_data):
                         unresolved_nodes.append({
                             "id": target,
                             "type": target_data.get("type", ""),

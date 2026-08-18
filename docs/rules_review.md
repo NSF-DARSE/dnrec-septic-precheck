@@ -1,861 +1,1043 @@
-# Rules Review
+# Rule verification checklist
 
-Each candidate rule is presented with its full graph context:
-cited section text, cross-references resolved and inlined,
-definitions inlined, and exceptions listed.
+15 rules are staged for certification. Every one is
+`verified: false`, so the engine returns UNKNOWN for all of them and the
+verdict for any application is CANNOT VERIFY. That is the intended state.
 
-A person confirms rules against the regulation. This file
-makes that review possible without jumping around a 245-page PDF.
+Each block below is self contained. The verbatim quote is the text the
+threshold came from, and the cross references and definitions the rule
+depends on are inlined underneath it, so a value can be confirmed without
+opening the PDF. Page numbers are given for the cases where you want to.
 
-Do not promote any rule to verified: true based on this file alone.
-Open the PDF at the cited page and confirm the value, units, and
-conditions before moving anything to rules_7101.yaml.
+## How to certify a rule
 
-## Graph statistics
+1. Read the quote and confirm it says what the threshold claims.
+2. Read the caveats. Several distances have reductions the Department can
+   approve, and one rule must not fire on replacement systems at all.
+3. Confirm `applies_to` matches the systems the requirement governs.
+4. If correct, set `verified: true` in
+   `src/septic/rules/rules_7101.yaml` and record your name and the date
+   in `notes`.
+5. If wrong, leave it unverified and record why. An unverified rule is
+   invisible to reviewers, which is the safe direction to fail.
 
-- Sections: 1448
-- Exhibits: 29
-- Definitions: 19
-- Rules: 3
-- Total edges: 2134
+## Regulation
 
-## Current rules (from rules_7101.yaml)
+Delaware Regulations Governing On-Site Wastewater Treatment and Disposal
+Systems, January 11, 2014. 245 pages.
+`docs/regulations/de-onsite-wastewater-2014.pdf`
 
-### EX001-site-plan-present
+Graph backing this document: 2102 sections, 40 exhibits, 19 definitions, 2927 edges.
 
-**Description:** A site plan must accompany the application. Placeholder used to exercise the engine, not a verified citation.
-**Citation:** Section TBD, p.None
-**Verified:** False
-**Severity:** return
+## All rules at a glance
 
----
-
-### EX002-percolation-rate-present
-
-**Description:** A percolation rate must be recorded for the proposed disposal area. Placeholder used to exercise the engine, not a verified citation.
-**Citation:** Section TBD, p.None
-**Verified:** False
-**Severity:** return
-
----
-
-### EX003-lot-area-present
-
-**Description:** The lot area must be stated on the application. Placeholder used to exercise the engine, not a verified citation.
-**Citation:** Section TBD, p.None
-**Verified:** False
-**Severity:** advisory
-
----
-
-## Top candidate sections for review
-
-Sections with the highest concentration of obligation language
-and numeric thresholds, ordered by candidate count.
-
-### Section 1 (38 candidates, 12 obligations, 6 setbacks)
-
-**Candidates:**
-- p.202 numbers=500 [obligation]
-  > In this instance, converting a residential use to a commercial use the maximum allowable daily flow is 500 gpd.
-- p.202 numbers=0,11,11,18,18 [setback]
-  > SEPARATION REQUIREMENTS SYSTEM TYPE DEPTH TO THE LIMITING ZONE (LZ) SMALL SYSTEM LARGE SYSTEM1 POINT OF COMPLIANCE TRENC
-- p.204 numbers=5,10,20,30,30
-  > PERCOLATION RATES BASED UPON USDA SOIL TEXTURES USDA TEXTURE DNREC ASSIGNED PERMEABILITY RATE (MPI)* Sands 5 Loamy Sand 
-- p.204 numbers=120,50,120,25,49
-  > Permeability Class Permeability Rate (mpi) Very Slow > 120 Slow 50 - 120 Moderate 25 - 49 Moderately Rapid 10 - 25 Rapid
-- p.206 numbers=10 [obligation]
-  > THIS FORM MUST BE SUBMITTED WITHIN 10 DAYS OF COMPLETION REASON FOR ABANDONMENT:
-  ... and 33 more
+| # | rule | requirement | citation | page |
+| --- | --- | --- | --- | --- |
+| 1 | `ISO-001-disposal-area-to-well` | >= 100 feet | Exhibit C | 173 |
+| 2 | `ISO-002-disposal-area-to-watercourse` | >= 100 feet | Exhibit C | 173 |
+| 3 | `ISO-003-disposal-area-to-property-line` | >= 10 feet | Exhibit C | 173 |
+| 4 | `ISO-004-disposal-area-to-escarpment` | >= 15 feet | Exhibit C | 173 |
+| 5 | `ISO-005-septic-tank-to-well` | >= 50 feet | Exhibit C | 173 |
+| 6 | `ISO-006-septic-tank-to-watercourse` | >= 25 feet | Exhibit C | 173 |
+| 7 | `PERC-001-site-maximum-percolation-rate` | <= 120 minutes per inch | 5.2.4.2.5.7 | 52 |
+| 8 | `PERC-002-percolation-test-hole-count` | >= 3 holes | 5.2.4.2.2 | 51 |
+| 9 | `SEP-001-limiting-zone-below-trench-bottom` | >= 36 inches | 5.3.12.1.3 | 61 |
+| 10 | `SEP-002-conventional-limiting-zone-minimum-depth` | >= 20 inches | 5.2.4.2.4.2 | 51 |
+| 11 | `FLOW-001-residential-minimum-design-flow` | >= 240 gallons per day | 5.3.3.3 | 56 |
+| 12 | `FLOW-002-residential-flow-per-bedroom` | >= 120 gallons per day per bedroom | 5.3.3.3 | 56 |
+| 13 | `SLOPE-001-gravity-bed-maximum-slope` | <= 2 percent | 5.3.12.1.2 | 60 |
+| 14 | `SITE-001-site-evaluation-report-present` | no threshold (presence check) | 5.2.1.1 | 43 |
+| 15 | `SITE-002-wells-within-150-feet-shown` | no threshold (presence check) | 5.2.1.5 | 44 |
 
 ---
 
-### Section 2.1 (32 candidates, 19 obligations, 8 setbacks)
+## 1. ISO-001-disposal-area-to-well
 
-**Title:** The following words and terms, when used in this Regulation, shall have the following
-**Page:** 10
-**Path:** 2 TABLE OF CONTENTS
+- Requirement: **>= 100 feet**
+- Parameter checked: `dist_disposal_to_well`
+- Citation: **Exhibit C, page 173**
+- Severity if failed: return
+- Applies when: `system_scale` = small
+- Verified: **False**
 
-**Section text:**
-> meaning unless the text clearly indicates otherwise: 
-“Absorption facility” means a system of open jointed or perforated piping, 
-alternative distribution units or other seepage systems for receiving the flow from 
-septic tanks or other treatment facilities and designed to distribute effluent for 
-oxidation and absorption by the soil within the zone of aeration. 
-“Advanced treatment unit” means an
+The disposal area must be at least 100 feet from a well.
 
-**Candidates:**
-- p.11 numbers=5
-  > "Building drain" means the piping coming from inside a building that extends five (5) feet beyond the exterior walls of 
-- p.11 numbers=36,12,23 [obligation, setback]
-  > "Capping fill gravity" means a gravity fed on-site wastewater treatment and disposal system which maintains a minimum 36
-- p.12 numbers=10
-  > "Construction report" means a Department approved form prepared by the contractor and submitted to the Department within
-- p.13 numbers=36 [obligation, setback]
-  > "Elevated sand mound" means an on-site wastewater treatment and disposal system which maintains a minimum 36 inches of s
-- p.13 numbers=95,4,10,100 [obligation]
-  > A minimum of 95% by weight must pass through a #4 sieve and a maximum of 10% by weight through a #100 sieve.
-  ... and 27 more
+**Verbatim text from the regulation**
 
----
+> MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Disposal area", column "Well": 100, notes a, c, d, e, h, i
 
-### Section 8.0 (18 candidates, 9 obligations, 8 setbacks)
+**Exhibit C content, page 173**
 
-**Title:** Exhibits
-**Page:** 166
-**Path:** 8 Guidelines for Designing Peat 
+```
+MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse
+Dwellings and 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or
+Escarpment 
+>25% 
+Septic tank 
+Grease trap 
+Distribution box 
+Dosing chamber 
+Diversion valve 
+or box 
+Advanced 
+treatment unit 
+50 10 25 10 f -- -- 
+Disposal area 100 
+a, c, d, e, 
+h, i 
+10 100 b 10 g 10 15
+MINIMUM ISOLATION DISTANCES (FEET) FOR LARGE SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse Dwellings & 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or 
+Escarpment 
+>25% 
+```
 
-**Section text:**
-> Attachments - Guidance Documents 
- 1 Class C Inspection Guidelines
-Table of Contents
-A. Existing On-Site Wastewater System Field Inspection Report Example 
-B. Textural Triangle for Soil Classification 
-C. Minimum Isolation Distances 
-D. Wastewater Design Flow Rates 
-E. Grease Trap Design Capacities 
-F. Typical Grease Trap 
-G. Typical Two Compartment Septic Tank 
-H. Typical Concrete Distribution Bo
+Dependency check: every section and exhibit this rule depends on has been read.
 
-**Definitions used:**
-- "Spray irrigation"
-- "Treatment"
+**What was read, and what to watch for**
 
-**Candidates:**
-- p.166 numbers=5
-  > Climatological Normal Precipitation (P) & 5 Year Return Monthly Precipitation (P5) LL.
-- p.166 numbers=1,000
-  > Chesapeake Bay 1,000 Foot Enforcement Zone
-- p.169 numbers=231
-  > L" X W" / 231 X H" ** Specify Concrete, Metal, Other Holding / Dosing Tank / Lift Station Holding Tank Lift Station Dosi
-- p.171 numbers=1,100 [obligation]
-  > Site sketch(es) shall be based on a whole number scale not to exceed 1 inch equals 100 feet.
-- p.171 numbers=1,10,20,30,40 [setback]
-  > Acceptable scales are: 1 inch = 10, 20, 30, 40, 50, 60, or 100 feet. x A north directional arrow. x Indicate location of
-  ... and 13 more
+Read page 173 (Exhibit C small systems table) and page 174 (the notes). Obligation followed from Section 5.3.4.1 on page 57 via the REFERENCES edge in the graph: "The minimum isolation distances set forth in Exhibit C shall be maintained when designing, locating, repairing, replacing, and installing on-site wastewater treatment and disposal systems." Four documented reductions apply and a reviewer must check them before treating a shortfall as a deficiency. Note a: 50 feet may be approved under the Delaware Regulations Governing the Construction and Use of Wells. Note e: 50 feet may be considered for replacement systems on lots recorded before April 8, 1984 where lot size will not allow 100 feet, subject to well casing and grouting requirements. Note h: replacement systems may reduce to 50 feet with an additional 12 inches of suitable soil. Note i: the Department may reduce to 50 feet where advanced treatment is incorporated. Note d raises the distance to 150 feet for public or industrial wells, so this rule is the residential domestic well case and a separate rule is needed for public wells. Note c changes the measurement datum for elevated sand mound and capping fill systems to the outer edge of the stone or gravel-less chamber.
 
----
+**Remedy shown to the applicant**
 
-### Section 5.2.4.2.5 (12 candidates, 10 obligations, 0 setbacks)
+Move the disposal area so it is at least 100 feet from every well shown on the site plan, or document the Department approval that permits a lesser distance under Exhibit C note a, e, h or i.
 
-**Title:** The following procedures shall be used for percolation tests:
-**Page:** 51
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.4 Soil Percolation Rate Determin > 5.2.4.2 Soil Percolation Test
+**Certification**
 
-**Section text:**
-> 5.2.4.2.5.1 A minimum of three (3) test holes shall be dug within the 
-proposed installation area of the absorption facility. Additional tests may be 
-required in areas with varying soil characteristics or when warranted at the 
-sole discretion of the Department due to the size of the required disposal 
-area.
-
-**Definitions used:**
-- "Disposal"
-
-**Candidates:**
-- p.52 numbers=52,5.2,6 [obligation]
-  > 52 5.2.4.2.5.2 Test holes with a horizontal diameter of six (6) inches shall be dug or bored.
-- p.52 numbers=2,5.2,12 [obligation]
-  > Two (2) inches of coarse sand or fine aggregate shall be placed in the bottom of the hole to prevent sealing of the hole
-- p.52 numbers=4,5.2,6 [obligation]
-  > This level shall be maintained for a period of at least four (4) hours. 5.2.4.2.5.5 The water level shall then be adjust
-- p.52 numbers=6,30,5.2,2,30 [obligation]
-  > The water level shall again be adjusted to six (6) inches over the aggregate and the hole allowed to infiltrate undistur
-- p.52 numbers=2,30,30 [obligation]
-  > Where the drop in the water level is less than two (2) inches in 30 minutes, the interval for readings during the percol
-  ... and 7 more
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 6.3.2.3.3 (5 candidates, 4 obligations, 0 setbacks)
+## 2. ISO-002-disposal-area-to-watercourse
 
-**Title:** Public Access
-**Page:** 113
-**Path:** 6 6.12.1 Permitting > 6.3 Design Parameters > 6.3.2 System specific design paramet > 6.3.2.3 Spray irrigation
+- Requirement: **>= 100 feet**
+- Parameter checked: `dist_disposal_to_watercourse`
+- Citation: **Exhibit C, page 173**
+- Severity if failed: return
+- Applies when: `system_scale` = small
+- Verified: **False**
 
-**Section text:**
-> 
-6.3.2.3.3.1 Limited public access sites are sites where access by the public is 
-controlled and only available to authorized personnel, including operations 
-staff, laboratory staff and farm personnel. 
-6.3.2.3.3.1.1 Suitable barriers, access road gates, or “No Trespassing” 
-signs must be provided at all limited access site entry points. 
-6.3.2.3.3.1.2 The treated wastewater utilized for limited 
+The disposal area must be at least 100 feet from a watercourse.
 
-**Candidates:**
-- p.113 numbers=6.3,6.3,6.3,6.3,6.3 [obligation]
-  > 6.3.2.3.3 Public Access 6.3.2.3.3.1 Limited public access sites are sites where access by the public is controlled and o
-- p.113 numbers=50,200,100,90,50
-  > Parameter Daily Permissible Average Concentration BOD5 50 mg/L Fecal Coliform 200 colonies/100 mL Total Suspended Solids
-- p.114 numbers=6.3,6.3,0.5,4 [obligation]
-  > Any advanced treatment technology achieving the same treatment levels will be considered by the Department. 6.3.2.3.3.2.
-- p.114 numbers=100,6.3,6.3,6.3,6.3 [obligation]
-  > If ultraviolet disinfection is utilized, ultraviolet disinfection must be performed following storage with an ultraviole
-- p.114 numbers=10,20,100,10,5 [obligation]
-  > Parameter Daily Permissible Average Concentration BOD5 10 mg/L Fecal Coliform 20 colonies/100 mL Total Suspended Solids 
+**Verbatim text from the regulation**
 
----
+> MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Disposal area", column "Watercourse": 100, note b
 
-### Section 6.3.2.3.13 (5 candidates, 5 obligations, 1 setbacks)
+**Exhibit C content, page 173**
 
-**Title:** Other System Design Considerations
-**Page:** 118
-**Path:** 6 6.12.1 Permitting > 6.3 Design Parameters > 6.3.2 System specific design paramet > 6.3.2.3 Spray irrigation
+```
+MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse
+Dwellings and 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or
+Escarpment 
+>25% 
+Septic tank 
+Grease trap 
+Distribution box 
+Dosing chamber 
+Diversion valve 
+or box 
+Advanced 
+treatment unit 
+50 10 25 10 f -- -- 
+Disposal area 100 
+a, c, d, e, 
+h, i 
+10 100 b 10 g 10 15
+MINIMUM ISOLATION DISTANCES (FEET) FOR LARGE SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse Dwellings & 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or 
+Escarpment 
+>25% 
+```
 
-**Section text:**
-> 
-6.3.2.3.13.1 The source of all data used and assumptions made for design
+Dependency check: every section and exhibit this rule depends on has been read.
 
-**Candidates:**
-- p.119 numbers=1,000 [obligation]
-  > Limited public access sites must have signs posted on the perimeter every 1,000 feet, at a minimum, and at all entry poi
-- p.119 numbers=6.3,1,000,6.3,6.3,5 [obligation]
-  > Fencing of spray fields is not required. 6.3.2.3.13.4 All domestic, irrigation, commercial, industrial, and public wells
-- p.120 numbers=120,6.3,6.3,6.3,6.3 [obligation, setback]
-  > 120 6.3.2.3.13.8.4.3 Design percolation rate. 6.3.2.3.13.8.4.4 Nitrogen loading and other constituent loading limitation
-- p.120 numbers=6.3,10 [obligation]
-  > Monitoring must be performed upgradient and downgradient of the irrigation site. 6.3.2.3.13.13 Spray nozzle pressure var
-- p.120 numbers=6.3,5,2,6.3 [obligation]
-  > Pipe drains shall discharge either to the spray fields or other identified vegetated areas and must not produce a runoff
+**What was read, and what to watch for**
 
----
+Read page 173 (table) and page 174 (notes). Note b is load bearing here and a reviewer should read it before flagging: a lesser distance to a minimum of 50 feet may be approved if the watercourse has not been designated for use as a public water supply or shellfish, and there is no setback at all from an ephemeral watercourse. Note b also assigns the determination of whether a watercourse is ephemeral to the Class D soil scientist, so this check cannot be settled from the site plan alone when the classification is contested.
 
-### Section 5.2.3.1.6 (4 candidates, 1 obligations, 1 setbacks)
+**Remedy shown to the applicant**
 
-**Title:** Monitoring must be performed by Class A, B, C, D, E, F, H or I
-**Page:** 50
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.3 Observation Wells/Piezometers > 5.2.3.1 Observing water table fluctuat
+Move the disposal area so it is at least 100 feet from the watercourse, or document that the watercourse is ephemeral or not designated for public water supply or shellfish use under Exhibit C note b.
 
-**Section text:**
-> licensees or DNREC licensed well driller. Monitoring shall occur, at a minimum, 
-weekly throughout the monitoring period. If water is observed above 18 inches for 
-siting OWTDS, more frequent observations are warranted. For the purposes of 
-siting an OWTDS via observation wells and/or piezometers the hydrologic limiting 
-zone will be determined based on the average of all readings taken within a 1
+**Certification**
 
-**Candidates:**
-- p.50 numbers=18
-  > If water is observed above 18 inches for siting OWTDS, more frequent observations are warranted.
-- p.50 numbers=14,5.2,5.2 [obligation]
-  > For the purposes of siting an OWTDS via observation wells and/or piezometers the hydrologic limiting zone will be determ
-- p.50 numbers=24 [setback]
-  > If the water level in the fresh boring, after 24 hours, presents a discrepancy with the water level observed in the well
-- p.50 numbers=10
-  > If the data is declared invalid, then the Department will notify the owner in writing of the invalid data within 10 days
-
----
-
-### Section 5.2.4.2.4 (4 candidates, 2 obligations, 0 setbacks)
-
-**Title:** The depth of the percolation test holes shall not be determined until a
-**Page:** 51
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.4 Soil Percolation Rate Determin > 5.2.4.2 Soil Percolation Test
-
-**Section text:**
-> site evaluation is completed and a limiting zone, if any, is identified. The depth of 
-the percolation test holes shall be as follows: 
-5.2.4.2.4.1 If the limiting zone occurs at least 20 inches from the soil 
-surface, the percolation test holes shall be within the soil horizon controlling 
-the water movement vertically and/or horizontally to a depth of 60 inches. 
-5.2.4.2.4.2 If the limiting zone
-
-**Definitions used:**
-- "Disposal"
-- "Treatment"
-
-**Candidates:**
-- p.51 numbers=5.2 [obligation]
-  > 5.2.4.2.4 The depth of the percolation test holes shall not be determined until a site evaluation is completed and a lim
-- p.51 numbers=5.2,20,60,5.2,20 [obligation]
-  > The depth of the percolation test holes shall be as follows: 5.2.4.2.4.1 If the limiting zone occurs at least 20 inches 
-- p.51 numbers=5.2,20
-  > However, if replacing a failing or malfunctioning system, Section 5.2.4.2.4.1 should be used without regard for the 20 i
-- p.51 numbers=48,60
-  > In situations where sand-lining through an impermeable or less permeable horizon within the top 48 inches, a percolation
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 5.3.12.2.3 (4 candidates, 3 obligations, 1 setbacks)
+## 3. ISO-003-disposal-area-to-property-line
 
-**Title:** Depth to Limiting Zone: The limiting zone shall be a minimum of 18
-**Page:** 61
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.12 Conventional On-Site Wastewate > 5.3.12.2 All Low Pressure Pipe Treatmen
+- Requirement: **>= 10 feet**
+- Parameter checked: `dist_disposal_to_property_line`
+- Citation: **Exhibit C, page 173**
+- Severity if failed: return
+- Applies when: `system_scale` = small
+- Verified: **False**
 
-**Section text:**
-> inches below the bottom of the trench (e.g. a minimum of 27 inches below 
-existing grade for a nine (9) inch deep LPP trench system). Shallow disposal 
-trenches (placed not less than nine (9) inches into the original soil profile) may 
-be used with a capping fill to achieve the minimum separation distance specified 
-above. The capping fill, if required, shall be placed in accordance with these 
-Re
+The disposal area must be at least 10 feet from dwellings and property lines.
 
-**Cross-references:**
-- Exhibit O: Exhibit O
+**Verbatim text from the regulation**
 
-**Definitions used:**
-- "Disposal"
-- "Treatment"
+> MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Disposal area", column "Dwellings and Property Lines": 10, note g
 
-**Candidates:**
-- p.61 numbers=5.3
-  > 5.3.12.2.3 Depth to Limiting Zone:
-- p.61 numbers=18,27,9 [obligation]
-  > The limiting zone shall be a minimum of 18 inches below the bottom of the trench (e.g. a minimum of 27 inches below exis
-- p.61 numbers=9 [obligation, setback]
-  > Shallow disposal trenches (placed not less than nine (9) inches into the original soil profile) may be used with a cappi
-- p.61 numbers=18 [obligation]
-  > A capping fill cover is required for all LPP treatment and disposal systems with trench depths less than 18 inches.
+**Exhibit C content, page 173**
 
----
+```
+MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse
+Dwellings and 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or
+Escarpment 
+>25% 
+Septic tank 
+Grease trap 
+Distribution box 
+Dosing chamber 
+Diversion valve 
+or box 
+Advanced 
+treatment unit 
+50 10 25 10 f -- -- 
+Disposal area 100 
+a, c, d, e, 
+h, i 
+10 100 b 10 g 10 15
+MINIMUM ISOLATION DISTANCES (FEET) FOR LARGE SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse Dwellings & 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or 
+Escarpment 
+>25% 
+```
 
-### Section 5.3.15.2.5 (4 candidates, 4 obligations, 0 setbacks)
+Dependency check: every section and exhibit this rule depends on has been read.
 
-**Title:** All inlet and outlet connections shall be sanitary tees or baffles
-**Page:** 66
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.15 Grease Traps > 5.3.15.2 All grease traps shall be desi
+**What was read, and what to watch for**
 
-**Section text:**
-> constructed of pre-cast concrete or PVC. Inlet and outlet openings shall be a 
-minimum of four (4) inches in diameter. The outlet invert shall be two (2) inches 
-below the inlet invert. The inlet baffle or sanitary tee shall extend at least 24 
-inches below the liquid level. The bottom of the outlet baffle or sanitary tee shall 
-be eight (8) inches above the tank bottom.
+Read page 173 (table) and page 174 (notes). The table column covers dwellings and property lines with the same value, so one rule serves both only if the extractor reports the smaller of the two measured distances. That is a scope ambiguity a reviewer should settle: if the extractor cannot distinguish them, splitting this into two rules is the safer shape. Note g permits 5 feet from an interior lot or easement line within a recorded subdivision where the absorption facility serves a central sewer system.
 
-**Candidates:**
-- p.66 numbers=4 [obligation]
-  > Inlet and outlet openings shall be a minimum of four (4) inches in diameter.
-- p.66 numbers=2 [obligation]
-  > The outlet invert shall be two (2) inches below the inlet invert.
-- p.66 numbers=24 [obligation]
-  > The inlet baffle or sanitary tee shall extend at least 24 inches below the liquid level.
-- p.66 numbers=8 [obligation]
-  > The bottom of the outlet baffle or sanitary tee shall be eight (8) inches above the tank bottom.
+**Remedy shown to the applicant**
 
----
+Move the disposal area so it is at least 10 feet from every property line and dwelling shown on the site plan.
 
-### Section 5.3.17.6 (4 candidates, 4 obligations, 0 setbacks)
+**Certification**
 
-**Title:** Dosing chambers shall be constructed with a ventilation port and a
-**Page:** 68
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.17 Dosing Chambers (see Exhibit I
-
-**Section text:**
-> watertight access manhole. The ventilation port shall be extended at least six (6) 
-inches above finished grade while the access manhole shall also be extended above 
-finished grade. The Department recommends six (6) inches above existing grade, at 
-a minimum, at time of installation. The vent shall be three (3) inches in diameter and 
-the access manhole shall be sized for easy removal of pumps. I
-
-**Candidates:**
-- p.68 numbers=6 [obligation]
-  > The ventilation port shall be extended at least six (6) inches above finished grade while the access manhole shall also 
-- p.68 numbers=6 [obligation]
-  > The Department recommends six (6) inches above existing grade, at a minimum, at time of installation.
-- p.68 numbers=3 [obligation]
-  > The vent shall be three (3) inches in diameter and the access manhole shall be sized for easy removal of pumps.
-- p.68 numbers=20 [obligation]
-  > In no case shall the manhole be less than 20 inches square or in diameter.
-
----
-
-### Section 5.4.4.4 (4 candidates, 4 obligations, 0 setbacks)
-
-**Title:** A minimum distance of four (4) feet and a maximum distance of six (6) feet
-**Page:** 85
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.4 Installation Requirements > 5.4.4 Distribution Networks
-
-**Section text:**
-> shall separate adjacent laterals in a bed. Laterals shall be placed no farther than 
-three (3) feet from the sidewalls of the bed. The length to width ratio for seepage 
-beds and elevated sand mounds shall be 4:1 or greater and maximum bed width 
-shall not exceed 25 feet, unless approved by the Department. A minimum distance 
-of six (6) feet shall separate laterals in a trench disposal system.
-
-**Definitions used:**
-- "Disposal"
-
-**Candidates:**
-- p.85 numbers=5.4,4,6 [obligation]
-  > 5.4.4.4 A minimum distance of four (4) feet and a maximum distance of six (6) feet shall separate adjacent laterals in a
-- p.85 numbers=3 [obligation]
-  > Laterals shall be placed no farther than three (3) feet from the sidewalls of the bed.
-- p.85 numbers=4,1,25 [obligation]
-  > The length to width ratio for seepage beds and elevated sand mounds shall be 4:1 or greater and maximum bed width shall 
-- p.85 numbers=6 [obligation]
-  > A minimum distance of six (6) feet shall separate laterals in a trench disposal system.
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 5.4.5.1.2 (4 candidates, 4 obligations, 0 setbacks)
+## 4. ISO-004-disposal-area-to-escarpment
 
-**Title:** For trenches or beds with a minimum sidewall depth of 24 inches,
-**Page:** 85
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.4 Installation Requirements > 5.4.5 Conventional Treatment and Dis > 5.4.5.1 Gravity Trenches and Beds (see
+- Requirement: **>= 15 feet**
+- Parameter checked: `dist_disposal_to_escarpment`
+- Citation: **Exhibit C, page 173**
+- Severity if failed: return
+- Applies when: `system_scale` = small
+- Verified: **False**
 
-**Section text:**
-> backfill shall be placed in accordance with permit requirements. Unless 
-otherwise required by the Department, the construction sequence shall be as 
-follows: 
-5.4.5.1.2.1 The backfill material shall be at least 12 inches in depth above 
-the filter fabric and returned to the original grade. 
-5.4.5.1.2.2 Backfill material shall be carefully deposited by methods which 
-will not damage or disturb the
+The disposal area must be at least 15 feet from the top of a bank or an escarpment steeper than 25 percent.
 
-**Candidates:**
-- p.85 numbers=5.4,24 [obligation]
-  > 5.4.5.1.2 For trenches or beds with a minimum sidewall depth of 24 inches, backfill shall be placed in accordance with p
-- p.85 numbers=5.4,12,5.4,5.4,5.4 [obligation]
-  > Unless otherwise required by the Department, the construction sequence shall be as follows: 5.4.5.1.2.1 The backfill mat
-- p.85 numbers=3,99,5.4 [obligation]
-  > The moisture content of the material being placed shall be within plus or minus three (3)% of optimum as determined by A
-- p.85 numbers=2 [obligation]
-  > All materials shall be free of stones larger than two (2) inches in diameter, debris, trash, wood or other similar mater
+**Verbatim text from the regulation**
 
----
+> MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Disposal area", column "Top of Bank or Escarpment >25%": 15
 
-### Section 5.4.5.1.3 (4 candidates, 4 obligations, 1 setbacks)
+**Exhibit C content, page 173**
 
-**Title:** For trenches or beds with a minimum sidewall depth of 12 inches but
-**Page:** 85
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.4 Installation Requirements > 5.4.5 Conventional Treatment and Dis > 5.4.5.1 Gravity Trenches and Beds (see
+```
+MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse
+Dwellings and 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or
+Escarpment 
+>25% 
+Septic tank 
+Grease trap 
+Distribution box 
+Dosing chamber 
+Diversion valve 
+or box 
+Advanced 
+treatment unit 
+50 10 25 10 f -- -- 
+Disposal area 100 
+a, c, d, e, 
+h, i 
+10 100 b 10 g 10 15
+MINIMUM ISOLATION DISTANCES (FEET) FOR LARGE SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse Dwellings & 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or 
+Escarpment 
+>25% 
+```
 
-**Section text:**
-> less than 24 inches, a capping fill shall be placed over the disposal system. The 
-cap shall be constructed pursuant to permit requirements (see Exhibits M and
+Dependency check: every section and exhibit this rule depends on has been read.
 
-**Definitions used:**
-- "Disposal"
+**What was read, and what to watch for**
 
-**Candidates:**
-- p.85 numbers=5.4,12,24 [obligation]
-  > 5.4.5.1.3 For trenches or beds with a minimum sidewall depth of 12 inches but less than 24 inches, a capping fill shall 
-- p.86 numbers=2,5.4,5.4,5.4 [obligation]
-  > All materials shall be free of stones, larger than two (2) inches in diameter, debris, trash, wood or other similar mate
-- p.86 numbers=10,5.4,2 [obligation, setback]
-  > There shall be a minimum of 10 feet of separation between the edge of the fill and the absorption facility. 5.4.5.1.3.5 
-- p.86 numbers=16,5.4 [obligation]
-  > Fill material shall be evenly graded to a minimum final depth of 16 inches over the aggregate or gravel-less chambers an
+Read page 173. This cell carries no note letters, so the value stands without documented reductions, which makes it one of the cleaner rules in this set. The column heading qualifies the trigger as an escarpment steeper than 25 percent, so the rule only fires when the site has one. Section 5.2.1.9.5 on page 45 requires escarpments to be recorded in the site evaluation report, which is where the input for this check comes from.
 
----
+**Remedy shown to the applicant**
 
-### Section 6.2.2.5.1 (4 candidates, 3 obligations, 1 setbacks)
+Move the disposal area so it is at least 15 feet from the top of the bank or escarpment, or show on the site plan that no escarpment steeper than 25 percent is present.
 
-**Title:** The supplemental soil investigation report shall include;
-**Page:** 101
+**Certification**
 
-**Section text:**
-> 6.2.2.5.1.1 Site plan drawn to scale not to exceed one (1) inch equals 200 feet. 
-6.2.2.5.1.2 Location of all wells, well head protection areas, right of ways, 
-watercourses, roads, storm water management features and on-site 
-wastewater treatment and disposal systems within 150 feet of the perimeter of 
-the property. 
-6.2.2.5.1.3 The proposed disposal area (PDA) shall be mapped on a grid 
-pattern
-
-**Definitions used:**
-- "Disposal"
-- "Spray irrigation"
-- "Treatment"
-
-**Exceptions:**
-- Section 6.2.2.5: approval unless the site is permitted for construction prior to this date. The approved 
-SIR will th
-
-**Candidates:**
-- p.101 numbers=6.2,6.2,1,200,6.2 [obligation, setback]
-  > 6.2.2.5.1 The supplemental soil investigation report shall include; 6.2.2.5.1.1 Site plan drawn to scale not to exceed o
-- p.101 numbers=10,6.2,6 [obligation]
-  > Spray irrigation projects must be mapped on a grid pattern at a minimum of one observation every 10 acres. 6.2.2.5.1.4 O
-- p.101 numbers=6,6.2,6.2 [obligation]
-  > These tests must be performed within the most hydraulically restrictive horizon in the upper six (6) feet. 6.2.2.5.1.6 D
-- p.101 numbers=6.2,6.2,2007,6.2
-  > Approval page). 6.2.2.5.1.8 Number of proposed lots, dwellings, expected gal/day/unit flow, design flow rate, anticipate
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 6.3.2.2.1 (4 candidates, 4 obligations, 0 setbacks)
+## 5. ISO-005-septic-tank-to-well
 
-**Title:** Design considerations
-**Page:** 111
-**Path:** 6 6.12.1 Permitting > 6.3 Design Parameters > 6.3.2 System specific design paramet > 6.3.2.2 Rapid Infiltration Basins (RIB
+- Requirement: **>= 50 feet**
+- Parameter checked: `dist_tank_to_well`
+- Citation: **Exhibit C, page 173**
+- Severity if failed: return
+- Applies when: `system_scale` = small
+- Verified: **False**
 
-**Section text:**
-> 6.3.2.2.1.1 There must be a minimum of four (4) basins constructed. See 
-Section 6.3.1.16 for spare area requirements. 
-6.3.2.2.1.2 RIBs shall have a 72-hour resting period between doses unless 
-otherwise approved by the Department. Hydraulic loading and resting cycles 
-shall be developed so as to restore operating infiltration rates of the RIB 
-system to design levels by the end of the resting pe
+The septic tank must be at least 50 feet from a well.
 
-**Definitions used:**
-- "Disposal"
+**Verbatim text from the regulation**
 
-**Candidates:**
-- p.111 numbers=6.3,6.3,72 [obligation]
-  > See Section 6.3.1.16 for spare area requirements. 6.3.2.2.1.2 RIBs shall have a 72-hour resting period between doses unl
-- p.111 numbers=6.3,2,8,3,1 [obligation]
-  > Basins should be configured in a strip configuration perpendicular to the direction of groundwater flow. 6.3.2.2.1.4 All
-- p.111 numbers=6,6.3,42 [obligation]
-  > Leveling of the basin bottom may need to be performed but not to exceed six (6) inches of additional engineered sandy fi
-- p.111 numbers=200,6.3 [obligation]
-  > The entrance to the RIBs must be locked and signs must be posted every 200 feet warning the public that the enclosed are
+> MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Septic tank Grease trap Distribution box Dosing chamber Diversion valve or box Advanced treatment unit", column "Well": 50
 
----
+**Exhibit C content, page 173**
 
-### Section 6.5.4.3.2 (4 candidates, 2 obligations, 1 setbacks)
+```
+MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse
+Dwellings and 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or
+Escarpment 
+>25% 
+Septic tank 
+Grease trap 
+Distribution box 
+Dosing chamber 
+Diversion valve 
+or box 
+Advanced 
+treatment unit 
+50 10 25 10 f -- -- 
+Disposal area 100 
+a, c, d, e, 
+h, i 
+10 100 b 10 g 10 15
+MINIMUM ISOLATION DISTANCES (FEET) FOR LARGE SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse Dwellings & 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or 
+Escarpment 
+>25% 
+```
 
-**Title:** Hydrogeologic Suitability Report
-**Page:** 137
-**Path:** 6 6.12.1 Permitting > 6.5 Large System Permitting > 6.5.4 Operation Permit Re-Issuance > 6.5.4.3 CMR Requirements
+Dependency check: every section and exhibit this rule depends on has been read.
 
-**Section text:**
-> 6.5.4.3.2.1 Hydrogeological reports must be signed and sealed by a 
-Delaware-licensed professional geologist (PG) and must, at a minimum, 
-include the following: 
-6.5.4.3.2.1.1 The current number of units connected to the system must 
-be reported. Also report the number of units connected for each year of 
-the five (5) year reporting period and location of units. 
-6.5.4.3.2.1.2 A map of the curren
+**What was read, and what to watch for**
 
-**Cross-references:**
-- Exhibit W: Exhibit W
+Read page 173. The 50 foot value is shared by six components on one table row: septic tank, grease trap, distribution box, dosing chamber, diversion valve or box, and advanced treatment unit. This rule covers the septic tank only, because that is the component a residential site plan always shows. A reviewer should decide whether the other five components warrant their own rules or whether the extractor should report the minimum distance across all tank-side components. This cell carries no note letters.
 
-**Definitions used:**
-- "Disposal"
+**Remedy shown to the applicant**
 
-**Candidates:**
-- p.137 numbers=5,6.5 [obligation, setback]
-  > Also report the number of units connected for each year of the five (5) year reporting period and location of units. 6.5
-- p.137 numbers=6.5 [obligation]
-  > Trends identified in the data should be discussed. 6.5.4.3.2.1.5 Water-table hydrographs must be provided to demonstrate
-- p.138 numbers=50,55
-  > Example: the simulated pre-system operation water table was 50 feet msl and the simulated post-system or basin mound was
-- p.138 numbers=52,40
-  > An observed mound of 52 feet msl would constitute 40% of the simulated mound.
+Move the septic tank so it is at least 50 feet from every well shown on the site plan.
 
----
+**Certification**
 
-### Section 4.12.5.5 (3 candidates, 1 obligations, 0 setbacks)
-
-**Title:** Notify the Department 24 hours prior to construction start up to receive
-**Page:** 37
-**Path:** 4 5.6.1 Application > 4.12 Responsibilities of Licensees > 4.12.5 All Class E licensed system co
-
-**Section text:**
-> an authorization number. This authorization number will expire after 14 calendar 
-days. Upon issuance of Class E license, system contractors must notify the 
-Department 48 hours prior to initial six (6) construction start ups to receive an 
-authorization number.
-
-**Candidates:**
-- p.37 numbers=4.12,24
-  > 4.12.5.5 Notify the Department 24 hours prior to construction start up to receive an authorization number.
-- p.37 numbers=14
-  > This authorization number will expire after 14 calendar days.
-- p.37 numbers=48,6 [obligation]
-  > Upon issuance of Class E license, system contractors must notify the Department 48 hours prior to initial six (6) constr
-
----
-
-### Section 4.16 (3 candidates, 2 obligations, 0 setbacks)
-
-**Title:** Licenses issued pursuant to this Section are not transferable and shall expire on
-**Page:** 42
-**Path:** 4 5.6.1 Application
-
-**Section text:**
-> December 31st of each year. A license may be renewed for one (1) year without 
-examination for an ensuing year provided the licensee submits a completed license 
-renewal form (provided by the Department) by November 30th of each year, shows proof of 
-the number of hours of continuing education training and pays any applicable renewal fees 
-adopted by the Department. If the licensee fails to renew 
-
-**Candidates:**
-- p.42 numbers=4.16 [obligation]
-  > 4.16 Licenses issued pursuant to this Section are not transferable and shall expire on December 31st of each year.
-- p.42 numbers=1
-  > A license may be renewed for one (1) year without examination for an ensuing year provided the licensee submits a comple
-- p.42 numbers=1 [obligation]
-  > If the licensee fails to renew the license for more than one (1) year the licensee must reapply for the license and take
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 5.2.1.3.1 (3 candidates, 2 obligations, 2 setbacks)
+## 6. ISO-006-septic-tank-to-watercourse
 
-**Title:** Percolation rates, actual or estimated, > 120 minutes per inch (mpi)
-**Page:** 43
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.1 Site Evaluation Procedures > 5.2.1.3 The Class D soil scientist sha
+- Requirement: **>= 25 feet**
+- Parameter checked: `dist_tank_to_watercourse`
+- Citation: **Exhibit C, page 173**
+- Severity if failed: return
+- Applies when: `system_scale` = small
+- Verified: **False**
 
-**Section text:**
-> are very slowly permeable and constitute a limiting layer. Such sites shall not 
-be suitable for new construction, except when; 
-5.2.1.3.1.1 Very slowly permeable horizon(s) can be removed (see sand￾lining); or 
-5.2.1.3.1.2 The required separation distance above the very slowly 
-permeable horizon(s) can be met and maintained (unsaturated permeable 
-soils over very slowly permeable soils); or 
-5.2.
+The septic tank must be at least 25 feet from a watercourse.
 
-**Candidates:**
-- p.43 numbers=5.2,120
-  > 5.2.1.3.1 Percolation rates, actual or estimated, > 120 minutes per inch (mpi) are very slowly permeable and constitute 
-- p.44 numbers=44,5.2,24,75 [obligation, setback]
-  > 44 5.2.1.3.1.4.1 For systems with a separation distance of 24 inches the assigned percolation rate must be determined ba
-- p.44 numbers=24,60 [obligation, setback]
-  > Where the separation distance is > 24 inches, the minimum percolation rate assigned will be 60 mpi.
+**Verbatim text from the regulation**
 
----
+> MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Septic tank Grease trap Distribution box Dosing chamber Diversion valve or box Advanced treatment unit", column "Watercourse": 25
 
-### Section 5.2.1.4 (3 candidates, 2 obligations, 0 setbacks)
+**Exhibit C content, page 173**
 
-**Title:** A site drawing drawn to scale showing the information referenced in Section
-**Page:** 44
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.1 Site Evaluation Procedures
+```
+MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse
+Dwellings and 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or
+Escarpment 
+>25% 
+Septic tank 
+Grease trap 
+Distribution box 
+Dosing chamber 
+Diversion valve 
+or box 
+Advanced 
+treatment unit 
+50 10 25 10 f -- -- 
+Disposal area 100 
+a, c, d, e, 
+h, i 
+10 100 b 10 g 10 15
+MINIMUM ISOLATION DISTANCES (FEET) FOR LARGE SYSTEMS
+Components Well Water 
+Supply 
+Pressure 
+Line 
+Watercourse Dwellings & 
+Property Lines 
+Other 
+active 
+on-lot 
+systems 
+Top of Bank 
+or 
+Escarpment 
+>25% 
+```
 
-**Section text:**
-> 5.2.1.9. All site drawings are required to show a reference point (e.g. a numbered 
-utility pole, telephone or electrical box, building(s), property corners or fixed survey 
-marker). A minimum of two such reference points shall be noted on the site drawing. 
-Site drawing(s) shall be based on a whole number scale not to exceed one (1) inch 
-equals 100 feet. Acceptable scales are: 1 inch = 10, 20, 3
+Dependency check: every section and exhibit this rule depends on has been read.
 
-**Cross-references:**
-- Section 5.2.1.9: The report shall contain, at a minimum, observatio
-  > characteristics, if present:
+**What was read, and what to watch for**
 
-**Candidates:**
-- p.44 numbers=1,100 [obligation]
-  > Site drawing(s) shall be based on a whole number scale not to exceed one (1) inch equals 100 feet.
-- p.44 numbers=1,10,20,30,40
-  > Acceptable scales are: 1 inch = 10, 20, 30, 40, 50, 60, 80 or 100 feet.
-- p.44 numbers=8.5,11 [obligation]
-  > Any site drawing exceeding the dimensions of 8.5 inches X 11 inches must be submitted in duplicate.
+Read page 173. Note that the tank row value of 25 feet is a different and smaller distance than the disposal area row value of 100 feet in the same column, and that the tank cell carries no note letters while the disposal area cell carries note b. Reading across the wrong row here would understate the disposal area requirement by 75 feet, which is why the column alignment was verified against pdfplumber extract_tables as well as the text layer.
 
----
+**Remedy shown to the applicant**
 
-### Section 5.2.1.11 (3 candidates, 2 obligations, 0 setbacks)
+Move the septic tank so it is at least 25 feet from the watercourse.
 
-**Title:** Once received, the report shall be reviewed for compliance with current
-**Page:** 45
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.1 Site Evaluation Procedures
+**Certification**
 
-**Section text:**
-> Regulations by a DNREC Environmental Scientist with a soil science background. If 
-the report is in non-compliance, the Class D soil scientist shall be notified. The Class 
-D soil scientist shall contact the Department and follow up with written 
-correspondence to rectify the discrepancy. The Department shall not modify any site 
-evaluation report unless requested by the Class D soil scientist. Th
-
-**Candidates:**
-- p.46 numbers=10 [obligation]
-  > The review process, which may include a field check, shall take place within 10 working days of receipt.
-- p.46 numbers=10 [obligation]
-  > If approval cannot be issued within 10 working days, the property owner or authorized agent shall be notified of the del
-- p.46 numbers=72
-  > Site evaluations' requiring test pits should be scheduled with the Department 72 hours prior to conducting the site eval
-
----
-
-### Section 5.3.2.6.4 (3 candidates, 0 obligations, 0 setbacks)
-
-**Title:** Calculate the effective absorption width (EAW) in feet using the
-**Page:** 56
-
-**Section text:**
-> following equation: 
-EAW = HAR/(1.2 – LTAR) 
-Where: 
-HAR = horizontal acceptance rate (see Section 5.3.2.6.2) 
-LTAR = long term acceptance rate (see Section 5.3.2.6.1) 
-NOTE: An effective width of four (4) to nine (9) feet is appropriate. The 
-designer should use an EAW that is  the calculated value. If the calculated 
-value is > 10 feet then limit the EAW to 10 feet.
-
-**Cross-references:**
-- Section 5.3.2.6.2: Calculate the horizontal acceptance rate (HAR) in 
-  > following equation: 
-HAR = sum (incremental loading rate (in site evaluation) (see Exhibit V)) X 
-(thickness of each horizon (inches) to a depth of 20
-- Section 5.3.2.6.1: Calculate the long term acceptance rate (LTAR) (se
-
-**Candidates:**
-- p.56 numbers=5.3
-  > 5.3.2.6.4 Calculate the effective absorption width (EAW) in feet using the following equation:
-- p.56 numbers=4,9
-  > An effective width of four (4) to nine (9) feet is appropriate.
-- p.56 numbers=10,10
-  > If the calculated value is > 10 feet then limit the EAW to 10 feet.
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 5.3.7.3 (3 candidates, 3 obligations, 0 setbacks)
+## 7. PERC-001-site-maximum-percolation-rate
 
-**Title:** All gravity distribution laterals shall be thin walled or Sch. 40 PVC and shall
-**Page:** 58
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.7 Gravity Distribution Requireme
+- Requirement: **<= 120 minutes per inch**
+- Parameter checked: `perc_rate`
+- Citation: **5.2.4.2.5.7, page 52**
+- Severity if failed: return
+- Applies when: always, the requirement is unconditional
+- Verified: **False**
 
-**Section text:**
-> be four (4) inches in diameter. Perforated PVC pipe shall have 3
-/8 to 3
-/4 inch diameter 
-holes a maximum of 30 inches on center. Coiled and corrugated piping shall not be 
-used. A grade of less than two (2) inches per 100 feet shall be provided for all gravity 
-distribution laterals.
+A system may not be placed on soil with a percolation rate slower than 120 minutes per inch.
 
-**Candidates:**
-- p.58 numbers=5.3,40,4 [obligation]
-  > 5.3.7.3 All gravity distribution laterals shall be thin walled or Sch. 40 PVC and shall be four (4) inches in diameter.
-- p.58 numbers=3,8,3,4,30 [obligation]
-  > Perforated PVC pipe shall have 3 /8 to 3 /4 inch diameter holes a maximum of 30 inches on center.
-- p.58 numbers=2,100 [obligation]
-  > A grade of less than two (2) inches per 100 feet shall be provided for all gravity distribution laterals.
+**Verbatim text from the regulation**
 
----
+> On-site wastewater treatment and disposal systems shall not be placed on those portions of any sites that have percolation rates slower than 120 mpi.
 
-### Section 5.3.9.3 (3 candidates, 3 obligations, 0 setbacks)
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.4 Soil Percolation Rate Determination > 5.2.4.2 Soil Percolation Test > 5.2.4.2.5 The following procedures shall be used f
 
-**Title:** All pressure distribution laterals shall be Sch. 40 PVC pipe with diameters
-**Page:** 59
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.9 Pressure distribution systems 
+**Rest of the cited section**
 
-**Section text:**
-> as determined by a Class C designer. Minimum hole diameters for perforated 
-pressure distribution laterals shall be 5
-/32 to 1
-/2 inch maximum and spacing intervals 
-as determined by a Class C designer and be placed on center along the length of 
-the pipe. Maximum hole spacing shall be determined by percolation rates as 
-follows: 
- Percolation Rate Maximum Hole Spacing 
- 20 - 25 MPI 60 inches 
- 30
+> arithmetic average of all percolation tests conducted. Percolation rates slower than 120 minutes per inch (mpi) are unacceptable and shall not be used to determine the arithmetic average percolation rate but shall be reported. On-site wastewater treatment and disposal systems shall not be placed on those portions of any sites that have percolation rates slower than 120 mpi.
 
-**Candidates:**
-- p.59 numbers=5,32,1,2 [obligation]
-  > Minimum hole diameters for perforated pressure distribution laterals shall be 5 /32 to 1 /2 inch maximum and spacing int
-- p.59 numbers=20,25,60,30,60 [obligation]
-  > Percolation Rate Maximum Hole Spacing 20 - 25 MPI 60 inches 30 - 60 MPI 72 inches 65 - 120 MPI 96 inches NOTE:
-- p.59 numbers=5 [obligation]
-  > Trench systems designed on slopes > 5% must provide for balanced trench loading rates (gpd/ft2 ).
+**Defined terms used in this section**
+
+- "Disposal" (defined in 2.0)
+- "Treatment" (defined in 2.0)
+
+Dependency check: every section and exhibit this rule depends on has been read.
+
+**What was read, and what to watch for**
+
+Read page 52. This is the cleanest threshold in the regulation: the sentence states the direction in words rather than a symbol, so it does not depend on the missing glyph problem that affected other passages. The same 120 minutes per inch limit is stated three more times for specific system types, which corroborates it: Section 5.2.1.3.1 on page 43 calls rates over 120 minutes per inch very slowly permeable and a limiting layer, Section 5.3.12.1.4.1 on page 61 forbids seepage trenches and beds above 120, and Section 5.3.12.4.4 on page 62 forbids elevated sand mounds above 120. applies_to is empty because the prohibition is written against any site and any system, not a subset. Section 5.2.4.2.5.7 also states that rates slower than 120 are excluded from the arithmetic average but must still be reported, so a reviewer should confirm which number the application is quoting: the site average or an individual test hole.
+
+**Remedy shown to the applicant**
+
+The soil in the proposed disposal area percolates too slowly for any system under these Regulations. Relocate the disposal area to soil that percolates at 120 minutes per inch or faster, or apply for an innovative or alternative system.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 5.3.12.1.2 (3 candidates, 1 obligations, 0 setbacks)
+## 8. PERC-002-percolation-test-hole-count
 
-**Title:** Slope: 0 - 15%: Bed systems cannot be sited on slopes > 2%, unless
-**Page:** 60
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.12 Conventional On-Site Wastewate > 5.3.12.1 All Full Depth Gravity and Cap
+- Requirement: **>= 3 holes**
+- Parameter checked: `perc_test_holes`
+- Citation: **5.2.4.2.2, page 51**
+- Severity if failed: return
+- Applies when: always, the requirement is unconditional
+- Verified: **False**
 
-**Section text:**
-> otherwise approved by the Department. All systems must be constructed with 
-level bottoms and shall incorporate construction procedures prohibiting 
-equipment from entering the excavation. Trench systems on slopes in excess of
+A soil percolation test must consist of three test holes.
 
-**Candidates:**
-- p.60 numbers=5.3,0,15
-  > 5.3.12.1.2 Slope: 0 - 15%:
-- p.60 numbers=2
-  > Bed systems cannot be sited on slopes > 2%, unless otherwise approved by the Department.
-- p.61 numbers=61,15 [obligation]
-  > 61 15% shall be permitted only if the design is prepared by a licensed Class C designer.
+**Verbatim text from the regulation**
 
----
+> One (1) soil percolation test shall consist of three (3) test holes.
 
-### Section 5.3.12.1.4 (3 candidates, 1 obligations, 1 setbacks)
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.4 Soil Percolation Rate Determination > 5.2.4.2 Soil Percolation Test
 
-**Title:** Percolation Rates:
-**Page:** 61
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.12 Conventional On-Site Wastewate > 5.3.12.1 All Full Depth Gravity and Cap
+Dependency check: every section and exhibit this rule depends on has been read.
 
-**Section text:**
-> 5.3.12.1.4.1 6 - 120 mpi: Gravity distribution systems may be allowed unless 
-otherwise required by these Regulations. Construction of seepage trenches 
-and beds in soils with percolation rates > 120 mpi shall not be permitted. 
-5.3.12.1.4.2 < 6 mpi: A pressurized distribution system is required for 
-seepage trenches or beds. The trench or bed may be placed between 12 
-and 24 inches in order to ma
+**What was read, and what to watch for**
 
-**Candidates:**
-- p.61 numbers=5.3,5.3,6,120
-  > 5.3.12.1.4 Percolation Rates: 5.3.12.1.4.1 6 - 120 mpi:
-- p.61 numbers=120,5.3,6 [obligation]
-  > Construction of seepage trenches and beds in soils with percolation rates > 120 mpi shall not be permitted. 5.3.12.1.4.2
-- p.61 numbers=12,24,36 [setback]
-  > The trench or bed may be placed between 12 and 24 inches in order to maintain 36 inch separation distance between rapidl
+Read pages 51 and 52. Section 5.2.4.2.5.1 on page 51 states the same requirement from the other direction, as a minimum of three test holes dug within the proposed installation area, and permits the Department to require additional tests. Written as a minimum rather than an equality for that reason. Section 5.2.4.2.5.6 on page 52 permits a hole to be excluded from the analysis if the licensed percolation tester determines it is uncharacteristic of the site, but requires it to be listed on the application, so a reviewer checking this should count holes listed rather than holes averaged.
+
+**Remedy shown to the applicant**
+
+Record the results of all three percolation test holes on the application.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 5.3.12.3.3 (3 candidates, 2 obligations, 0 setbacks)
+## 9. SEP-001-limiting-zone-below-trench-bottom
 
-**Title:** Depth to Limiting Zone:  24 inches to evidence of a limiting zone.
-**Page:** 62
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.12 Conventional On-Site Wastewate > 5.3.12.3 Wisconsin At-Grade
+- Requirement: **>= 36 inches**
+- Parameter checked: `limiting_zone_below_trench_bottom`
+- Citation: **5.3.12.1.3, page 61**
+- Severity if failed: return
+- Applies when: `system_type` = conventional, gravity
+- Verified: **False**
 
-**Section text:**
-> Replacement systems must have a limiting zone  20 inches and in soils without 
-an umbric epipedon or prone to ponding and/or flooding. Class D soil scientist 
-shall verify these site characteristics are applicable prior to prescribing the 
-Wisconsin at-grade as a disposal option. The soil scientist must also specify the 
-percolation rate for each soil horizon to a depth of 36 inches and the incre
+For a gravity trench or bed system, the limiting zone must be at least 3 feet below the bottom of the trench.
 
-**Cross-references:**
-- Exhibit V: Exhibit V
+**Verbatim text from the regulation**
 
-**Definitions used:**
-- "Disposal"
+> The limiting zone shall be a minimum of three (3) feet below the bottom of the trench
 
-**Candidates:**
-- p.62 numbers=5.3,24
-  > 5.3.12.3.3 Depth to Limiting Zone:  24 inches to evidence of a limiting zone.
-- p.62 numbers=20 [obligation]
-  > Replacement systems must have a limiting zone  20 inches and in soils without an umbric epipedon or prone to ponding an
-- p.62 numbers=36,20 [obligation]
-  > The soil scientist must also specify the percolation rate for each soil horizon to a depth of 36 inches and the incremen
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.12 Conventional On-Site Wastewater Treatmen > 5.3.12.1 All Full Depth Gravity and Capping Fill
 
----
+**Rest of the cited section**
 
-### Section 5.3.12.5.2 (3 candidates, 1 obligations, 0 setbacks)
+> (3) feet below the bottom of the trench t 48 inches beneath the soil surface.
 
-**Title:** Slope: 0 – 15%. Bed systems cannot be sited on slopes > 2%, unless
-**Page:** 62
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.12 Conventional On-Site Wastewate > 5.3.12.5 All Pressure-Dosed Full Depth 
+Dependency check: every section and exhibit this rule depends on has been read.
 
-**Section text:**
-> otherwise approved by the Department. All designs must be constructed with 
-level bottoms and shall prohibit equipment from entering the excavation. Slopes 
-in excess of 15% shall incorporate construction procedures such as, but not 
-limited to, equipment to be used, installation methods (e.g. trenches on contour, 
-one trench at a time), and proper site restoration.
+**What was read, and what to watch for**
 
-**Candidates:**
-- p.62 numbers=5.3,0,15
-  > 5.3.12.5.2 Slope: 0 - 15%.
-- p.62 numbers=2
-  > Bed systems cannot be sited on slopes > 2%, unless otherwise approved by the Department.
-- p.62 numbers=15 [obligation]
-  > Slopes in excess of 15% shall incorporate construction procedures such as, but not limited to, equipment to be used, ins
+Read pages 60 and 61. Section 5.3.12.1 is titled "All Full Depth Gravity and Capping Fill Gravity Trench and Bed Treatment and Disposal Systems", which is the conventional gravity system this rule set targets. Threshold converted from the 3 feet in the text to 36 inches so it shares units with the other separation rule; a reviewer should confirm the unit conversion is acceptable or change the rule to feet. IMPORTANT: the quoted sentence continues past where this quote stops, and the continuation is not safely readable. The raw extraction is "a minimum of three (3) feet below the bottom of the trench t 48 inches beneath the soil surface", where "t" is a glyph PDFium failed to map. Comparing against the parallel wording in Section 5.3.12.5.3 on page 62, which reads "48 inches from original grade and three (3) feet below bottom of filter aggregate", the missing character is most likely "and" or a greater-than-or-equal sign, which would make a 48 inch depth below the soil surface a second and separate requirement. That second requirement was NOT promoted to a rule because the operator cannot be read from the text. A reviewer with the paper regulation should settle it and add the rule.
+
+**Remedy shown to the applicant**
+
+Raise the trench bottom or relocate the disposal area so at least 36 inches of soil separate the trench bottom from the limiting zone.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
 
-### Section 5.3.14.9 (3 candidates, 3 obligations, 0 setbacks)
+## 10. SEP-002-conventional-limiting-zone-minimum-depth
 
-**Title:** All inlet and outlet connections shall be sanitary tees or baffles constructed
-**Page:** 65
-**Path:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.14 Septic Tanks
+- Requirement: **>= 20 inches**
+- Parameter checked: `limiting_zone_depth`
+- Citation: **5.2.4.2.4.2, page 51**
+- Severity if failed: return
+- Applies when: `system_type` = conventional, gravity
+- Verified: **False**
 
-**Section text:**
-> of pre-cast concrete or PVC. Inlet openings may have a minimum diameter 
-equivalent to the diameter of the house sewer but in no instance shall the diameter 
-be less than three (3) inches. The outlet invert shall be two (2) inches below the inlet 
-invert. The inlet and outlet baffles or sanitary tees shall extend at least 12 inches 
-below the liquid level, but to a level no deeper than 40% of the 
+A site whose limiting zone is shallower than 20 inches is unsuitable for a conventional system.
 
-**Candidates:**
-- p.65 numbers=3 [obligation]
-  > Inlet openings may have a minimum diameter equivalent to the diameter of the house sewer but in no instance shall the di
-- p.65 numbers=2 [obligation]
-  > The outlet invert shall be two (2) inches below the inlet invert.
-- p.65 numbers=12,40 [obligation]
-  > The inlet and outlet baffles or sanitary tees shall extend at least 12 inches below the liquid level, but to a level no 
+**Verbatim text from the regulation**
+
+> If the limiting zone occurs at less than 20 inches from the surface, the site is unsuitable for a conventional on-site wastewater treatment and disposal system.
+
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.4 Soil Percolation Rate Determination > 5.2.4.2 Soil Percolation Test > 5.2.4.2.4 The depth of the percolation test holes
+
+**Rest of the cited section**
+
+> surface, the site is unsuitable for a conventional on-site wastewater treatment and disposal system. However, if replacing a failing or malfunctioning system, Section 5.2.4.2.4.1 should be used without regard for the 20 inch limiting condition. In situations where sand-lining through an impermeable or less permeable horizon within the top 48 inches, a percolation test should be performed within the soil zone which is controlling the water movement vertically and/or horizontally beneath the restrictive material to a depth of 60 inches.
+
+**Cross references, resolved**
+
+- Section 5.2.4.2.4: The depth of the percolation test holes shall not be determined until 
+  > site evaluation is completed and a limiting zone, if any, is identified. The depth of the percolation test holes shall be as follows:
+
+**Defined terms used in this section**
+
+- "Disposal" (defined in 2.0)
+- "Treatment" (defined in 2.0)
+
+Dependency check: every section and exhibit this rule depends on has been read.
+
+**What was read, and what to watch for**
+
+Read page 51. The sentence states the direction in words, so it does not depend on a symbol. The same section carries an explicit exception a reviewer must apply: when replacing a failing or malfunctioning system, Section 5.2.4.2.4.1 is used "without regard for the 20 inch limiting condition", so this rule must not fire on a repair or replacement application. applies_to cannot express that yet because it tests equality against facts and the condition needed is the absence of a replacement flag. Until the extractor supplies a construction type fact, a reviewer should read a failure of this rule on a replacement application as not applicable. This is the clearest case in the set where applies_to is too weak for the regulation, and it should be raised before certification.
+
+**Remedy shown to the applicant**
+
+The site is unsuitable for a conventional system at this limiting zone depth. Consider an alternative system type, or a replacement system design under the exception in Section 5.2.4.2.4.2.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
 
 ---
+
+## 11. FLOW-001-residential-minimum-design-flow
+
+- Requirement: **>= 240 gallons per day**
+- Parameter checked: `design_flow`
+- Citation: **5.3.3.3, page 56**
+- Severity if failed: return
+- Applies when: `use_type` = residential
+- Verified: **False**
+
+The design flow for a residential dwelling must be at least 240 gallons per day.
+
+**Verbatim text from the regulation**
+
+> The minimum design flow for any commercial property shall be 120 gallons per day and residential dwellings shall be 240 gallons per day.
+
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.3 Wastewater Design Flow Rates
+
+**Rest of the cited section**
+
+> family, multiple family, manufactured homes, and apartments served by on-site wastewater treatment and disposal systems shall be 120 gallons per day per bedroom. The minimum design flow for any commercial property shall be 120 gallons per day and residential dwellings shall be 240 gallons per day. Credit for water conservation devices will be accounted for according to current Department guidelines.
+
+**Defined terms used in this section**
+
+- "Disposal" (defined in 2.0)
+- "Treatment" (defined in 2.0)
+
+Dependency check: every section and exhibit this rule depends on has been read.
+
+**What was read, and what to watch for**
+
+Read page 56. The quoted sentence sets two different floors in one sentence, 120 gallons per day for commercial and 240 for residential, so applies_to restricts this rule to residential use and a separate rule would be needed for commercial. The 240 gallon floor interacts with the per bedroom figure in FLOW-002: a two bedroom dwelling at 120 gallons per bedroom reaches exactly 240, so the floor only binds on a one bedroom dwelling. Section 5.3.5.1 on page 57 allows a 25 percent reduction in design flow for water conservation, but Section 5.3.5.2 states that reduction is not permissible for new construction, so a reviewer checking a new build should not accept a reduced figure.
+
+**Remedy shown to the applicant**
+
+Size the system for at least 240 gallons per day, which is the floor for a residential dwelling regardless of bedroom count.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
+
+---
+
+## 12. FLOW-002-residential-flow-per-bedroom
+
+- Requirement: **>= 120 gallons per day per bedroom**
+- Parameter checked: `design_flow_per_bedroom`
+- Citation: **5.3.3.3, page 56**
+- Severity if failed: return
+- Applies when: `use_type` = residential
+- Verified: **False**
+
+The design flow for a residential dwelling must be at least 120 gallons per day per bedroom.
+
+**Verbatim text from the regulation**
+
+> The design wastewater flow from residential dwellings, including single family, multiple family, manufactured homes, and apartments served by on-site wastewater treatment and disposal systems shall be 120 gallons per day per bedroom.
+
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.3 Wastewater Design Flow Rates
+
+**Rest of the cited section**
+
+> family, multiple family, manufactured homes, and apartments served by on-site wastewater treatment and disposal systems shall be 120 gallons per day per bedroom. The minimum design flow for any commercial property shall be 120 gallons per day and residential dwellings shall be 240 gallons per day. Credit for water conservation devices will be accounted for according to current Department guidelines.
+
+**Defined terms used in this section**
+
+- "Disposal" (defined in 2.0)
+- "Treatment" (defined in 2.0)
+
+Dependency check: every section and exhibit this rule depends on has been read.
+
+**What was read, and what to watch for**
+
+Read page 56. The regulation states this as an equality, "shall be 120 gallons per day per bedroom", not as a minimum. It is written here as a minimum because a system sized above the requirement is not a deficiency a reviewer would return, while one sized below it is. A reviewer should confirm that reading, because it is an interpretation and not what the text literally says. This rule needs a derived fact: design flow divided by bedroom count. If the extractor cannot read the bedroom count from the packet the rule returns UNKNOWN rather than passing, which is the intended behaviour.
+
+**Remedy shown to the applicant**
+
+Size the system for at least 120 gallons per day for each bedroom in the dwelling.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
+
+---
+
+## 13. SLOPE-001-gravity-bed-maximum-slope
+
+- Requirement: **<= 2 percent**
+- Parameter checked: `disposal_slope`
+- Citation: **5.3.12.1.2, page 60**
+- Severity if failed: return
+- Applies when: `system_type` = conventional, gravity; `absorption_type` = bed
+- Verified: **False**
+
+A bed system may not be sited on a slope steeper than 2 percent.
+
+**Verbatim text from the regulation**
+
+> Bed systems cannot be sited on slopes > 2%, unless otherwise approved by the Department.
+
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.3 Permitting > 5.3.12 Conventional On-Site Wastewater Treatmen > 5.3.12.1 All Full Depth Gravity and Capping Fill
+
+**Rest of the cited section**
+
+> otherwise approved by the Department. All systems must be constructed with level bottoms and shall incorporate construction procedures prohibiting equipment from entering the excavation. Trench systems on slopes in excess of
+
+Dependency check: every section and exhibit this rule depends on has been read.
+
+**What was read, and what to watch for**
+
+Read pages 60 and 61. The comparison direction is explicit in the text as a greater-than sign, so this passage is not affected by the missing glyph problem. The trailing clause "unless otherwise approved by the Department" is a real discretionary exception, so a failure here is a question for the reviewer rather than a settled deficiency, and the remedy is worded to say so. Severity is return rather than advisory because an application showing a bed on a 5 percent slope with no documented approval is incomplete as submitted. The same section allows trench systems from 0 to 15 percent and permits steeper than 15 percent only where a licensed Class C designer prepared the design, which is a separate rule not promoted here because the condition is a licence class rather than a measurement.
+
+**Remedy shown to the applicant**
+
+Relocate the bed to ground at 2 percent slope or flatter, change to a trench system, or document the Department approval permitting the steeper slope.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
+
+---
+
+## 14. SITE-001-site-evaluation-report-present
+
+- Requirement: **no threshold (presence check)**
+- Parameter checked: `site_evaluation_report`
+- Citation: **5.2.1.1, page 43**
+- Severity if failed: return
+- Applies when: always, the requirement is unconditional
+- Verified: **False**
+
+A site evaluation report prepared by a Class D soil scientist must be obtained before a construction permit.
+
+**Verbatim text from the regulation**
+
+> Any person applying for a permit to install a new or replacement on-site wastewater treatment and disposal system shall first obtain a site evaluation report prepared by a Class D soil scientist.
+
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.1 Site Evaluation Procedures
+
+**Rest of the cited section**
+
+> permit for an on-site wastewater treatment and disposal system. Any person applying for a permit to install a new or replacement on-site wastewater treatment and disposal system shall first obtain a site evaluation report prepared by a Class D soil scientist. The Department shall only conduct site evaluations for Home Rehabilitation Loan Programs (HRLP), block grant households, State Revolving Fund (SRF) sites and other qualifying income programs with similar criteria.
+
+**Defined terms used in this section**
+
+- "Disposal" (defined in 2.0)
+- "Treatment" (defined in 2.0)
+
+Dependency check: every section and exhibit this rule depends on has been read.
+
+**What was read, and what to watch for**
+
+Read page 43. This rule takes no threshold, so certifying it means confirming the requirement exists and that the packet is expected to contain the report, not confirming a number. Section 5.2.1.2 on page 43 lists what the report must contain at a minimum: approval pages, report pages, site drawing, soil profile notes, zoning verification form, and the appropriate fee, and each of those is a candidate rule of its own. The section carves out Department-conducted evaluations for Home Rehabilitation Loan Programs, block grant households, State Revolving Fund sites and similar income qualifying programs, which does not change whether a report is required but does change who prepares it.
+
+**Remedy shown to the applicant**
+
+Attach the site evaluation report prepared by a Class D soil scientist.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
+
+---
+
+## 15. SITE-002-wells-within-150-feet-shown
+
+- Requirement: **no threshold (presence check)**
+- Parameter checked: `wells_within_150_feet_shown`
+- Citation: **5.2.1.5, page 44**
+- Severity if failed: return
+- Applies when: always, the requirement is unconditional
+- Verified: **False**
+
+The site drawing must show every on-site and adjacent well within 150 feet of the approved soils area.
+
+**Verbatim text from the regulation**
+
+> Site drawings will show the location of all on-site and adjacent wells within 150 feet of the approved soils area.
+
+**Where this sits:** 5 6.5.1.4 Design Engineer Report > 5.2 Soil Investigations > 5.2.1 Site Evaluation Procedures
+
+**Rest of the cited section**
+
+> 150 feet of the approved soils area. The following procedure shall be used in all cases when on-site or adjacent well(s) cannot be located. For instances where the on-site or adjacent well(s) are below ground and the homeowner or adjacent property owner states that the well is located in a certain area, this information shall suffice for verification of well location. Any well(s) that cannot be verified must be researched through the Water Supply Section of the Department. The search attempts to locate any well(s) that are near the affected parcel. If, after this search is completed, the well location(s) cannot be identified the Class D soil scientist can state “records were researched under this property owner’s name and no information was found”. The Department then sends a letter to the adjacent well owners notifying them of the need to locate their well(s) due to the future installat
+
+**Defined terms used in this section**
+
+- "Disposal" (defined in 2.0)
+- "Treatment" (defined in 2.0)
+
+Dependency check: every section and exhibit this rule depends on has been read.
+
+**What was read, and what to watch for**
+
+Read pages 44 and 45. Section 5.2.1.9.4 on page 45 states the same requirement in the list of report contents and adds that wells must be measured from two reference points or established survey control. The 150 foot radius here is a drawing requirement and is deliberately larger than the 100 foot isolation distance in ISO-001, so that a well which constrains the design cannot be omitted for being outside the setback. Section 5.2.1.5 also sets out what to do when a well cannot be located, including a Water Supply Section records search and a 15 day notice to adjacent owners, after which the system must be designed to maximise the distance from the property line. A packet using that path is not deficient, so this rule is satisfied by either the wells being shown or that documentation being present, which the present operator cannot express on its own. A reviewer should decide whether the extractor sets this fact for the documented-search case.
+
+**Remedy shown to the applicant**
+
+Mark every on-site and adjacent well within 150 feet of the approved soils area on the site drawing, or record that a well could not be located and the search that was performed.
+
+**Certification**
+
+- [ ] Quote matches the PDF at the cited page
+- [ ] Threshold and units are correct
+- [ ] `applies_to` matches the systems governed
+- [ ] Caveats above are acceptable
+- Checked by: ____________________  Date: ____________
+
+---
+
+## Candidates read and not promoted
+
+A threshold nobody could confirm is a rejection, not a guess. These were
+read and left out, with the reason. Several are promotable once the
+extractor produces one more fact, or once someone checks the paper copy.
+
+### Limiting zone at least 48 inches beneath the soil surface
+
+- Source: 5.3.12.1.3, page 61
+- Why not promoted: The operator is unreadable. The sentence extracts as 'a minimum of three (3) feet below the bottom of the trench t 48 inches beneath the soil surface', where 't' is a glyph PDFium failed to map. Comparing the parallel wording in 5.3.12.5.3 on page 62 suggests the missing character joins two separate requirements, but that is inference, not reading. The 3 feet below trench bottom half of the same sentence was promoted as SEP-001 because it is spelled out in words.
+
+### Minimum design percolation rate of 20 minutes per inch
+
+- Source: 5.3.2.1, page 55
+- Why not promoted: Real requirement, wrong parameter. The text forbids designing with a rate below 20 minutes per inch, which constrains the design figure, not the measured site rate. Sections 5.3.2.2 through 5.3.2.5 confirm this by repeating 'minimum rate is 20 mpi for design' while still allowing faster soils, and 5.3.2.4 requires a pressurized system below 6 mpi rather than rejecting the site. Mapping this onto the measured perc rate would fail sandy sites the regulation permits.
+
+### Minimum of three soil borings or two test pits per acre
+
+- Source: 5.2.1.9.8, page 45
+- Why not promoted: Two alternative satisfying conditions joined by 'or' cannot be one numeric comparison, and the engine has no operator for 'either A or B'. Promoting the borings half alone would fail a packet that correctly used test pits.
+
+### Trench systems permitted on slopes steeper than 15 percent
+
+- Source: 5.3.12.1.2, page 60
+- Why not promoted: The condition is a licence class, not a measurement: steeper than 15 percent is allowed only where a licensed Class C designer prepared the design. The threshold is checkable but the exemption depends on a fact about the designer that the extractor does not yet produce, so the rule would fire on compliant applications.
+
+### Public or industrial well isolation distance of 150 feet
+
+- Source: Exhibit C note d, page 174
+- Why not promoted: Confirmed in the source and worth promoting later, but it needs a fact distinguishing a public or industrial well from a domestic one, which the extractor does not produce. Shipping it without that fact would either never fire or fire on every domestic well. Recorded in ISO-001 notes so the reviewer sees the interaction.
+
+### Assigned percolation rate floor of 60 or 75 minutes per inch
+
+- Source: 5.2.1.3.1.4.1, page 44
+- Why not promoted: The operator is unreadable, same glyph problem: 'For systems with a separation distance of  24 inches'. Which side of 24 inches selects the 75 mpi floor and which selects 60 cannot be read from the text, and the two branches give different answers.
+
+## Coverage gap
+
+570 sections in the regulation use obligation language (shall,
+must, minimum) and are not cited by any rule. That is the backlog, and it
+is the honest measure of how much of the regulation this tool does not yet
+check. The first 40 are listed as a starting point for the next round.
+
+| section | page | opening text |
+| --- | --- | --- |
+| 1.3 | 9 | These Regulations shall supersede and replace the Regulations Governing the |
+| 2 | 2 | TABLE OF CONTENTS |
+| 3.5 | 26 | If any part of these Regulations, or the application of any part thereof, is hel |
+| 3.6 | 26 | These Regulations, being necessary for the health and welfare of the State and i |
+| 3.7 | 26 | At the sole discretion of the Department, if the proposed operation of a system  |
+| 3.10 | 26 | Discharge of untreated or partially treated wastewater or septic tank effluent d |
+| 3.11 | 26 | Except where specifically allowed within these Regulations, no person shall conn |
+| 3.15 | 27 | The Department shall impose, in any permit, standards for evaluating treatment |
+| 3.22.1 | 27 | Certification by a registered professional engineer (Class C) that all new and |
+| 3.23.1 | 27 | When the Department determines that construction of on-site wastewater |
+| 3.24 | 27 | Whenever the preparation of reports or other documents required by these |
+| 3.26.2 | 28 | The failure of the Department to enforce any of the provisions of these |
+| 3.29.2.1 | 28 | Require a new application package and review fee in order to continue |
+| 3.30 | 28 | All new and replacement systems permitted within 1,000 feet of the Chesapeake |
+| 3.31.2 | 28 | Each system shall have adequate capacity to properly treat and dispose of the |
+| 3.31.3 | 28 | A recorded utility easement is required whenever a system crosses a property |
+| 3.31.6 | 29 | Whenever real property is recorded as two separate lots under common |
+| 3.31.9.3 | 29 | For proposed subdivision or other developments with more than five (5) |
+| 3.31.11 | 29 | When a central wastewater system is deemed both physically and legally |
+| 3.31.13 | 29 | For all properties utilizing an OWTDS that are sold or otherwise transferred to |
+| 3.31.15.1.1.1 | 30 | For single family residences, only the area within the property |
+| 3.31.15.1.1.2 | 30 | For multiple family dwellings or where more than one (1) |
+| 3.31.15.1.1.2.1 | 30 | For projects utilizing only a septic tank for treatment prior |
+| 3.31.15.1.2 | 30 | For commercial facilities the maximum siting density shall be |
+| 3.31.15.1.3 | 30 | In establishing maximum siting densities the Department may |
+| 3.31.15.2.2 | 31 | At the time the permit is issued or feasibility study is approved, the |
+| 3.31.16 | 31 | All new and replacement small systems requiring advanced treatment units |
+| 3.32.1 | 31 | Whenever the preparation of reports or other documents required by these |
+| 3.32.2 | 31 | For large systems which serve communities that experience a significant |
+| 3.32.3 | 31 | Unless otherwise required by a permit the permittee and operator, if |
+| 3.32.6.5.4 | 32 | In writing as soon as possible but within five (5) days of the date |
+| 3.32.6.5.5 | 32 | In writing as soon as possible after the permittee becomes aware |
+| 4.0 | 2 | Licenses |
+| 4.4 | 33 | On-Site System Advisory Board (Board) approval to take an exam is valid for six  |
+| 4.6 | 33 | In the event an applicant fails to receive a passing grade on the examination, h |
+| 4.8.1 | 34 | Class D.1 is licensed to perform individual site evaluations for both new |
+| 4.8.1.7 | 34 | Pass a field practicum prepared and administered by the Site |
+| 4.8.3 | 35 | Class D.3 is licensed to perform all soils work licensed under Sections 4.8.1 |
+| 4.9.1 | 35 | E.1 is licensed to install all conventional on-site wastewater treatment and |
+| 4.9.1.2 | 35 | A minimum of two (2) years of experience under the guidance of an |
+

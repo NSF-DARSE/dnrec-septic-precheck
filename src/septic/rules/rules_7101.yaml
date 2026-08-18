@@ -1,26 +1,40 @@
 # Rule set for the Delaware on-site wastewater regulation.
 #
-# This file is deliberately almost empty. Candidate thresholds extracted from the
-# regulation live in candidates.md with their section, page, and verbatim quote.
-# A number only moves from candidates.md into this file after a human has read
-# the quoted passage in the PDF and confirmed the value, the units, and the
-# conditions it applies under.
+# Every rule below was read out of the regulation PDF, section by section, using
+# the graph in graph.py to follow each cross reference before writing anything
+# down. Each one carries the real section number, the real page, and the
+# verbatim text the threshold comes from.
 #
-# Nothing here has been verified, so the engine returns UNKNOWN for every entry
-# and the verdict for any application is CANNOT VERIFY. That is the correct
-# behaviour: a wrong setback distance shown to permitting staff is worse than no
-# answer at all.
+# EVERY RULE IS verified: false. The engine returns UNKNOWN for an unverified
+# rule and the overall verdict is CANNOT VERIFY. That is deliberate and it is
+# the safety interlock: showing permitting staff a wrong setback distance is
+# worse than showing them nothing. These rules are staged for a human to certify
+# against the PDF, one at a time.
 #
-# The three entries below exist to exercise the schema and the engine. They use
-# the present operator, which takes no threshold, so this file contains no
-# numeric regulatory value of any kind. Numeric comparison is covered in
-# tests/test_rules_engine.py using synthetic rules that cite nothing.
+# docs/rules_review.md is the checklist for that review. It presents each rule
+# with the cited text, the cross references resolved, and the definitions
+# inlined, so a reviewer can confirm a value without opening the PDF.
 #
-# To promote a candidate:
-#   1. Open docs/regulations/de-onsite-wastewater-2014.pdf at the cited page.
+# To certify a rule:
+#   1. Open docs/regulations/de-onsite-wastewater-2014.pdf at citation.page.
 #   2. Confirm the number, the units, and which systems it applies to.
-#   3. Add the rule with the verbatim quote in citation.quote.
-#   4. Set verified: true and record who checked it in notes.
+#   3. Read the caveats listed in notes, since several distances have documented
+#      reductions the Department can approve.
+#   4. Set verified: true and record who checked it and when in notes.
+#
+# A note on the isolation distances. Section 5.3.4.1 creates the obligation but
+# contains no numbers: it says the distances are "set forth in Exhibit C". The
+# values below were read from the Exhibit C small systems table on page 173, and
+# the column alignment was checked twice, once from the PDFium text layer and
+# once from pdfplumber extract_tables, because reading a table column wrong would
+# put a wrong regulatory number in front of a reviewer. Both readings agree.
+#
+# A note on missing glyphs. PDFium does not map the less-than-or-equal and
+# greater-than-or-equal characters in this PDF, so some passages extract with the
+# operator simply absent, for example "percolation rates  120 mpi". No rule below
+# depends on a passage where the comparison direction was ambiguous. Those were
+# rejected instead of guessed, and the rejections are recorded in
+# docs/rules_review.md.
 
 version: 1
 regulation: "Delaware Regulations Governing On-Site Wastewater Treatment and Disposal Systems"
@@ -28,56 +42,532 @@ regulation_date: "2014-01-11"
 regulation_file: "docs/regulations/de-onsite-wastewater-2014.pdf"
 
 rules:
-  - id: EX001-site-plan-present
+
+  # ---------------------------------------------------------------------------
+  # Isolation distances, Exhibit C small systems table, page 173.
+  # Obligation created by Section 5.3.4.1, page 57.
+  # ---------------------------------------------------------------------------
+
+  - id: ISO-001-disposal-area-to-well
     description: >-
-      A site plan must accompany the application. Placeholder used to exercise
-      the engine, not a verified citation.
+      The disposal area must be at least 100 feet from a well.
     citation:
-      section: "TBD"
-      page: null
-      quote: null
-    applies_to: {}
-    parameter: site_plan
-    operator: present
-    threshold: null
-    units: null
+      section: "Exhibit C"
+      page: 173
+      quote: >-
+        MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Disposal
+        area", column "Well": 100, notes a, c, d, e, h, i
+    applies_to:
+      system_scale: small
+    parameter: dist_disposal_to_well
+    operator: ">="
+    threshold: 100
+    units: feet
     severity: return
     verified: false
-    remedy: "Attach the site plan sheet before submitting."
-    notes: "Example only. Section number not yet identified."
+    remedy: >-
+      Move the disposal area so it is at least 100 feet from every well shown on
+      the site plan, or document the Department approval that permits a lesser
+      distance under Exhibit C note a, e, h or i.
+    notes: >-
+      Read page 173 (Exhibit C small systems table) and page 174 (the notes).
+      Obligation followed from Section 5.3.4.1 on page 57 via the REFERENCES edge
+      in the graph: "The minimum isolation distances set forth in Exhibit C shall
+      be maintained when designing, locating, repairing, replacing, and installing
+      on-site wastewater treatment and disposal systems." Four documented
+      reductions apply and a reviewer must check them before treating a shortfall
+      as a deficiency. Note a: 50 feet may be approved under the Delaware
+      Regulations Governing the Construction and Use of Wells. Note e: 50 feet may
+      be considered for replacement systems on lots recorded before April 8, 1984
+      where lot size will not allow 100 feet, subject to well casing and grouting
+      requirements. Note h: replacement systems may reduce to 50 feet with an
+      additional 12 inches of suitable soil. Note i: the Department may reduce to
+      50 feet where advanced treatment is incorporated. Note d raises the distance
+      to 150 feet for public or industrial wells, so this rule is the residential
+      domestic well case and a separate rule is needed for public wells. Note c
+      changes the measurement datum for elevated sand mound and capping fill
+      systems to the outer edge of the stone or gravel-less chamber.
 
-  - id: EX002-percolation-rate-present
+  - id: ISO-002-disposal-area-to-watercourse
     description: >-
-      A percolation rate must be recorded for the proposed disposal area.
-      Placeholder used to exercise the engine, not a verified citation.
+      The disposal area must be at least 100 feet from a watercourse.
     citation:
-      section: "TBD"
-      page: null
-      quote: null
+      section: "Exhibit C"
+      page: 173
+      quote: >-
+        MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Disposal
+        area", column "Watercourse": 100, note b
+    applies_to:
+      system_scale: small
+    parameter: dist_disposal_to_watercourse
+    operator: ">="
+    threshold: 100
+    units: feet
+    severity: return
+    verified: false
+    remedy: >-
+      Move the disposal area so it is at least 100 feet from the watercourse, or
+      document that the watercourse is ephemeral or not designated for public
+      water supply or shellfish use under Exhibit C note b.
+    notes: >-
+      Read page 173 (table) and page 174 (notes). Note b is load bearing here and
+      a reviewer should read it before flagging: a lesser distance to a minimum of
+      50 feet may be approved if the watercourse has not been designated for use
+      as a public water supply or shellfish, and there is no setback at all from
+      an ephemeral watercourse. Note b also assigns the determination of whether a
+      watercourse is ephemeral to the Class D soil scientist, so this check cannot
+      be settled from the site plan alone when the classification is contested.
+
+  - id: ISO-003-disposal-area-to-property-line
+    description: >-
+      The disposal area must be at least 10 feet from dwellings and property
+      lines.
+    citation:
+      section: "Exhibit C"
+      page: 173
+      quote: >-
+        MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Disposal
+        area", column "Dwellings and Property Lines": 10, note g
+    applies_to:
+      system_scale: small
+    parameter: dist_disposal_to_property_line
+    operator: ">="
+    threshold: 10
+    units: feet
+    severity: return
+    verified: false
+    remedy: >-
+      Move the disposal area so it is at least 10 feet from every property line
+      and dwelling shown on the site plan.
+    notes: >-
+      Read page 173 (table) and page 174 (notes). The table column covers
+      dwellings and property lines with the same value, so one rule serves both
+      only if the extractor reports the smaller of the two measured distances.
+      That is a scope ambiguity a reviewer should settle: if the extractor cannot
+      distinguish them, splitting this into two rules is the safer shape. Note g
+      permits 5 feet from an interior lot or easement line within a recorded
+      subdivision where the absorption facility serves a central sewer system.
+
+  - id: ISO-004-disposal-area-to-escarpment
+    description: >-
+      The disposal area must be at least 15 feet from the top of a bank or an
+      escarpment steeper than 25 percent.
+    citation:
+      section: "Exhibit C"
+      page: 173
+      quote: >-
+        MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Disposal
+        area", column "Top of Bank or Escarpment >25%": 15
+    applies_to:
+      system_scale: small
+    parameter: dist_disposal_to_escarpment
+    operator: ">="
+    threshold: 15
+    units: feet
+    severity: return
+    verified: false
+    remedy: >-
+      Move the disposal area so it is at least 15 feet from the top of the bank or
+      escarpment, or show on the site plan that no escarpment steeper than 25
+      percent is present.
+    notes: >-
+      Read page 173. This cell carries no note letters, so the value stands
+      without documented reductions, which makes it one of the cleaner rules in
+      this set. The column heading qualifies the trigger as an escarpment steeper
+      than 25 percent, so the rule only fires when the site has one. Section
+      5.2.1.9.5 on page 45 requires escarpments to be recorded in the site
+      evaluation report, which is where the input for this check comes from.
+
+  - id: ISO-005-septic-tank-to-well
+    description: >-
+      The septic tank must be at least 50 feet from a well.
+    citation:
+      section: "Exhibit C"
+      page: 173
+      quote: >-
+        MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Septic tank
+        Grease trap Distribution box Dosing chamber Diversion valve or box
+        Advanced treatment unit", column "Well": 50
+    applies_to:
+      system_scale: small
+    parameter: dist_tank_to_well
+    operator: ">="
+    threshold: 50
+    units: feet
+    severity: return
+    verified: false
+    remedy: >-
+      Move the septic tank so it is at least 50 feet from every well shown on the
+      site plan.
+    notes: >-
+      Read page 173. The 50 foot value is shared by six components on one table
+      row: septic tank, grease trap, distribution box, dosing chamber, diversion
+      valve or box, and advanced treatment unit. This rule covers the septic tank
+      only, because that is the component a residential site plan always shows. A
+      reviewer should decide whether the other five components warrant their own
+      rules or whether the extractor should report the minimum distance across all
+      tank-side components. This cell carries no note letters.
+
+  - id: ISO-006-septic-tank-to-watercourse
+    description: >-
+      The septic tank must be at least 25 feet from a watercourse.
+    citation:
+      section: "Exhibit C"
+      page: 173
+      quote: >-
+        MINIMUM ISOLATION DISTANCES (FEET) FOR SMALL SYSTEMS, row "Septic tank
+        Grease trap Distribution box Dosing chamber Diversion valve or box
+        Advanced treatment unit", column "Watercourse": 25
+    applies_to:
+      system_scale: small
+    parameter: dist_tank_to_watercourse
+    operator: ">="
+    threshold: 25
+    units: feet
+    severity: return
+    verified: false
+    remedy: >-
+      Move the septic tank so it is at least 25 feet from the watercourse.
+    notes: >-
+      Read page 173. Note that the tank row value of 25 feet is a different and
+      smaller distance than the disposal area row value of 100 feet in the same
+      column, and that the tank cell carries no note letters while the disposal
+      area cell carries note b. Reading across the wrong row here would understate
+      the disposal area requirement by 75 feet, which is why the column alignment
+      was verified against pdfplumber extract_tables as well as the text layer.
+
+  # ---------------------------------------------------------------------------
+  # Percolation rate and soil suitability.
+  # ---------------------------------------------------------------------------
+
+  - id: PERC-001-site-maximum-percolation-rate
+    description: >-
+      A system may not be placed on soil with a percolation rate slower than 120
+      minutes per inch.
+    citation:
+      section: "5.2.4.2.5.7"
+      page: 52
+      quote: >-
+        On-site wastewater treatment and disposal systems shall not be placed on
+        those portions of any sites that have percolation rates slower than 120
+        mpi.
     applies_to: {}
     parameter: perc_rate
+    operator: "<="
+    threshold: 120
+    units: minutes per inch
+    severity: return
+    verified: false
+    remedy: >-
+      The soil in the proposed disposal area percolates too slowly for any system
+      under these Regulations. Relocate the disposal area to soil that percolates
+      at 120 minutes per inch or faster, or apply for an innovative or alternative
+      system.
+    notes: >-
+      Read page 52. This is the cleanest threshold in the regulation: the sentence
+      states the direction in words rather than a symbol, so it does not depend on
+      the missing glyph problem that affected other passages. The same 120 minutes
+      per inch limit is stated three more times for specific system types, which
+      corroborates it: Section 5.2.1.3.1 on page 43 calls rates over 120 minutes
+      per inch very slowly permeable and a limiting layer, Section 5.3.12.1.4.1 on
+      page 61 forbids seepage trenches and beds above 120, and Section 5.3.12.4.4
+      on page 62 forbids elevated sand mounds above 120. applies_to is empty
+      because the prohibition is written against any site and any system, not a
+      subset. Section 5.2.4.2.5.7 also states that rates slower than 120 are
+      excluded from the arithmetic average but must still be reported, so a
+      reviewer should confirm which number the application is quoting: the site
+      average or an individual test hole.
+
+  - id: PERC-002-percolation-test-hole-count
+    description: >-
+      A soil percolation test must consist of three test holes.
+    citation:
+      section: "5.2.4.2.2"
+      page: 51
+      quote: >-
+        One (1) soil percolation test shall consist of three (3) test holes.
+    applies_to: {}
+    parameter: perc_test_holes
+    operator: ">="
+    threshold: 3
+    units: holes
+    severity: return
+    verified: false
+    remedy: >-
+      Record the results of all three percolation test holes on the application.
+    notes: >-
+      Read pages 51 and 52. Section 5.2.4.2.5.1 on page 51 states the same
+      requirement from the other direction, as a minimum of three test holes dug
+      within the proposed installation area, and permits the Department to require
+      additional tests. Written as a minimum rather than an equality for that
+      reason. Section 5.2.4.2.5.6 on page 52 permits a hole to be excluded from
+      the analysis if the licensed percolation tester determines it is
+      uncharacteristic of the site, but requires it to be listed on the
+      application, so a reviewer checking this should count holes listed rather
+      than holes averaged.
+
+  # ---------------------------------------------------------------------------
+  # Vertical separation to the limiting zone.
+  # ---------------------------------------------------------------------------
+
+  - id: SEP-001-limiting-zone-below-trench-bottom
+    description: >-
+      For a gravity trench or bed system, the limiting zone must be at least 3
+      feet below the bottom of the trench.
+    citation:
+      section: "5.3.12.1.3"
+      page: 61
+      quote: >-
+        The limiting zone shall be a minimum of three (3) feet below the bottom of
+        the trench
+    applies_to:
+      system_type:
+        - conventional
+        - gravity
+    parameter: limiting_zone_below_trench_bottom
+    operator: ">="
+    threshold: 36
+    units: inches
+    severity: return
+    verified: false
+    remedy: >-
+      Raise the trench bottom or relocate the disposal area so at least 36 inches
+      of soil separate the trench bottom from the limiting zone.
+    notes: >-
+      Read pages 60 and 61. Section 5.3.12.1 is titled "All Full Depth Gravity and
+      Capping Fill Gravity Trench and Bed Treatment and Disposal Systems", which is
+      the conventional gravity system this rule set targets. Threshold converted
+      from the 3 feet in the text to 36 inches so it shares units with the other
+      separation rule; a reviewer should confirm the unit conversion is acceptable
+      or change the rule to feet. IMPORTANT: the quoted sentence continues past
+      where this quote stops, and the continuation is not safely readable. The raw
+      extraction is "a minimum of three (3) feet below the bottom of the trench t
+      48 inches beneath the soil surface", where "t" is a glyph PDFium failed to
+      map. Comparing against the parallel wording in Section 5.3.12.5.3 on page
+      62, which reads "48 inches from original grade and three (3) feet below
+      bottom of filter aggregate", the missing character is most likely "and" or a
+      greater-than-or-equal sign, which would make a 48 inch depth below the soil
+      surface a second and separate requirement. That second requirement was NOT
+      promoted to a rule because the operator cannot be read from the text. A
+      reviewer with the paper regulation should settle it and add the rule.
+
+  - id: SEP-002-conventional-limiting-zone-minimum-depth
+    description: >-
+      A site whose limiting zone is shallower than 20 inches is unsuitable for a
+      conventional system.
+    citation:
+      section: "5.2.4.2.4.2"
+      page: 51
+      quote: >-
+        If the limiting zone occurs at less than 20 inches from the surface, the
+        site is unsuitable for a conventional on-site wastewater treatment and
+        disposal system.
+    applies_to:
+      system_type:
+        - conventional
+        - gravity
+    parameter: limiting_zone_depth
+    operator: ">="
+    threshold: 20
+    units: inches
+    severity: return
+    verified: false
+    remedy: >-
+      The site is unsuitable for a conventional system at this limiting zone
+      depth. Consider an alternative system type, or a replacement system design
+      under the exception in Section 5.2.4.2.4.2.
+    notes: >-
+      Read page 51. The sentence states the direction in words, so it does not
+      depend on a symbol. The same section carries an explicit exception a reviewer
+      must apply: when replacing a failing or malfunctioning system, Section
+      5.2.4.2.4.1 is used "without regard for the 20 inch limiting condition", so
+      this rule must not fire on a repair or replacement application. applies_to
+      cannot express that yet because it tests equality against facts and the
+      condition needed is the absence of a replacement flag. Until the extractor
+      supplies a construction type fact, a reviewer should read a failure of this
+      rule on a replacement application as not applicable. This is the clearest
+      case in the set where applies_to is too weak for the regulation, and it
+      should be raised before certification.
+
+  # ---------------------------------------------------------------------------
+  # Design flow.
+  # ---------------------------------------------------------------------------
+
+  - id: FLOW-001-residential-minimum-design-flow
+    description: >-
+      The design flow for a residential dwelling must be at least 240 gallons per
+      day.
+    citation:
+      section: "5.3.3.3"
+      page: 56
+      quote: >-
+        The minimum design flow for any commercial property shall be 120 gallons
+        per day and residential dwellings shall be 240 gallons per day.
+    applies_to:
+      use_type: residential
+    parameter: design_flow
+    operator: ">="
+    threshold: 240
+    units: gallons per day
+    severity: return
+    verified: false
+    remedy: >-
+      Size the system for at least 240 gallons per day, which is the floor for a
+      residential dwelling regardless of bedroom count.
+    notes: >-
+      Read page 56. The quoted sentence sets two different floors in one sentence,
+      120 gallons per day for commercial and 240 for residential, so applies_to
+      restricts this rule to residential use and a separate rule would be needed
+      for commercial. The 240 gallon floor interacts with the per bedroom figure in
+      FLOW-002: a two bedroom dwelling at 120 gallons per bedroom reaches exactly
+      240, so the floor only binds on a one bedroom dwelling. Section 5.3.5.1 on
+      page 57 allows a 25 percent reduction in design flow for water conservation,
+      but Section 5.3.5.2 states that reduction is not permissible for new
+      construction, so a reviewer checking a new build should not accept a reduced
+      figure.
+
+  - id: FLOW-002-residential-flow-per-bedroom
+    description: >-
+      The design flow for a residential dwelling must be at least 120 gallons per
+      day per bedroom.
+    citation:
+      section: "5.3.3.3"
+      page: 56
+      quote: >-
+        The design wastewater flow from residential dwellings, including single
+        family, multiple family, manufactured homes, and apartments served by
+        on-site wastewater treatment and disposal systems shall be 120 gallons per
+        day per bedroom.
+    applies_to:
+      use_type: residential
+    parameter: design_flow_per_bedroom
+    operator: ">="
+    threshold: 120
+    units: gallons per day per bedroom
+    severity: return
+    verified: false
+    remedy: >-
+      Size the system for at least 120 gallons per day for each bedroom in the
+      dwelling.
+    notes: >-
+      Read page 56. The regulation states this as an equality, "shall be 120
+      gallons per day per bedroom", not as a minimum. It is written here as a
+      minimum because a system sized above the requirement is not a deficiency a
+      reviewer would return, while one sized below it is. A reviewer should confirm
+      that reading, because it is an interpretation and not what the text literally
+      says. This rule needs a derived fact: design flow divided by bedroom count.
+      If the extractor cannot read the bedroom count from the packet the rule
+      returns UNKNOWN rather than passing, which is the intended behaviour.
+
+  # ---------------------------------------------------------------------------
+  # Slope.
+  # ---------------------------------------------------------------------------
+
+  - id: SLOPE-001-gravity-bed-maximum-slope
+    description: >-
+      A bed system may not be sited on a slope steeper than 2 percent.
+    citation:
+      section: "5.3.12.1.2"
+      page: 60
+      quote: >-
+        Bed systems cannot be sited on slopes > 2%, unless otherwise approved by
+        the Department.
+    applies_to:
+      system_type:
+        - conventional
+        - gravity
+      absorption_type: bed
+    parameter: disposal_slope
+    operator: "<="
+    threshold: 2
+    units: percent
+    severity: return
+    verified: false
+    remedy: >-
+      Relocate the bed to ground at 2 percent slope or flatter, change to a trench
+      system, or document the Department approval permitting the steeper slope.
+    notes: >-
+      Read pages 60 and 61. The comparison direction is explicit in the text as a
+      greater-than sign, so this passage is not affected by the missing glyph
+      problem. The trailing clause "unless otherwise approved by the Department" is
+      a real discretionary exception, so a failure here is a question for the
+      reviewer rather than a settled deficiency, and the remedy is worded to say
+      so. Severity is return rather than advisory because an application showing a
+      bed on a 5 percent slope with no documented approval is incomplete as
+      submitted. The same section allows trench systems from 0 to 15 percent and
+      permits steeper than 15 percent only where a licensed Class C designer
+      prepared the design, which is a separate rule not promoted here because the
+      condition is a licence class rather than a measurement.
+
+  # ---------------------------------------------------------------------------
+  # Application completeness. These are the cheapest deficiencies to catch,
+  # because they need no measurement at all.
+  # ---------------------------------------------------------------------------
+
+  - id: SITE-001-site-evaluation-report-present
+    description: >-
+      A site evaluation report prepared by a Class D soil scientist must be
+      obtained before a construction permit.
+    citation:
+      section: "5.2.1.1"
+      page: 43
+      quote: >-
+        Any person applying for a permit to install a new or replacement on-site
+        wastewater treatment and disposal system shall first obtain a site
+        evaluation report prepared by a Class D soil scientist.
+    applies_to: {}
+    parameter: site_evaluation_report
     operator: present
     threshold: null
     units: null
     severity: return
     verified: false
-    remedy: "Record the percolation test result on the application."
-    notes: "Example only. Threshold values remain in candidates.md."
+    remedy: >-
+      Attach the site evaluation report prepared by a Class D soil scientist.
+    notes: >-
+      Read page 43. This rule takes no threshold, so certifying it means
+      confirming the requirement exists and that the packet is expected to contain
+      the report, not confirming a number. Section 5.2.1.2 on page 43 lists what
+      the report must contain at a minimum: approval pages, report pages, site
+      drawing, soil profile notes, zoning verification form, and the appropriate
+      fee, and each of those is a candidate rule of its own. The section carves out
+      Department-conducted evaluations for Home Rehabilitation Loan Programs, block
+      grant households, State Revolving Fund sites and similar income qualifying
+      programs, which does not change whether a report is required but does change
+      who prepares it.
 
-  - id: EX003-lot-area-present
+  - id: SITE-002-wells-within-150-feet-shown
     description: >-
-      The lot area must be stated on the application. Placeholder used to
-      exercise the engine, not a verified citation.
+      The site drawing must show every on-site and adjacent well within 150 feet
+      of the approved soils area.
     citation:
-      section: "TBD"
-      page: null
-      quote: null
+      section: "5.2.1.5"
+      page: 44
+      quote: >-
+        Site drawings will show the location of all on-site and adjacent wells
+        within 150 feet of the approved soils area.
     applies_to: {}
-    parameter: lot_area
+    parameter: wells_within_150_feet_shown
     operator: present
     threshold: null
     units: null
-    severity: advisory
+    severity: return
     verified: false
-    remedy: "State the lot area in square feet."
-    notes: "Example only. Section number not yet identified."
+    remedy: >-
+      Mark every on-site and adjacent well within 150 feet of the approved soils
+      area on the site drawing, or record that a well could not be located and the
+      search that was performed.
+    notes: >-
+      Read pages 44 and 45. Section 5.2.1.9.4 on page 45 states the same
+      requirement in the list of report contents and adds that wells must be
+      measured from two reference points or established survey control. The 150
+      foot radius here is a drawing requirement and is deliberately larger than the
+      100 foot isolation distance in ISO-001, so that a well which constrains the
+      design cannot be omitted for being outside the setback. Section 5.2.1.5 also
+      sets out what to do when a well cannot be located, including a Water Supply
+      Section records search and a 15 day notice to adjacent owners, after which
+      the system must be designed to maximise the distance from the property line.
+      A packet using that path is not deficient, so this rule is satisfied by
+      either the wells being shown or that documentation being present, which the
+      present operator cannot express on its own. A reviewer should decide whether
+      the extractor sets this fact for the documented-search case.

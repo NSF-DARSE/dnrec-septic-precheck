@@ -244,10 +244,68 @@ class TestShippedRuleSet:
         assert rules, "expected seed rules to load"
         assert all(not r.verified for r in rules)
 
-    def test_shipped_rules_carry_no_numeric_threshold(self):
-        # Guards the constraint that no unverified regulatory number is shipped.
+    def test_no_shipped_rule_can_produce_a_verdict(self):
+        """The interlock: an unverified threshold cannot PASS or FAIL.
+
+        This replaces an earlier test that asserted no rule shipped a threshold
+        at all. That was the right guard while the file was deliberately empty of
+        numbers, but the rule set now stages real thresholds read from the
+        regulation for a human to certify, so the guard has to move to the
+        property that still has to hold: a number nobody has checked cannot reach
+        a reviewer as a finding. Facts are supplied deliberately generously here,
+        including values that would fail every numeric rule, and the outcome must
+        still be UNKNOWN for all of them.
+        """
+        generous_facts = {
+            "system_scale": "small",
+            "system_type": "conventional",
+            "use_type": "residential",
+            "absorption_type": "bed",
+            "dist_disposal_to_well": 1,
+            "dist_disposal_to_watercourse": 1,
+            "dist_disposal_to_property_line": 1,
+            "dist_disposal_to_escarpment": 1,
+            "dist_tank_to_well": 1,
+            "dist_tank_to_watercourse": 1,
+            "perc_rate": 999,
+            "perc_test_holes": 0,
+            "limiting_zone_below_trench_bottom": 1,
+            "limiting_zone_depth": 1,
+            "design_flow": 1,
+            "design_flow_per_bedroom": 1,
+            "disposal_slope": 99,
+            "site_evaluation_report": "",
+            "wells_within_150_feet_shown": "",
+        }
+        report = evaluate(generous_facts)
+        assert report.evaluations, "expected the shipped rules to evaluate"
+        assert not report.failures, (
+            "an unverified rule produced a FAIL: "
+            f"{[e.rule.id for e in report.failures]}"
+        )
+        assert not report.passes, (
+            "an unverified rule produced a PASS: "
+            f"{[e.rule.id for e in report.passes]}"
+        )
+        assert len(report.unknowns) == len(report.evaluations)
+        assert report.verdict is Verdict.CANNOT_VERIFY
+
+    def test_every_shipped_rule_carries_a_real_citation(self):
+        """A staged rule a human cannot look up is not reviewable."""
         for r in load_rules():
-            assert r.threshold is None, f"{r.id} ships a threshold value"
+            assert r.citation.section not in (None, "", "TBD"), (
+                f"{r.id} has a placeholder citation section"
+            )
+            assert r.citation.page is not None, f"{r.id} has no page"
+            assert r.citation.quote, f"{r.id} has no verbatim quote"
+            assert r.notes, f"{r.id} has no notes recording what was read"
+            assert r.remedy, f"{r.id} has no remedy for the reviewer to relay"
+
+    def test_numeric_rules_declare_units(self):
+        """A threshold without units is a number nobody can check."""
+        for r in load_rules():
+            if r.operator.is_numeric:
+                assert r.units, f"{r.id} has a numeric threshold but no units"
 
     def test_shipped_rule_set_yields_cannot_verify(self):
         report = evaluate({"site_plan": "yes", "perc_rate": 30, "lot_area": 20000})
