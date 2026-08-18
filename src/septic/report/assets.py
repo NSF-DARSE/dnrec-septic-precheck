@@ -176,12 +176,16 @@ TOKENS: dict[str, dict] = {
     #
     # max_width is the tight case, the sidebar, where four marks in a row do not
     # fit: at a common 52 pixels they need 318 and there are about 300. Three
-    # circular marks at 54 with a 20 pixel gap need 202, so the fallback lockup is
+    # circular marks at 74 with a 20 pixel gap need 262, so the fallback lockup is
     # the circles on one row with the wordmark centred beneath. In the footer band
     # there is room for all four on one row, which is what the console uses.
+    #
+    # Both heights were raised about fifteen percent, from 64 and 56, after the
+    # band was seen on a projector: at the old sizes the marks read as a footnote
+    # from the back of a room. The ratio between them is unchanged.
     "sponsor_strip": {
-        "circular_logo_height": 64,
-        "wordmark_height": 56,
+        "circular_logo_height": 74,
+        "wordmark_height": 64,
         "gap": 20,
         "max_width": 300,
         "layout": (

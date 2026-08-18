@@ -96,6 +96,17 @@ def analyze(
 
     Tries the offline cache before anything else, so the common demo path makes no
     network call and needs no credentials.
+
+    subject describes the document and nothing else. It used to carry a source line
+    naming the service and saying whether a cache was used, and for a harvested
+    permit that line held the full S3 key. Every value in subject is rendered, so
+    that put a storage path onto a projected screen and into any report a reviewer
+    forwarded. It also read as a caveat: a cache hit is keyed by the SHA256 of the
+    document, so it means this exact packet was analysed before, not that the
+    result was staged for a demo. What a reviewer needs is which document produced
+    the findings and how long it is. The offline guarantee is still real and is
+    still what makes the demo survive a failed network, it just does not need
+    narrating on screen, and the sidebar already says it in the right register.
     """
     client = client or TextractClient()
     subject: dict[str, Any] = {}
@@ -112,7 +123,6 @@ def analyze(
         subject["document_hash"] = doc_hash
         analysis = client.cached_by_hash(doc_hash)
         if analysis is not None:
-            subject["source"] = "cached Textract analysis (no network used)"
             return analysis, subject, True
         if not allow_network:
             raise RuntimeError(
@@ -120,7 +130,6 @@ def analyze(
                 f"Run once with network access to populate the cache."
             )
         analysis = client.analyze_file(pdf)
-        subject["source"] = "Textract StartDocumentAnalysis, FORMS and TABLES"
         return analysis, subject, False
 
     if permit:
@@ -131,15 +140,16 @@ def analyze(
                 f"approved permits carry one. Pass --pdf with a local file instead."
             )
         subject["permit_number"] = permit
+        # The file name only. The bucket and the key stay out of subject, because
+        # everything in subject is rendered, and a projected screen or a forwarded
+        # report is the last place a storage path belongs.
         subject["document"] = key.rsplit("/", 1)[-1]
         cached = client.cached(key)
         if cached is not None:
-            subject["source"] = f"cached Textract analysis of s3://{key}"
             return cached, subject, True
         if not allow_network:
             raise RuntimeError(f"no cached analysis for {key} and network declined")
         analysis = client.analyze(key)
-        subject["source"] = f"Textract analysis of s3://{key}"
         return analysis, subject, False
 
     raise ValueError("pass either a pdf path or a permit number")

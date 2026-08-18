@@ -55,8 +55,11 @@ from septic.report.assets import (  # noqa: E402
     asset_path,
     logo_data_uri,
 )
-from septic.report.render import VERDICT_COLOR  # noqa: E402
-from septic.report.wording import UNREAD_INTRO  # noqa: E402
+from septic.report.render import VERDICT_COLOR, render_html  # noqa: E402
+from septic.report.wording import (  # noqa: E402
+    NOT_APPLICABLE_BANNER,
+    UNREAD_BANNER,
+)
 from septic.rules import engine  # noqa: E402
 
 st.set_page_config(
@@ -292,7 +295,7 @@ def load_graph_once():
 
 
 @st.cache_data(show_spinner=False)
-def review_from_cache(pdf_path: str) -> tuple[str, dict] | None:
+def review_from_cache(pdf_path: str) -> dict | None:
     """Run the whole chain from the on-disk cache. No network, no credentials.
 
     Delegates to septic.review rather than repeating the chain here. An earlier
@@ -301,8 +304,11 @@ def review_from_cache(pdf_path: str) -> tuple[str, dict] | None:
     it. That is exactly the drift the module docstring warns about: two paths
     through the same pipeline, and the one nobody is watching loses a stage.
 
-    Returns the rendered HTML and the composed payload, or None when there is no
-    cached analysis, so the caller can explain instead of crashing.
+    Returns the composed payload, or None when there is no cached analysis, so the
+    caller can explain instead of crashing. The report body is rendered from this
+    payload by the shared renderer in embedded mode, which is why the HTML the
+    review already produced is not what goes on screen: that one is the standalone
+    page, complete with its own verdict header for printing.
     """
     path = Path(pdf_path)
     client = TextractClient()
@@ -318,7 +324,7 @@ def review_from_cache(pdf_path: str) -> tuple[str, dict] | None:
         )
     except Exception:  # noqa: BLE001
         return None
-    return result.html, result.composed.to_json()
+    return result.composed.to_json()
 
 
 # ---------------------------------------------------------------------------
@@ -344,18 +350,23 @@ SPONSOR_LOGOS = (
 def banner(payload: dict) -> str:
     """The verdict and the coverage figure, above the embedded report.
 
-    The report body carries both already. This repeats them outside the iframe
-    because the iframe starts scrolled to the top only until somebody scrolls it,
-    and because the first question a reviewer asks across a room is answered by
-    two lines of text. Coverage is shown at the same weight as the verdict on
-    purpose: NO DEFICIENCIES FOUND over seven of fifteen checks is not the same
-    statement as NO DEFICIENCIES FOUND over all fifteen, and showing the headline
-    without the number would be worse than showing neither.
+    This is the single on screen statement of the verdict. The report body below it
+    is rendered in embedded mode, which leaves out its own headline, coverage line
+    and explanation, because this box carries them and the screen was otherwise
+    showing all three twice within about a hundred pixels. Coverage is shown at the
+    same weight as the verdict on purpose: NO DEFICIENCIES FOUND over seven of
+    fifteen checks is not the same statement as NO DEFICIENCIES FOUND over all
+    fifteen, and showing the headline without the number would be worse than
+    showing neither.
+
+    The tail is one sentence. It used to be the full paragraph the report prints
+    above its itemised list, which is the right length there and the wrong length
+    here.
 
     Every number here is read out of the composed payload. Nothing on this screen
     counts anything: the coverage line is coverage["text"] verbatim, which is the
-    same string the report body a few pixels below it renders, and the sentence
-    under it carries no figures at all so it cannot drift from them.
+    same string the report body renders when it is opened on its own, and the
+    sentence under it carries no figures at all so it cannot drift from them.
     """
     headline = payload.get("headline", "")
     coverage = payload.get("coverage") or {}
@@ -364,12 +375,9 @@ def banner(payload: dict) -> str:
         headline, (TOKENS["colour"]["ink"], TOKENS["colour"]["surface_sunken"])
     )
     if coverage.get("unreadable"):
-        tail = UNREAD_INTRO
+        tail = UNREAD_BANNER
     elif coverage.get("not_applicable"):
-        tail = (
-            "The checks that do not govern this kind of system are listed "
-            "separately below, and are not requirements this packet met."
-        )
+        tail = NOT_APPLICABLE_BANNER
     else:
         tail = "Every check in the rule set ran against this packet."
     return (
@@ -403,10 +411,8 @@ def attribution_band() -> str:
         "University of Delaware, with the support of</div>"
         f"<div class='sponsor-strip'>{logos}</div>"
         "<div class='band-note'>This is a prototype and not a DNREC product. "
-        "DNREC has not endorsed it, and nothing it produces is a determination. "
-        "It reads an application packet, checks it against requirements taken "
-        "from the 2014 regulation, and cites the section behind every finding so "
-        "a reviewer can check the source. The reviewer decides.</div>"
+        "DNREC has not endorsed it and nothing it produces is a determination. "
+        "The reviewer decides.</div>"
         "</div>"
     )
 
@@ -518,30 +524,34 @@ if uploaded is not None:
     cached = client.cached_by_hash(doc_hash)
 
     if cached is not None and cached.ok:
-        st.success(
-            f"{uploaded.name} is already in the local Textract cache. "
-            "Reviewing it with no network."
-        )
+        # No banner announcing a cache hit. It named the service and the cache, and
+        # it read as a caveat: the cache is keyed by the SHA256 of these bytes, so a
+        # hit means this exact packet was analysed before, not that anything was
+        # staged. The document is named in the provenance line below either way.
         uploads = config.OUT_DIR / "uploads"
         uploads.mkdir(parents=True, exist_ok=True)
         target = uploads / uploaded.name
         target.write_bytes(data)
         started = time.perf_counter()
         with st.spinner("Reading the packet and applying the rules"):
-            result = review_from_cache(str(target))
+            payload = review_from_cache(str(target))
         elapsed = time.perf_counter() - started
-        if result:
-            html, payload = result
+        if payload:
             subject = payload.get("subject") or {}
             st.markdown(
                 f"<div class='provenance'><b>{subject.get('document', '')}</b>"
                 f" &nbsp;|&nbsp; {subject.get('pages', 0)} pages"
-                f" &nbsp;|&nbsp; {subject.get('source', '')}"
                 f" &nbsp;|&nbsp; reviewed in {elapsed * 1000:.0f} ms</div>",
                 unsafe_allow_html=True,
             )
             st.markdown(banner(payload), unsafe_allow_html=True)
-            components.html(html, height=estimate_height(payload), scrolling=True)
+            # Embedded, so the report leaves out the headline, the coverage line
+            # and the explanation the banner directly above already carries.
+            components.html(
+                render_html(payload, embedded=True),
+                height=estimate_height(payload),
+                scrolling=True,
+            )
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"

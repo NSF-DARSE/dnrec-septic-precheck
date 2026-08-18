@@ -98,7 +98,7 @@ def render_text(composed) -> str:
     add(RULE)
 
     subject = c.get("subject") or {}
-    for key in ("document", "permit_number", "detail_id", "pages", "source"):
+    for key in ("document", "permit_number", "detail_id", "pages"):
         if subject.get(key):
             add(f"{key.replace('_', ' '):<16}{subject[key]}")
     add(f"{'generated':<16}{c.get('generated_at', '')}")
@@ -544,7 +544,26 @@ def _esc(value) -> str:
     return html.escape(str(value if value is not None else ""))
 
 
-def render_html(composed) -> str:
+def render_html(composed, embedded: bool = False) -> str:
+    """The report as an HTML page.
+
+    embedded is for the console, which puts this report in an iframe with its own
+    verdict banner a few pixels above it. Both surfaces were doing their job
+    correctly and independently, and the result on screen was the headline, the
+    coverage line and the explanation paragraph printed twice within about a
+    hundred pixels of each other. In embedded mode the identity header, the
+    verdict box and the counts line are left out, because the banner directly
+    above already carries every number in them.
+
+    The default renders all of it, and that is not a detail. A reviewer prints this
+    report or opens it from disk with no console around it, so on its own it has to
+    say which document it is about and what the verdict was. That is why this is a
+    render mode rather than a deletion.
+
+    Nothing else differs between the two modes. The findings, the citations, the
+    quoted regulation text, the screening and the footer are identical, so the page
+    a reviewer prints cannot say anything the screen did not.
+    """
     c = composed if isinstance(composed, dict) else composed.to_json()
     fg, bg = VERDICT_COLOR.get(
         c["headline"], (TOKENS["colour"]["ink"], TOKENS["colour"]["surface_sunken"])
@@ -558,30 +577,32 @@ def render_html(composed) -> str:
     add(f"<title>Septic permit review: {_esc(c['headline'])}</title>")
     add(f"<style>{CSS}</style></head><body><div class='wrap'>")
 
-    add("<header><h1>DNREC septic permit application review</h1><div class='meta'>")
-    subject = c.get("subject") or {}
-    for key in ("document", "permit_number", "detail_id", "pages"):
-        if subject.get(key):
-            label = key.replace("_", " ")
-            add(f"<span>{_esc(label)}: <b>{_esc(subject[key])}</b></span>")
-    add(f"<span>generated {_esc(c.get('generated_at'))}</span>")
-    add("</div></header>")
-
-    add(f"<div class='verdict' style='color:{fg};background:{bg}'>")
-    add(f"<h2>{_esc(c['headline'])}</h2>")
     coverage = c.get("coverage") or {}
     counts = c.get("counts") or {}
-    # Verbatim, like every other surface. Deriving it from counts would count the
-    # rules that never applied, since the engine reports those as passes.
-    coverage_text = coverage.get("text", "")
-    add(f"<p class='coverage'>{_esc(coverage_text)}</p>")
-    add(f"<p>{_esc(c['explanation'])}</p></div>")
 
-    add(f"<p class='counts'><b>{coverage.get('evaluated', 0)}</b> compared a "
-        f"value &nbsp; <b>{counts.get('fail', 0)}</b> of those failed &nbsp; "
-        f"<b>{coverage.get('not_applicable', 0)}</b> not applicable to this "
-        f"system &nbsp; <b>{coverage.get('unreadable', 0)}</b> could not be "
-        f"read</p>")
+    if not embedded:
+        add("<header><h1>DNREC septic permit application review</h1>"
+            "<div class='meta'>")
+        subject = c.get("subject") or {}
+        for key in ("document", "permit_number", "detail_id", "pages"):
+            if subject.get(key):
+                label = key.replace("_", " ")
+                add(f"<span>{_esc(label)}: <b>{_esc(subject[key])}</b></span>")
+        add(f"<span>generated {_esc(c.get('generated_at'))}</span>")
+        add("</div></header>")
+
+        add(f"<div class='verdict' style='color:{fg};background:{bg}'>")
+        add(f"<h2>{_esc(c['headline'])}</h2>")
+        # Verbatim, like every other surface. Deriving it from counts would count
+        # the rules that never applied, since the engine reports those as passes.
+        add(f"<p class='coverage'>{_esc(coverage.get('text', ''))}</p>")
+        add(f"<p>{_esc(c['explanation'])}</p></div>")
+
+        add(f"<p class='counts'><b>{coverage.get('evaluated', 0)}</b> compared a "
+            f"value &nbsp; <b>{counts.get('fail', 0)}</b> of those failed &nbsp; "
+            f"<b>{coverage.get('not_applicable', 0)}</b> not applicable to this "
+            f"system &nbsp; <b>{coverage.get('unreadable', 0)}</b> could not be "
+            f"read</p>")
 
     for notice in c.get("notices") or []:
         add(f"<div class='notice'>{_esc(notice)}</div>")

@@ -332,9 +332,18 @@ class TestAnUnreadCheckNamesWhatToRead:
         assert " ".join(UNREAD_INTRO.split()) in flat
         assert " ".join(note.split()) in flat
 
-        # The console banner reads the same constant rather than its own sentence.
-        assert "from septic.report.wording import UNREAD_INTRO" in app_source
-        assert "tail = UNREAD_INTRO" in app_source
+        # The console banner points at the list rather than reprinting it. Both
+        # sentences come from this module, so the two surfaces still cannot word
+        # the same missing value differently, and neither invents its own copy.
+        from septic.report.wording import UNREAD_BANNER
+
+        assert "from septic.report.wording import" in app_source
+        assert "UNREAD_BANNER" in app_source
+        assert "tail = UNREAD_BANNER" in app_source
+        assert UNREAD_BANNER not in html, (
+            "the banner sentence belongs on the console only, since the report "
+            "prints the full paragraph beside its list"
+        )
 
     def test_the_missing_value_list_says_where_to_look_too(self):
         from septic.rules.schema import Citation, Operator, Rule, Severity

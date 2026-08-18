@@ -148,6 +148,23 @@ UNREAD_INTRO = (
     "it off the drawing is now a task for the reviewer rather than for the tool."
 )
 
+# What the console banner says, which is not the same job as the paragraph above.
+# The banner is two short lines read across a room and the report body sits a few
+# pixels underneath it, so printing UNREAD_INTRO in both put the same fifty words
+# on screen twice and read as the tool repeating itself. The banner points at the
+# list, the list does the explaining.
+UNREAD_BANNER = (
+    "The checks that could not be read are listed below, each naming the value to "
+    "read and where the packet carries it."
+)
+
+# The same job for the rules that never governed this packet. One sentence, for
+# the same reason.
+NOT_APPLICABLE_BANNER = (
+    "The checks that do not govern this kind of system are listed below, and are "
+    "not requirements this packet met."
+)
+
 
 def parameter_name(parameter: str) -> str:
     """What a reviewer calls this value. Falls back to the fact name."""
