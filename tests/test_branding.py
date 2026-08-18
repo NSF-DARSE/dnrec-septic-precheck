@@ -253,7 +253,6 @@ class TestProjectedAndPrinted:
     ):
         assert "@media print" in app_source
         printed = app_source.split("@media print", 1)[1]
-        assert "stSidebar" in printed
         assert "stFileUploader" in printed
         assert "print-color-adjust" in printed, (
             "the verdict box carries meaning in its colour and has to print in it"

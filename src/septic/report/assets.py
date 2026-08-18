@@ -165,7 +165,6 @@ TOKENS: dict[str, dict] = {
     "chrome": {
         "header_height": 60,
         "top_clearance": 76,
-        "sidebar_width": 340,
     },
     # The sponsor strip. FSAII is a horizontal wordmark at roughly 1.95 to 1 and
     # the other three are circular. They share one height band with width left

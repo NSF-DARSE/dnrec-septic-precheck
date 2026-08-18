@@ -34,10 +34,6 @@ codeTextColor            = "#374151"  # colour.citation_fg
 font = '"Segoe UI", "Inter", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif'
 codeFont = 'ui-monospace, "Cascadia Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace'
 
-# The sidebar and the main column are both light now, so the boundary
-# between them has to be drawn rather than implied by two backgrounds.
-showSidebarBorder = true
-
 # Pinned to the same light values, so a dark operating system cannot pull
 # the shell out from under the palette. Inheriting the visitor's theme is
 # what broke this in the first place.

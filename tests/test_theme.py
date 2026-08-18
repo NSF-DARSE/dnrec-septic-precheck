@@ -222,7 +222,7 @@ class TestTheConsoleDoesNotBreakTheShell:
 
     def test_printing_still_drops_the_chrome(self, app_css):
         printed = app_css.split("@media print", 1)[1]
-        for testid in ("stSidebar", "stFileUploader", "stToolbar", "stHeader"):
+        for testid in ("stFileUploader", "stToolbar", "stHeader"):
             assert f'[data-testid="{testid}"]' in printed
 
 

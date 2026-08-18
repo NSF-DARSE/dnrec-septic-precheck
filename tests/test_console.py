@@ -701,12 +701,18 @@ class TestAppRuns:
         text = " ".join(m.value or "" for m in app_test.markdown)
         assert "requirements this checks" in text, text[:300]
 
-    def test_sidebar_says_how_many_rules_are_applied(self, app_test):
-        """A reviewer has to see the scope of what was checked."""
+    def test_rule_count_is_visible(self, app_test):
+        """A reviewer has to see the scope of what was checked.
+
+        The count of requirements and the fact they come from the regulation must
+        be on screen regardless of where the control is placed. This test pins
+        the property (visible rule count matching the loaded rule set) rather
+        than the location it renders in.
+        """
         app_test.run()
-        sidebar_text = " ".join(m.value or "" for m in app_test.sidebar.markdown)
-        assert "Rules applied" in sidebar_text
-        assert str(len(engine.load_rules())) in sidebar_text
+        text = " ".join(m.value or "" for m in app_test.markdown)
+        assert str(len(engine.load_rules())) in text
+        assert "regulation" in text.lower()
 
 
 class TestUploadDegradation:

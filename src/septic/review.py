@@ -106,7 +106,7 @@ def analyze(
     result was staged for a demo. What a reviewer needs is which document produced
     the findings and how long it is. The offline guarantee is still real and is
     still what makes the demo survive a failed network, it just does not need
-    narrating on screen, and the sidebar already says it in the right register.
+    narrating on screen, and the rule count line already says it in the right register.
     """
     client = client or TextractClient()
     subject: dict[str, Any] = {}

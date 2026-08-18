@@ -67,7 +67,7 @@ st.set_page_config(
     # A local file, read off disk by Streamlit. Nothing is fetched.
     page_icon=str(asset_path("favicon.png")),
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 
@@ -81,9 +81,6 @@ STYLE_TEMPLATE = """
 .block-container {
   padding-top:$k_top_clearance; padding-bottom:$s_sm; max-width:1600px;
 }
-
-[data-testid="stSidebar"] { min-width:${k_sidebar_width}px; }
-[data-testid="stSidebar"] .block-container { padding-top:$s_lg; }
 
 html, body { font-family:$f_sans; }
 
@@ -270,7 +267,7 @@ html, body { font-family:$f_sans; }
   border:0; padding:0; margin:0 0 $s_md;
 }
 
-/* Rules reference table in sidebar */
+/* Rules reference table */
 .rules-table { border-collapse:collapse; width:100%; font-size:$t_body; }
 .rules-table th {
   text-align:left; font-size:$t_micro; text-transform:uppercase;
@@ -328,7 +325,7 @@ select:focus-visible, textarea:focus-visible,
 
 /* Print */
 @media print {
-  [data-testid="stSidebar"], [data-testid="stFileUploader"],
+  [data-testid="stFileUploader"],
   [data-testid="stToolbar"], [data-testid="stHeader"] { display:none; }
   .block-container { padding:0; max-width:none; }
   .brand-band, .band {
@@ -361,7 +358,6 @@ def stylesheet() -> str:
     )
     values.update({f"w_{name}": value for name, value in TOKENS["weight"].items()})
     values["k_top_clearance"] = f"{TOKENS['chrome']['top_clearance']}px"
-    values["k_sidebar_width"] = TOKENS["chrome"]["sidebar_width"]
     values["f_sans"] = TOKENS["font"]["sans"]
     values["f_mono"] = TOKENS["font"]["mono"]
     values["circular_h"] = TOKENS["sponsor_strip"]["circular_logo_height"]
@@ -881,7 +877,7 @@ def render_findings(payload: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Left panel
+# Rules and toggle, in the main column.
 # ---------------------------------------------------------------------------
 
 warm_layers()
@@ -889,14 +885,7 @@ load_graph_once()
 
 PACKET = "application_packet"
 
-with st.sidebar:
-    rules = engine.load_rules()
-    st.markdown("### Rules applied")
-    st.markdown(
-        f"**{len(rules)}** requirements taken from the 2014 regulation, each one "
-        f"carrying the section and page it comes from."
-    )
-    show_rules = st.toggle("Show all rules", value=False)
+rules = engine.load_rules()
 
 
 # ---------------------------------------------------------------------------
@@ -998,7 +987,21 @@ if uploaded is not None:
             f"`python -m septic review --pdf {uploaded.name}`"
         )
 
-elif show_rules:
+# ---------------------------------------------------------------------------
+# Rules toggle and reference, always visible at the foot of the review.
+# ---------------------------------------------------------------------------
+
+st.markdown("---")
+rule_cols = st.columns([3, 1])
+with rule_cols[0]:
+    st.caption(
+        f"{len(rules)} requirements taken from the 2014 regulation, each one "
+        f"carrying the section and page it comes from."
+    )
+with rule_cols[1]:
+    show_rules = st.toggle("Show all rules", value=False)
+
+if show_rules:
     st.markdown(f"### The {len(rules)} requirements this checks")
     st.caption(
         "Every one is quoted from the 2014 regulation. The section and page are "
