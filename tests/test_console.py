@@ -318,6 +318,26 @@ class TestAppRuns:
         assert "testdata" not in text.lower()
         assert not app_test.exception, [str(e.value) for e in app_test.exception]
 
+    def test_a_cold_page_load_constructs_no_aws_client(self, app_test,
+                                                       monkeypatch):
+        """The page has to render with no credentials in the environment.
+
+        Nothing on the first paint needs AWS: the GIS layers and the regulation
+        graph come off disk, and the Textract cache is only consulted once a
+        packet is uploaded. This breaks the session factory for the duration of
+        the run, so any attempt to build a client fails the test rather than
+        surfacing as a slow spinner in front of an audience.
+        """
+        def explode(*args, **kwargs):
+            raise AssertionError("the console built an AWS client on page load")
+
+        monkeypatch.setattr(config, "session", explode)
+        app_test.run()
+        assert not app_test.exception, [str(e.value) for e in app_test.exception]
+        text = " ".join(m.value or "" for m in app_test.markdown)
+        assert "Septic permit application review" in text
+        assert "Drop an application packet" in text
+
     def test_all_rules_can_be_shown(self, app_test):
         """A reviewer asks two questions: what failed, and what gets checked.
 
