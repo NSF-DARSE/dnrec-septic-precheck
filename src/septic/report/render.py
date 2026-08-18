@@ -262,13 +262,19 @@ h3 {
 .reason { margin:10px 0; font-size:18px; }
 .observed { font-size:17px; color:var(--muted); margin:6px 0; }
 .cite {
-  margin:14px 0 0; padding:13px 16px; background:#f9fafb;
-  border-left:4px solid #6b7280; border-radius:0 6px 6px 0;
+  margin:16px 0 0; padding:16px 20px; background:#f9fafb;
+  border-left:6px solid #374151; border-radius:0 8px 8px 0;
 }
-.cite .where { font-weight:650; font-size:16px; }
+.cite .where {
+  font-weight:700; font-size:14px; text-transform:uppercase;
+  letter-spacing:0.08em; color:#374151; margin-bottom:9px;
+}
+/* The verbatim regulation text. This is the difference between a tool that
+   asserts and a tool that cites, so it outweighs the finding text above it
+   rather than sitting below it as a footnote. */
 .cite blockquote {
-  margin:8px 0 0; font-style:italic; color:#1f2937; font-size:16.5px;
-  max-width:82ch;
+  margin:0; font-style:italic; color:#111827; font-size:19px;
+  line-height:1.5; max-width:88ch;
 }
 .fix { margin:14px 0 0; padding:13px 16px; background:#eff6ff; border-radius:6px; font-size:17.5px; }
 .fix b { display:block; font-size:14px; text-transform:uppercase; letter-spacing:0.07em; color:#1e40af; margin-bottom:5px; }
