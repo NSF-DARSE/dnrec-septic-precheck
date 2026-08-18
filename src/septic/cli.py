@@ -143,6 +143,79 @@ def cmd_candidates(argv: list[str]) -> int:
     return 0
 
 
+def cmd_graph(argv: list[str]) -> int:
+    from .rules import graph as reg_graph
+
+    ap = argparse.ArgumentParser(prog="septic graph")
+    sub = ap.add_subparsers(dest="action")
+
+    build_p = sub.add_parser("build", help="build the regulation graph")
+    build_p.add_argument("--pdf", type=Path, default=config.REGULATION_PDF)
+
+    ctx_p = sub.add_parser("context", help="show context for a section")
+    ctx_p.add_argument("section", help="section number, e.g. 5.3.4")
+
+    unr_p = sub.add_parser("unresolved", help="show unresolved deps for a rule")
+    unr_p.add_argument("rule_id", help="rule id from rules_7101.yaml")
+
+    sub.add_parser("orphans", help="sections with obligations not cited by rules")
+    sub.add_parser("summary", help="node and edge counts")
+
+    args = ap.parse_args(argv)
+    config.ensure_dirs()
+
+    if args.action == "build":
+        G, stats = reg_graph.build_graph(args.pdf)
+        path = reg_graph.save_graph(G)
+        summary = reg_graph.graph_summary(G)
+        print(f"accepted {stats.accepted} headings, "
+              f"rejected {stats.raw_candidates - stats.accepted}")
+        print(f"  header: {stats.rejected_header}, "
+              f"duplicate: {stats.rejected_duplicate}, "
+              f"list item: {stats.rejected_list_item}")
+        print(f"nodes: {summary['total_nodes']} "
+              f"({summary['nodes_by_type']})")
+        print(f"edges: {summary['total_edges']} "
+              f"({summary['edges_by_type']})")
+        print(f"saved to {path}")
+        return 0
+
+    # All other actions require a built graph
+    try:
+        G = reg_graph.load_graph()
+    except FileNotFoundError:
+        print("graph not built yet. Run: python -m septic graph build")
+        return 1
+
+    if args.action == "context":
+        result = reg_graph.context(G, args.section)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
+
+    if args.action == "unresolved":
+        result = reg_graph.unresolved(G, args.rule_id)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
+
+    if args.action == "orphans":
+        result = reg_graph.orphans(G)
+        print(f"{len(result)} sections with obligation language not cited by any rule:")
+        for item in result:
+            sec = item["section"]
+            title = item["title"][:60]
+            page = item["page"]
+            print(f"  {sec:<12} p.{page:<4} {title}")
+        return 0
+
+    if args.action == "summary":
+        summary = reg_graph.graph_summary(G)
+        print(json.dumps(summary, indent=2))
+        return 0
+
+    ap.print_help()
+    return 0
+
+
 COMMANDS = {
     "preflight": cmd_preflight,
     "harvest": cmd_harvest,
@@ -150,6 +223,7 @@ COMMANDS = {
     "verify": cmd_verify,
     "rules": cmd_rules,
     "candidates": cmd_candidates,
+    "graph": cmd_graph,
 }
 
 
