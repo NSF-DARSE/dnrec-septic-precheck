@@ -1,0 +1,77 @@
+{
+  "source": "https://enterprise.firstmap.delaware.gov/arcgis/rest/services",
+  "downloaded": "2026-08-17",
+  "bbox_wgs84": [
+    -75.8,
+    38.44,
+    -74.98,
+    39.85
+  ],
+  "layers": [
+    {
+      "name": "surface_water_major_rivers",
+      "service": "Hydrology/DE_Water/FeatureServer",
+      "layer": 0,
+      "simplify": 0.0001,
+      "description": "MajorRivers, polyline, derived from NHD",
+      "status": "ok",
+      "features": 2984,
+      "file": "surface_water_major_rivers.geojson.gz",
+      "size_mb": 0.13,
+      "uncompressed_mb": 0.79,
+      "service_total": 2984
+    },
+    {
+      "name": "surface_water_flowlines",
+      "service": "Hydrology/DE_Water/FeatureServer",
+      "layer": 1,
+      "simplify": 0.0003,
+      "description": "FlowLine, polyline, streams and ditches from NHD",
+      "status": "ok",
+      "features": 60712,
+      "file": "surface_water_flowlines.geojson.gz",
+      "size_mb": 1.54,
+      "uncompressed_mb": 12.74,
+      "service_total": 123960
+    },
+    {
+      "name": "surface_water_lakes_ponds",
+      "service": "Hydrology/DE_Water/FeatureServer",
+      "layer": 2,
+      "simplify": 0.0002,
+      "description": "Lakes and Ponds, polygon, from NHD",
+      "status": "ok",
+      "features": 14711,
+      "file": "surface_water_lakes_ponds.geojson.gz",
+      "size_mb": 1.32,
+      "uncompressed_mb": 6.7,
+      "service_total": 39498
+    },
+    {
+      "name": "public_ponds",
+      "service": "Hydrology/DE_Public_Ponds/FeatureServer",
+      "layer": 0,
+      "simplify": 0.0,
+      "description": "DE_Public_Ponds, public pond features",
+      "status": "ok",
+      "features": 51,
+      "file": "public_ponds.geojson.gz",
+      "size_mb": 0.0,
+      "uncompressed_mb": 0.01,
+      "service_total": 51
+    },
+    {
+      "name": "tax_ditches",
+      "service": "Hydrology/DE_TaxDitch/FeatureServer",
+      "layer": 0,
+      "simplify": 0.0003,
+      "description": "DE_TaxDitch, tax ditch centrelines with easements",
+      "status": "ok",
+      "features": 21449,
+      "file": "tax_ditches.geojson.gz",
+      "size_mb": 0.42,
+      "uncompressed_mb": 3.34,
+      "service_total": 21449
+    }
+  ]
+}

@@ -24,5 +24,20 @@ pdfplumber==0.11.10
 # no server.
 networkx==3.6.1
 
+# Geospatial screening and figures. All three are pinned to versions built
+# against the numpy 1.x C API, for the reason at the top of this file.
+#
+# This is not hypothetical. Installing matplotlib unpinned resolved it to 3.11.1,
+# which requires numpy 2, which upgraded numpy to 2.4.6, which broke pandas 1.5.3
+# and took the whole test suite down with it. matplotlib 3.7.5 is the last line
+# that works against numpy 1.23. Do not relax these without also moving pandas.
+#
+# shapely and pyproj rather than geopandas on purpose: geopandas pulls GDAL and
+# fiona, which is a much larger compiled surface for no benefit here, since the
+# only geometry operations needed are nearest distance and a projection.
+matplotlib==3.7.5
+shapely==2.0.6
+pyproj==3.6.1
+
 PyYAML==6.0.2
 pytest==9.1.1

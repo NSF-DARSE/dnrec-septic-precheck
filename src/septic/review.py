@@ -145,12 +145,57 @@ def analyze(
     raise ValueError("pass either a pdf path or a permit number")
 
 
+def permit_row(permit: str) -> dict | None:
+    """Find a permit's CSV row, for coordinates. Returns None without the CSV.
+
+    The CSV is gitignored and 45 MB, so its absence is normal rather than an
+    error. Screening is skipped when it is not there.
+    """
+    try:
+        import pandas as pd
+    except ImportError:
+        return None
+    if not config.PERMIT_CSV.exists():
+        return None
+    try:
+        frame = pd.read_csv(config.PERMIT_CSV, dtype=str, low_memory=False)
+    except Exception:  # noqa: BLE001
+        return None
+    subset = frame[frame["permitNumber"].astype(str) == str(permit)]
+    if subset.empty:
+        return None
+    return subset.iloc[0].to_dict()
+
+
+def screen_location(permit: str | None):
+    """Geospatial screening for a permit, or None.
+
+    Returns a Screening. A permit with no coordinates, which is about ten percent
+    of them, yields a Screening with no point, which contributes no facts and so
+    leaves any rule needing them UNKNOWN rather than passed.
+    """
+    if not permit:
+        return None
+    try:
+        from . import geo
+    except ImportError:
+        return None
+    row = permit_row(permit)
+    if row is None:
+        return None
+    try:
+        return geo.screen_permit(row)
+    except Exception:  # noqa: BLE001 - screening is advisory, never fatal
+        return None
+
+
 def review(
     pdf: Path | None = None,
     permit: str | None = None,
     manifest: Path | None = None,
     allow_network: bool = True,
     with_precedents: bool = True,
+    with_screening: bool = True,
     rephrase: bool = False,
     client: TextractClient | None = None,
 ) -> ReviewResult:
@@ -172,6 +217,22 @@ def review(
 
     extraction = extract_facts(document)
 
+    # Geospatial screening. The distance to mapped surface water is a measured
+    # fact the engine can consume alongside anything read off the packet. It is
+    # merged into the fact mapping rather than handled specially, so a rule that
+    # wants it sees it exactly like any other value, and a permit with no
+    # coordinates simply has no such fact.
+    screening = None
+    if with_screening:
+        candidate = permit or subject.get("permit_number")
+        if candidate is None and pdf is not None:
+            # Example filenames carry the permit number: permit_281364_60839580.
+            parts = Path(pdf).stem.split("_")
+            candidate = parts[1] if len(parts) > 1 else None
+        screening = screen_location(candidate)
+        if screening is not None:
+            extraction.facts.update(screening.facts())
+
     # The rules are the only thing that produces a verdict.
     report = engine.evaluate(extraction.facts)
 
@@ -188,6 +249,7 @@ def review(
         extraction=extraction,
         graph=_load_graph_quietly(),
         precedents=precedents,
+        screening=screening,
         subject=subject,
     )
 

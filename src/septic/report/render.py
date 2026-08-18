@@ -187,6 +187,40 @@ def render_text(composed) -> str:
             add(f"    from {fact['where']}")
         add("")
 
+    screening = c.get("screening") or {}
+    if screening.get("flags"):
+        add(RULE)
+        add("LOCATION SCREENING")
+        add(RULE)
+        add("")
+        for line in _wrap(
+            "Computed from the permit's mapped coordinates against state "
+            "hydrography layers. This is a screening prompt, not a measurement of "
+            "compliance: the regulation measures isolation distance from the "
+            "disposal area, and this measures from the geocoded address point, "
+            "which is somewhere else on the parcel. It tells a reviewer what to "
+            "check on the site plan."
+        ):
+            add(line)
+        add("")
+        point = screening.get("point") or {}
+        if point:
+            add(f"  location  {point.get('lat')}, {point.get('lon')}  "
+                f"from {point.get('source')}")
+            if point.get("cross_checked"):
+                add("  coordinates cross checked against the Geocoded Location "
+                    "column")
+        nearest = screening.get("nearest_water")
+        if nearest:
+            add(f"  nearest mapped surface water  "
+                f"{nearest['distance_feet']:.0f} ft, {nearest['label']} "
+                f"({nearest['layer']})")
+        add("")
+        for flag in screening["flags"]:
+            for line in _wrap(flag, indent="  "):
+                add(line)
+            add("")
+
     precedents = c.get("precedents") or {}
     entries = precedents.get("precedents") or []
     if entries:
@@ -415,6 +449,36 @@ def render_html(composed) -> str:
                 f"<td><b>{_esc(fact['value'])}</b></td>"
                 f"<td>{_esc(fact['where'])}</td></tr>")
         add("</table>")
+
+    screening = c.get("screening") or {}
+    if screening.get("flags"):
+        add("<h3>Location screening</h3>")
+        add("<p class='caveat'>Computed from the permit's mapped coordinates "
+            "against state hydrography layers. This is a screening prompt, not a "
+            "measurement of compliance: the regulation measures isolation distance "
+            "from the disposal area, and this measures from the geocoded address "
+            "point, which is somewhere else on the parcel. It tells a reviewer "
+            "what to check on the site plan.</p>")
+        point = screening.get("point") or {}
+        nearest = screening.get("nearest_water")
+        add("<table>")
+        if point:
+            checked = " (cross checked against Geocoded Location)" if point.get(
+                "cross_checked") else ""
+            add(f"<tr><th>coordinates</th><td>{_esc(point.get('lat'))}, "
+                f"{_esc(point.get('lon'))}{_esc(checked)}</td></tr>")
+        if nearest:
+            add(f"<tr><th>nearest mapped surface water</th><td>"
+                f"<b>{nearest['distance_feet']:.0f} ft</b> to "
+                f"{_esc(nearest['label'])} ({_esc(nearest['layer'])})</td></tr>")
+        add("</table>")
+        for flag in screening["flags"]:
+            add(f"<div class='notice'>{_esc(flag)}</div>")
+        figure = screening.get("figure_png")
+        if figure:
+            add(f"<p><img src='{_esc(figure)}' alt='Location map' "
+                f"style='max-width:100%;border:1px solid #d1d5db;"
+                f"border-radius:8px'></p>")
 
     precedents = c.get("precedents") or {}
     entries = precedents.get("precedents") or []

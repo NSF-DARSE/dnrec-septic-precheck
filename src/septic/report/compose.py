@@ -121,6 +121,7 @@ class Composed:
     missing_information: list[dict] = field(default_factory=list)
     discarded_readings: list[dict] = field(default_factory=list)
     facts_read: list[dict] = field(default_factory=list)
+    screening: dict[str, Any] = field(default_factory=dict)
     precedents: dict[str, Any] = field(default_factory=dict)
     notices: list[str] = field(default_factory=list)
     generated_at: str = ""
@@ -139,6 +140,7 @@ class Composed:
             "missing_information": self.missing_information,
             "discarded_readings": self.discarded_readings,
             "facts_read": self.facts_read,
+            "screening": self.screening,
             "precedents": self.precedents,
             "notices": self.notices,
             "generated_at": self.generated_at,
@@ -251,6 +253,7 @@ def compose(
     extraction=None,
     graph=None,
     precedents=None,
+    screening=None,
     subject: dict[str, Any] | None = None,
 ) -> Composed:
     """Turn a rule Report into report content.
@@ -258,6 +261,12 @@ def compose(
     report is the output of rules.engine.evaluate and is the sole source of the
     verdict. This function sorts, groups and annotates. It never recomputes an
     outcome and never suppresses one.
+
+    screening is geospatial context. It is presented as a screening flag telling
+    the reviewer what to check on the site plan, and it is not a finding. The
+    regulation measures isolation distance from the disposal area, while a geocoded
+    point is somewhere on the parcel, so the two are not the same measurement and
+    this must never read as compliance. See src/septic/geo.py.
     """
     provenance = getattr(extraction, "provenance", {}) or {}
     missing = list(getattr(extraction, "missing", []) or [])
@@ -327,6 +336,12 @@ def compose(
                 "shown for completeness only."
             )
 
+    screening_payload = {}
+    if screening is not None:
+        screening_payload = (
+            screening.to_json() if hasattr(screening, "to_json") else screening
+        )
+
     return Composed(
         verdict=verdict.value,
         headline=VERDICT_HEADLINE[verdict],
@@ -339,6 +354,7 @@ def compose(
         missing_information=missing_information,
         discarded_readings=list(getattr(extraction, "rejected", []) or []),
         facts_read=facts_read,
+        screening=screening_payload,
         precedents=precedent_payload,
         notices=notices,
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ"),
