@@ -377,6 +377,7 @@ class Fact:
     confidence: float | None = None
     label: str | None = None
     note: str | None = None
+    box: Any = None        # layout.Box or None
 
     def to_json(self) -> dict:
         return {
@@ -390,6 +391,7 @@ class Fact:
             ),
             "label": self.label,
             "note": self.note,
+            "box": self.box.to_json() if self.box is not None else None,
         }
 
     def describe(self) -> str:
@@ -793,6 +795,7 @@ def _from_checkboxes(
         page=form_field.page,
         confidence=form_field.confidence,
         label=form_field.key.strip().rstrip(":"),
+        box=form_field.key_box,
     )
 
 
@@ -873,6 +876,7 @@ def _from_form_fields(
             page=form_field.page,
             confidence=form_field.confidence,
             label=form_field.key.strip().rstrip(":"),
+            box=form_field.value_box,
         )
     return None
 

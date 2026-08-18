@@ -32,6 +32,7 @@ on-disk cache keyed by document SHA256. Nothing is fetched from a CDN.
 from __future__ import annotations
 
 import base64
+import hashlib
 import html as html_lib
 import sys
 import time
@@ -39,6 +40,7 @@ from pathlib import Path
 from string import Template
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
@@ -293,6 +295,32 @@ html, body { font-family:$f_sans; }
   border-left:$b_accent solid $c_unverified_edge; background:$c_notice_bg;
   color:$c_notice_fg; padding:$s_md $s_lg; font-size:$t_caption;
   margin-top:$s_sm; border-radius:0 $r_sm $r_sm 0;
+}
+
+/* PDF viewer */
+.pdf-viewer-controls {
+  display:flex; align-items:center; gap:$s_md; margin-bottom:$s_sm;
+  font-size:$t_caption; color:var(--muted);
+}
+.pdf-viewer-controls button {
+  background:$c_surface_sunken; border:$b_hairline solid var(--line);
+  border-radius:$r_sm; padding:$s_xs $s_md; cursor:pointer;
+  font-size:$t_caption; color:var(--ink);
+}
+.pdf-viewer-controls button:disabled { opacity:0.4; cursor:default; }
+.pdf-viewer-legend {
+  display:flex; flex-wrap:wrap; gap:$s_lg; margin-top:$s_sm;
+  font-size:$t_micro; color:var(--muted);
+}
+.pdf-viewer-legend-item {
+  display:flex; align-items:center; gap:$s_xs;
+}
+.pdf-viewer-legend-dot {
+  display:inline-block; width:12px; height:12px; border-radius:3px;
+  border:$b_hairline solid;
+}
+.pdf-viewer-coverage {
+  font-size:$t_caption; color:var(--muted); margin-top:$s_sm;
 }
 
 /* Attribution band */
@@ -877,6 +905,210 @@ def render_findings(payload: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# PDF viewer: rasterise pages, overlay highlights, page controls.
+# ---------------------------------------------------------------------------
+
+_PAGE_CACHE: dict[str, dict[int, str]] = {}
+
+
+def _rasterise_page(pdf_bytes: bytes, page_num: int, doc_hash: str) -> str:
+    """Render one page of the PDF as a base64 PNG data URI, cached by hash."""
+    if doc_hash in _PAGE_CACHE and page_num in _PAGE_CACHE[doc_hash]:
+        return _PAGE_CACHE[doc_hash][page_num]
+    import pypdfium2 as pdfium
+    doc = pdfium.PdfDocument(pdf_bytes)
+    if page_num < 1 or page_num > len(doc):
+        return ""
+    page = doc[page_num - 1]
+    bitmap = page.render(scale=2)
+    img = bitmap.to_pil()
+    import io
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+    uri = f"data:image/png;base64,{encoded}"
+    _PAGE_CACHE.setdefault(doc_hash, {})[page_num] = uri
+    return uri
+
+
+def _resolve_highlights(payload: dict, page_num: int) -> list[dict]:
+    """Collect highlight boxes for all findings whose fact is on this page.
+
+    Each entry carries left, top, width, height (normalised 0-1), colour token
+    name, rule_id, parameter, and observed value. The colour is chosen by outcome:
+    pass -> clear_edge, fail -> deficiency_edge, unknown -> unverified_edge.
+    A finding with outcome unknown is never painted in deficiency colour.
+    """
+    highlights = []
+    colour_map = {
+        "pass": "clear_edge",
+        "fail": "deficiency_edge",
+        "unknown": "unverified_edge",
+    }
+    all_findings = []
+    for group in ("deficiencies", "satisfied", "unresolved", "not_applicable"):
+        all_findings.extend(payload.get(group) or [])
+
+    # Group findings by parameter to detect multi-rule overlaps.
+    by_box_key: dict[str, list[dict]] = {}
+    for f in all_findings:
+        box = f.get("fact_box")
+        fp = f.get("fact_page")
+        if not box or fp != page_num:
+            continue
+        key = f"{box['left']},{box['top']},{box['width']},{box['height']}"
+        by_box_key.setdefault(key, []).append(f)
+
+    severity_order = {"fail": 0, "unknown": 1, "pass": 2}
+    for key, findings in by_box_key.items():
+        # Most serious outcome wins the colour.
+        findings.sort(key=lambda f: severity_order.get(f.get("outcome", ""), 3))
+        primary = findings[0]
+        outcome = primary.get("outcome", "unknown")
+        colour_token = colour_map.get(outcome, "unverified_edge")
+        box = primary["fact_box"]
+        tooltip_parts = []
+        for f in findings:
+            tooltip_parts.append(
+                f"{f.get('rule_id', '')}: {f.get('parameter', '')} = "
+                f"{f.get('observed', '')}"
+            )
+        highlights.append({
+            "left": box["left"],
+            "top": box["top"],
+            "width": box["width"],
+            "height": box["height"],
+            "colour": TOKENS["colour"][colour_token],
+            "tooltip": "; ".join(tooltip_parts),
+        })
+    return highlights
+
+
+def _viewer_html(page_uri: str, highlights: list[dict], page_num: int,
+                 total_pages: int) -> str:
+    """Build the self-contained HTML for the PDF viewer with overlays."""
+    overlay_divs = []
+    for h in highlights:
+        left_pct = h["left"] * 100
+        top_pct = h["top"] * 100
+        width_pct = h["width"] * 100
+        height_pct = h["height"] * 100
+        colour = h["colour"]
+        tooltip = html_lib.escape(h["tooltip"], quote=True)
+        overlay_divs.append(
+            f"<div title='{tooltip}' style='"
+            f"position:absolute;"
+            f"left:{left_pct:.3f}%;"
+            f"top:{top_pct:.3f}%;"
+            f"width:{width_pct:.3f}%;"
+            f"height:{height_pct:.3f}%;"
+            f"background:{colour}33;"
+            f"border:2px solid {colour};"
+            f"border-radius:2px;"
+            f"pointer-events:auto;"
+            f"cursor:help;"
+            f"box-sizing:border-box;"
+            f"'></div>"
+        )
+    overlays = "\n".join(overlay_divs)
+    return (
+        f"<div style='position:relative;width:100%;'>"
+        f"<img src='{page_uri}' style='width:100%;display:block;'>"
+        f"{overlays}"
+        f"</div>"
+    )
+
+
+def _coverage_line(payload: dict, page_num: int) -> str:
+    """How many findings could be located on this page, of how many total."""
+    all_findings = []
+    for group in ("deficiencies", "satisfied", "unresolved", "not_applicable"):
+        all_findings.extend(payload.get(group) or [])
+    total = len(all_findings)
+    located_on_page = sum(
+        1 for f in all_findings
+        if f.get("fact_box") and f.get("fact_page") == page_num
+    )
+    located_total = sum(1 for f in all_findings if f.get("fact_box"))
+    return (
+        f"{located_on_page} of {total} findings located on this page. "
+        f"{located_total} of {total} have a location in the packet."
+    )
+
+
+def render_pdf_viewer(pdf_bytes: bytes, doc_hash: str, payload: dict) -> None:
+    """Render the PDF viewer pane with page controls and highlights."""
+    import pypdfium2 as pdfium
+    doc = pdfium.PdfDocument(pdf_bytes)
+    total_pages = len(doc)
+
+    # Page state
+    page_key = f"viewer_page_{doc_hash[:16]}"
+    if page_key not in st.session_state:
+        st.session_state[page_key] = 1
+
+    # Page navigation
+    nav_cols = st.columns([1, 3, 1])
+    with nav_cols[0]:
+        if st.button("Prev", key=f"prev_{doc_hash[:16]}",
+                     disabled=(st.session_state[page_key] <= 1)):
+            st.session_state[page_key] -= 1
+            st.rerun()
+    with nav_cols[1]:
+        st.markdown(
+            f"<div style='text-align:center;font-size:"
+            f"{TOKENS['type_scale']['caption']}px;color:"
+            f"{TOKENS['colour']['muted']}'>page {st.session_state[page_key]}"
+            f" of {total_pages}</div>",
+            unsafe_allow_html=True,
+        )
+    with nav_cols[2]:
+        if st.button("Next", key=f"next_{doc_hash[:16]}",
+                     disabled=(st.session_state[page_key] >= total_pages)):
+            st.session_state[page_key] += 1
+            st.rerun()
+
+    current_page = st.session_state[page_key]
+
+    # Rasterise and overlay
+    page_uri = _rasterise_page(pdf_bytes, current_page, doc_hash)
+    highlights = _resolve_highlights(payload, current_page)
+    viewer_html = _viewer_html(page_uri, highlights, current_page, total_pages)
+
+    components.html(viewer_html, height=900, scrolling=True)
+
+    # Legend
+    legend_items = [
+        (TOKENS["colour"]["clear_edge"], "Satisfied check"),
+        (TOKENS["colour"]["deficiency_edge"], "Deficiency found"),
+        (TOKENS["colour"]["unverified_edge"], "Could not be read"),
+    ]
+    legend_html = "<div class='pdf-viewer-legend'>"
+    for colour, label in legend_items:
+        legend_html += (
+            f"<span class='pdf-viewer-legend-item'>"
+            f"<span class='pdf-viewer-legend-dot' style='"
+            f"background:{colour}33;border-color:{colour}'></span>"
+            f"{html_lib.escape(label)}</span>"
+        )
+    legend_html += "</div>"
+    st.markdown(legend_html, unsafe_allow_html=True)
+
+    # Coverage line
+    st.markdown(
+        f"<div class='pdf-viewer-coverage'>"
+        f"{html_lib.escape(_coverage_line(payload, current_page))}</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def jump_to_page(doc_hash: str, page: int) -> None:
+    """Set the viewer to show a specific page."""
+    page_key = f"viewer_page_{doc_hash[:16]}"
+    st.session_state[page_key] = page
+
+
+# ---------------------------------------------------------------------------
 # Rules and toggle, in the main column.
 # ---------------------------------------------------------------------------
 
@@ -958,23 +1190,30 @@ if uploaded is not None:
             # Metric row with segmented bar
             st.markdown(metric_row(payload), unsafe_allow_html=True)
 
-            # Findings rendered natively
-            render_findings(payload)
+            # Split layout: findings left, PDF viewer right.
+            findings_col, viewer_col = st.columns([1, 1])
 
-            # Map figure card
-            map_html = map_figure_card(payload)
-            if map_html:
-                st.markdown(map_html, unsafe_allow_html=True)
+            with findings_col:
+                # Findings rendered natively
+                render_findings(payload)
 
-            # Download the printable HTML report
-            html_report = render_html(payload, embedded=False)
-            doc_name = subject.get("document", "report")
-            st.download_button(
-                label="Download printable report",
-                data=html_report,
-                file_name=f"review_{doc_name}.html",
-                mime="text/html",
-            )
+                # Map figure card
+                map_html = map_figure_card(payload)
+                if map_html:
+                    st.markdown(map_html, unsafe_allow_html=True)
+
+                # Download the printable HTML report
+                html_report = render_html(payload, embedded=False)
+                doc_name = subject.get("document", "report")
+                st.download_button(
+                    label="Download printable report",
+                    data=html_report,
+                    file_name=f"review_{doc_name}.html",
+                    mime="text/html",
+                )
+
+            with viewer_col:
+                render_pdf_viewer(data, doc_hash, payload)
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"

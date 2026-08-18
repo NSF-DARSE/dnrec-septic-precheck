@@ -747,3 +747,107 @@ class TestUploadDegradation:
             "the console must never start a Textract job, that is the CLI's job"
         )
         assert "needs AWS credentials" in source
+
+
+
+class TestPDFViewer:
+    """Tests for the split PDF viewer and fact box provenance."""
+
+    def test_fact_box_survives_into_payload(self):
+        """A fact with a box must carry it through compose into the payload.
+
+        The viewer needs the box to highlight the source on the rendered page,
+        so dropping it anywhere on the path from extraction to composed output
+        means a highlight disappears.
+        """
+        pdfs = cached_examples()
+        if not pdfs:
+            pytest.skip("no cached examples present")
+
+        pdf = pdfs[0]
+        client = TextractClient()
+        analysis = client.cached_by_hash(document_hash(pdf.read_bytes()))
+        assert analysis is not None and analysis.ok
+
+        document = layout.parse_blocks(analysis.blocks)
+        extraction = extract_facts(document)
+
+        # At least one fact must have a box from the real packet.
+        facts_with_box = [
+            f for f in extraction.provenance.values() if f.box is not None
+        ]
+        assert facts_with_box, "no fact has a box, so the viewer cannot highlight"
+
+        # Compose the payload and verify the box appears in facts_read.
+        from septic.rules import engine as eng
+        report = eng.evaluate(extraction.facts)
+        composed = compose_mod.compose(report, extraction=extraction)
+        payload = composed.to_json()
+
+        facts_read = payload.get("facts_read") or []
+        boxes_in_payload = [f for f in facts_read if f.get("box") is not None]
+        assert boxes_in_payload, "fact boxes did not survive into the composed payload"
+        # Verify the box structure.
+        sample = boxes_in_payload[0]["box"]
+        assert "left" in sample and "top" in sample
+        assert "width" in sample and "height" in sample
+        assert "page" in sample
+
+    def test_fact_box_appears_on_findings(self):
+        """A finding whose fact has a box must expose fact_box in the payload."""
+        pdfs = cached_examples()
+        if not pdfs:
+            pytest.skip("no cached examples present")
+
+        pdf = pdfs[0]
+        client = TextractClient()
+        analysis = client.cached_by_hash(document_hash(pdf.read_bytes()))
+        assert analysis is not None and analysis.ok
+
+        document = layout.parse_blocks(analysis.blocks)
+        extraction = extract_facts(document)
+        from septic.rules import engine as eng
+        report = eng.evaluate(extraction.facts)
+        composed = compose_mod.compose(report, extraction=extraction)
+        payload = composed.to_json()
+
+        all_findings = (
+            payload.get("deficiencies", [])
+            + payload.get("satisfied", [])
+            + payload.get("unresolved", [])
+        )
+        findings_with_box = [f for f in all_findings if f.get("fact_box")]
+        # If any fact has a box, the corresponding finding should too.
+        facts_with_box = [
+            f for f in extraction.provenance.values() if f.box is not None
+        ]
+        if facts_with_box:
+            assert findings_with_box, (
+                "facts have boxes but no finding exposes fact_box"
+            )
+
+    def test_no_unread_finding_rendered_in_deficiency_colour(self):
+        """An unread finding must never be painted red.
+
+        The deficiency colour means a requirement was positively violated. An
+        unresolved finding means the value could not be read at all. Painting
+        that amber rather than red is what separates absence of evidence from
+        evidence of absence, and the viewer must respect that boundary.
+        """
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+
+        # The _resolve_highlights function maps outcomes to colour tokens.
+        # Verify that "unknown" maps to unverified_edge, not deficiency_edge.
+        assert "\"unknown\": \"unverified_edge\"" in source, (
+            "unknown outcome is not mapped to unverified_edge in the highlight resolver"
+        )
+        # Verify deficiency_edge is only used for "fail" outcome.
+        assert "\"fail\": \"deficiency_edge\"" in source, (
+            "fail outcome is not mapped to deficiency_edge"
+        )
+
+    def test_no_http_in_app(self):
+        """The console must not reference any remote resource."""
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        for pattern in ("http://", "https://", "fonts.googleapis", "cdn."):
+            assert pattern not in source, f"found {pattern!r} in app.py"

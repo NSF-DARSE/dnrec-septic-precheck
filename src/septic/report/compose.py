@@ -135,6 +135,10 @@ class Finding:
     # where that value came from. Carried through from the Evaluation rather than
     # recovered from the reason text.
     excluded_by: dict | None = None
+    # The bounding box of the fact that supplied this finding's observed value,
+    # carried through so the viewer can highlight it on the rendered page.
+    fact_box: dict | None = None
+    fact_page: int | None = None
 
     @property
     def citation(self) -> str:
@@ -160,6 +164,8 @@ class Finding:
             "remedy": self.remedy,
             "verified": self.verified,
             "provenance": self.provenance,
+            "fact_box": self.fact_box,
+            "fact_page": self.fact_page,
             "cross_references": self.cross_references,
             "definitions": self.definitions,
             "exceptions": self.exceptions,
@@ -325,6 +331,8 @@ def _finding_from(evaluation, graph, provenance: dict,
         verified=rule.verified,
         parameter=rule.parameter,
         provenance=fact.describe() if fact else None,
+        fact_box=fact.box.to_json() if fact and fact.box else None,
+        fact_page=fact.page if fact else None,
         cross_references=ctx["cross_references"],
         definitions=ctx["definitions"],
         exceptions=ctx["exceptions"],
@@ -425,6 +433,8 @@ def compose(
             "source": fact.source,
             "where": fact.describe(),
             "raw": fact.raw,
+            "page": fact.page,
+            "box": fact.box.to_json() if fact.box is not None else None,
         }
         for name, fact in sorted(provenance.items())
     ]
