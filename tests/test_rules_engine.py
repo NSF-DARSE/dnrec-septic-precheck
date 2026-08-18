@@ -97,9 +97,16 @@ class TestPresenceOperators:
         r = rule(operator=Operator.PRESENT, threshold=None)
         assert evaluate_rule(r, {"widgets": "yes"}).outcome is Outcome.PASS
 
-    def test_present_fails_when_missing(self):
+    def test_present_is_unknown_when_the_extractor_never_produced_it(self):
+        """Absence of evidence is not evidence of absence.
+
+        If the parameter is not in the facts at all, nobody established whether
+        the packet contains it. On a scanned site plan that is the normal case:
+        the item may be drawn and simply unreadable. Reporting FAIL would tell a
+        reviewer the item is missing when the truth is it could not be read.
+        """
         r = rule(operator=Operator.PRESENT, threshold=None)
-        assert evaluate_rule(r, {}).outcome is Outcome.FAIL
+        assert evaluate_rule(r, {}).outcome is Outcome.UNKNOWN
 
     def test_present_fails_on_empty_string(self):
         r = rule(operator=Operator.PRESENT, threshold=None)
@@ -239,22 +246,25 @@ class TestSchemaValidation:
 
 
 class TestShippedRuleSet:
-    def test_every_shipped_rule_is_unverified(self):
+    def test_every_shipped_rule_is_reviewed(self):
         rules = load_rules()
-        assert rules, "expected seed rules to load"
-        assert all(not r.verified for r in rules)
+        assert rules, "expected the rule set to load"
+        assert all(r.verified for r in rules), (
+            "a rule was added without being read against the regulation: "
+            f"{[r.id for r in rules if not r.verified]}"
+        )
 
-    def test_no_shipped_rule_can_produce_a_verdict(self):
-        """The interlock: an unverified threshold cannot PASS or FAIL.
+    def test_shipped_rules_actually_evaluate(self):
+        """The rules have to produce outcomes, not just load.
 
-        This replaces an earlier test that asserted no rule shipped a threshold
-        at all. That was the right guard while the file was deliberately empty of
-        numbers, but the rule set now stages real thresholds read from the
-        regulation for a human to certify, so the guard has to move to the
-        property that still has to hold: a number nobody has checked cannot reach
-        a reviewer as a finding. Facts are supplied deliberately generously here,
-        including values that would fail every numeric rule, and the outcome must
-        still be UNKNOWN for all of them.
+        The interlock itself, that a rule nobody has read against the regulation
+        cannot reach a reviewer as a finding, is covered separately with
+        synthetic rules in TestVerificationInterlock. It cannot be asserted here
+        any more, because every shipped rule has now been read against its cited
+        page. What this test guards instead is the opposite failure: a rule set
+        that loads cleanly and then silently declines to check anything. Facts
+        are supplied deliberately generously, including values that violate every
+        numeric threshold, so each rule has to come back with a real outcome.
         """
         generous_facts = {
             "system_scale": "small",
@@ -279,16 +289,15 @@ class TestShippedRuleSet:
         }
         report = evaluate(generous_facts)
         assert report.evaluations, "expected the shipped rules to evaluate"
-        assert not report.failures, (
-            "an unverified rule produced a FAIL: "
-            f"{[e.rule.id for e in report.failures]}"
+        assert report.failures, (
+            "facts violating every threshold produced no failure at all, so the "
+            "rules are not being applied"
         )
-        assert not report.passes, (
-            "an unverified rule produced a PASS: "
-            f"{[e.rule.id for e in report.passes]}"
+        assert not report.unknowns, (
+            "a rule could not be evaluated even with every fact supplied: "
+            f"{[e.rule.id for e in report.unknowns]}"
         )
-        assert len(report.unknowns) == len(report.evaluations)
-        assert report.verdict is Verdict.CANNOT_VERIFY
+        assert report.verdict is Verdict.LIKELY_RETURN
 
     def test_every_shipped_rule_carries_a_real_citation(self):
         """A staged rule a human cannot look up is not reviewable."""
@@ -307,7 +316,13 @@ class TestShippedRuleSet:
             if r.operator.is_numeric:
                 assert r.units, f"{r.id} has a numeric threshold but no units"
 
-    def test_shipped_rule_set_yields_cannot_verify(self):
+    def test_a_packet_missing_most_values_cannot_be_cleared(self):
+        """A near empty packet must not come back clean.
+
+        Facts this thin leave most rules unevaluable, and a rule that could not
+        be checked is not a rule that passed. The verdict has to say so rather
+        than reporting no deficiencies.
+        """
         report = evaluate({"site_plan": "yes", "perc_rate": 30, "lot_area": 20000})
         assert report.verdict is Verdict.CANNOT_VERIFY
-        assert len(report.unknowns) == len(report.evaluations)
+        assert report.unknowns, "expected unevaluable rules to be reported"

@@ -355,13 +355,16 @@ class TestNoNetworkNeeded:
         assert "PRE-SUBMISSION REVIEW" in text
         assert "<!doctype html>" in html
 
-    def test_shipped_rules_offline_give_cannot_verify(self, clean_document):
+    def test_shipped_rules_run_offline_against_a_real_packet(self, clean_document):
+        """The rules have to be applied with no network, not merely loaded."""
         extraction = extract_facts(clean_document)
         report = engine.evaluate(extraction.facts)
         composed = compose_mod.compose(report, extraction=extraction)
-        assert composed.headline == "CANNOT VERIFY"
-        assert composed.counts["fail"] == 0
-        assert composed.counts["pass"] == 0
+        counts = composed.counts
+        assert sum(counts.values()) == len(engine.load_rules())
+        assert counts["pass"] + counts["fail"] > 0, (
+            "no rule reached a decision on this packet, so nothing was applied"
+        )
 
 
 class TestRendering:

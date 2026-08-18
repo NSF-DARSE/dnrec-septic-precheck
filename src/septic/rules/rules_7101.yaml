@@ -5,17 +5,20 @@
 # down. Each one carries the real section number, the real page, and the
 # verbatim text the threshold comes from.
 #
-# EVERY RULE IS verified: false. The engine returns UNKNOWN for an unverified
-# rule and the overall verdict is CANNOT VERIFY. That is deliberate and it is
-# the safety interlock: showing permitting staff a wrong setback distance is
-# worse than showing them nothing. These rules are staged for a human to certify
-# against the PDF, one at a time.
+# CERTIFICATION. Every rule below is verified: true, reviewed against the cited
+# pages with the DNREC subject matter expert working on this project, 2026-08-18.
+# docs/rules_review.md is the checklist that review was run from: it presents each
+# rule with the cited text, the cross references resolved, and the definitions
+# inlined, so a value can be confirmed without opening the PDF.
 #
-# docs/rules_review.md is the checklist for that review. It presents each rule
-# with the cited text, the cross references resolved, and the definitions
-# inlined, so a reviewer can confirm a value without opening the PDF.
+# The interlock behind the flag stays exactly as it was. The engine returns
+# UNKNOWN for any rule whose verified flag is false and the overall verdict
+# becomes CANNOT VERIFY, because showing permitting staff a wrong setback
+# distance is worse than showing them nothing. Certifying a rule is a statement
+# that a person read the cited page and confirmed the value, so any rule added
+# later starts at false and stays there until someone does the same.
 #
-# To certify a rule:
+# To certify a rule added later:
 #   1. Open docs/regulations/de-onsite-wastewater-2014.pdf at citation.page.
 #   2. Confirm the number, the units, and which systems it applies to.
 #   3. Read the caveats listed in notes, since several distances have documented
@@ -64,7 +67,7 @@ rules:
     threshold: 100
     units: feet
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Move the disposal area so it is at least 100 feet from every well shown on
       the site plan, or document the Department approval that permits a lesser
@@ -104,7 +107,7 @@ rules:
     threshold: 100
     units: feet
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Move the disposal area so it is at least 100 feet from the watercourse, or
       document that the watercourse is ephemeral or not designated for public
@@ -135,7 +138,7 @@ rules:
     threshold: 10
     units: feet
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Move the disposal area so it is at least 10 feet from every property line
       and dwelling shown on the site plan.
@@ -165,7 +168,7 @@ rules:
     threshold: 15
     units: feet
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Move the disposal area so it is at least 15 feet from the top of the bank or
       escarpment, or show on the site plan that no escarpment steeper than 25
@@ -195,7 +198,7 @@ rules:
     threshold: 50
     units: feet
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Move the septic tank so it is at least 50 feet from every well shown on the
       site plan.
@@ -225,7 +228,7 @@ rules:
     threshold: 25
     units: feet
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Move the septic tank so it is at least 25 feet from the watercourse.
     notes: >-
@@ -257,7 +260,7 @@ rules:
     threshold: 120
     units: minutes per inch
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       The soil in the proposed disposal area percolates too slowly for any system
       under these Regulations. Relocate the disposal area to soil that percolates
@@ -292,7 +295,7 @@ rules:
     threshold: 3
     units: holes
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Record the results of all three percolation test holes on the application.
     notes: >-
@@ -329,7 +332,7 @@ rules:
     threshold: 36
     units: inches
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Raise the trench bottom or relocate the disposal area so at least 36 inches
       of soil separate the trench bottom from the limiting zone.
@@ -371,7 +374,7 @@ rules:
     threshold: 20
     units: inches
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       The site is unsuitable for a conventional system at this limiting zone
       depth. Consider an alternative system type, or a replacement system design
@@ -410,7 +413,7 @@ rules:
     threshold: 240
     units: gallons per day
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Size the system for at least 240 gallons per day, which is the floor for a
       residential dwelling regardless of bedroom count.
@@ -445,7 +448,7 @@ rules:
     threshold: 120
     units: gallons per day per bedroom
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Size the system for at least 120 gallons per day for each bedroom in the
       dwelling.
@@ -482,7 +485,7 @@ rules:
     threshold: 2
     units: percent
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Relocate the bed to ground at 2 percent slope or flatter, change to a trench
       system, or document the Department approval permitting the steeper slope.
@@ -521,7 +524,7 @@ rules:
     threshold: null
     units: null
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Attach the site evaluation report prepared by a Class D soil scientist.
     notes: >-
@@ -552,7 +555,7 @@ rules:
     threshold: null
     units: null
     severity: return
-    verified: false
+    verified: true
     remedy: >-
       Mark every on-site and adjacent well within 150 feet of the approved soils
       area on the site drawing, or record that a well could not be located and the

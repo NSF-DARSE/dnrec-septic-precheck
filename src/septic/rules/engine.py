@@ -148,11 +148,27 @@ def evaluate_rule(rule: Rule, facts: dict[str, Any]) -> Evaluation:
     observed = facts.get(rule.parameter)
 
     if op.value == "present":
-        return (
-            Evaluation(rule, Outcome.PASS, f"{rule.parameter} is provided", observed)
-            if present
-            else Evaluation(rule, Outcome.FAIL, f"{rule.parameter} is missing", None)
-        )
+        if present:
+            return Evaluation(
+                rule, Outcome.PASS, f"{rule.parameter} is provided", observed
+            )
+        # Absence of evidence is not evidence of absence. If the extractor never
+        # produced this parameter at all, nobody has established whether the
+        # packet contains it, and on a scanned site plan that is the usual case:
+        # the item may well be drawn and simply unreadable. Reporting FAIL there
+        # tells a reviewer the item is missing when the truth is that it could
+        # not be read, which is the one mistake this tool cannot afford.
+        #
+        # FAIL is reserved for a positive finding of absence: the extractor
+        # produced the field and it came back empty.
+        if rule.parameter not in facts:
+            return Evaluation(
+                rule,
+                Outcome.UNKNOWN,
+                f"{rule.parameter} could not be read from the application, so "
+                f"whether it is present was not established",
+            )
+        return Evaluation(rule, Outcome.FAIL, f"{rule.parameter} is missing", None)
     if op.value == "absent":
         return (
             Evaluation(rule, Outcome.FAIL, f"{rule.parameter} is present", observed)

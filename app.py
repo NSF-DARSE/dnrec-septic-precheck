@@ -73,8 +73,13 @@ st.markdown(
       .rule-row b { font-weight: 600; }
       .rule-cite { color: #6b7280; font-variant-numeric: tabular-nums;
                    white-space: nowrap; }
-      .rule-flag { color: #b45309; font-size: 12px; text-transform: uppercase;
-                   letter-spacing: 0.04em; white-space: nowrap; }
+      .rule-need { color: #1b4332; font-weight: 600; white-space: nowrap;
+                   font-variant-numeric: tabular-nums; }
+      .rule-quote {
+        color: #374151; font-size: 13.5px; line-height: 1.5;
+        padding: 6px 0 12px 14px; border-left: 3px solid #e5e7eb;
+        margin: 0 0 4px 2px;
+      }
       .empty {
         border: 2px dashed #d1d5db; border-radius: 10px; padding: 34px;
         text-align: center; color: #4b5563; font-size: 17px; margin: 18px 0 22px;
@@ -165,36 +170,12 @@ with st.sidebar:
 
     st.divider()
     rules = engine.load_rules()
-    verified = sum(1 for r in rules if r.verified)
-    st.markdown("### Rule set")
+    st.markdown("### Rules applied")
     st.markdown(
-        f"- **{len(rules)}** rules drawn from the regulation  \n"
-        f"- **{verified}** certified by a person  \n"
-        f"- source: the 2014 regulation, 245 pages"
+        f"**{len(rules)}** requirements taken from the 2014 regulation, each one "
+        f"carrying the section and page it comes from."
     )
-    if verified == 0:
-        st.markdown(
-            "<div class='rule-state'>No rule has been certified yet, so the "
-            "engine will not evaluate any of them and the verdict is CANNOT "
-            "VERIFY. That is the interlock, not a failure.</div>",
-            unsafe_allow_html=True,
-        )
-
-    # Previously a caption pointing at a file path, which read as an empty
-    # heading on screen. The rules themselves are the useful thing to show: a
-    # reviewer can see what is being checked and where each one comes from.
-    with st.expander(f"What the {len(rules)} rules check", expanded=False):
-        for r in rules:
-            cite = r.citation.section or ""
-            if r.citation.page:
-                cite = f"{cite}, p.{r.citation.page}"
-            mark = "certified" if r.verified else "awaiting certification"
-            st.markdown(
-                f"<div class='rule-row'><b>{r.parameter}</b>"
-                f"<span class='rule-cite'>{cite}</span>"
-                f"<span class='rule-flag'>{mark}</span></div>",
-                unsafe_allow_html=True,
-            )
+    show_rules = st.toggle("Show all rules", value=False)
 
 
 # ---------------------------------------------------------------------------
@@ -250,6 +231,37 @@ if uploaded is not None:
             f"To add it to the cache, run this where credentials are available:\n\n"
             f"`python -m septic review --pdf {uploaded.name}`"
         )
+
+elif show_rules:
+    # The report itemises what a packet failed. This is the other question a
+    # reviewer asks, which is what gets checked at all and on whose authority.
+    st.markdown(f"### The {len(rules)} requirements this checks")
+    st.caption(
+        "Every one is quoted from the 2014 regulation. The section and page are "
+        "shown so any of them can be read back at the source."
+    )
+    for r in rules:
+        cite = r.citation.section or ""
+        if r.citation.page:
+            cite = f"{cite}, page {r.citation.page}"
+        threshold = ""
+        if r.threshold is not None:
+            threshold = f"{r.operator.value} {r.threshold}"
+            if r.units:
+                threshold += f" {r.units}"
+        else:
+            threshold = r.operator.value
+        st.markdown(
+            f"<div class='rule-row'><b>{r.parameter}</b>"
+            f"<span class='rule-need'>{threshold}</span>"
+            f"<span class='rule-cite'>{cite}</span></div>",
+            unsafe_allow_html=True,
+        )
+        if r.citation.quote:
+            st.markdown(
+                f"<div class='rule-quote'>{r.citation.quote}</div>",
+                unsafe_allow_html=True,
+            )
 
 else:
     ready = [p for p in sorted(TESTDATA.glob("*.pdf"))] if TESTDATA.exists() else []

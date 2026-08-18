@@ -104,8 +104,14 @@ class TestOfflineReviewPath:
             assert finding.section
             assert finding.section in html
 
-    def test_verification_state_is_disclosed(self):
-        """The refusal to answer on unverified rules must be visible."""
+    def test_unevaluated_checks_are_never_reported_as_passing(self):
+        """A check that did not run must be visibly separate from one that passed.
+
+        This is the property the whole report rests on. Most isolation distances
+        live on a scanned drawing that cannot be measured, so those rules come
+        back unevaluated, and folding them into the passes would tell a reviewer
+        an application is clean when most of it was never checked.
+        """
         pdfs = cached_examples()
         if not pdfs:
             pytest.skip("no cached examples present")
@@ -115,9 +121,12 @@ class TestOfflineReviewPath:
         composed = compose_mod.compose(
             engine.evaluate(extraction.facts), extraction=extraction
         )
-        joined = " ".join(composed.notices)
-        assert "not been confirmed" in joined
-        assert render_html(composed).count("not been confirmed") >= 1
+        counts = composed.counts
+        assert counts["unknown"] > 0, "expected some checks to be unevaluable"
+        assert len(composed.unresolved) == counts["unknown"]
+        assert len(composed.satisfied) == counts["pass"]
+        html = render_html(composed)
+        assert "could not be evaluated" in html.lower()
 
     def test_uncached_document_is_detectable(self):
         """So the console can explain instead of hanging on an upload."""
@@ -179,15 +188,17 @@ class TestAppRuns:
         assert app_test.sidebar.get("file_uploader"), "no uploader rendered"
         assert not app_test.sidebar.radio, "a preselected application list came back"
 
-    def test_verdict_reaches_the_screen(self, app_test):
-        if not cached_examples():
-            pytest.skip("no cached examples present")
+    def test_the_screen_addresses_the_reviewer(self, app_test):
+        """The audience is the reviewer assessing an application, not an applicant.
+
+        The heading used to say pre-submission review, which frames the tool as
+        something an applicant runs before filing. It is the largest text on a
+        projected screen, so the wording matters.
+        """
         app_test.run()
         text = " ".join(m.value or "" for m in app_test.markdown)
-        assert any(
-            headline in text or headline in str(app_test)
-            for headline in VERDICT_COLOR
-        ) or "pre-submission review" in text
+        assert "Septic permit application review" in text
+        assert "pre-submission" not in text.lower()
 
     def test_empty_state_points_at_the_sample_packets(self, app_test):
         """With nothing uploaded the screen must say what to do next.
@@ -203,20 +214,26 @@ class TestAppRuns:
         assert "testdata" in text, "empty state does not name the sample folder"
         assert not app_test.exception, [str(e.value) for e in app_test.exception]
 
-    def test_rule_list_is_browsable(self, app_test):
-        """The sidebar used to show a caption naming a file, which read as blank.
+    def test_all_rules_can_be_shown(self, app_test):
+        """A reviewer asks two questions: what failed, and what gets checked.
 
-        What a reviewer needs is the rules themselves with their citations.
+        The report answers the first. The toggle answers the second, listing every
+        requirement with the section, page, and quoted regulation text behind it.
         """
         app_test.run()
-        labels = [e.label for e in app_test.get("expander")]
-        assert any("rules check" in (l or "") for l in labels), labels
+        toggles = app_test.get("toggle")
+        assert toggles, "no control for showing the rules"
+        toggles[0].set_value(True).run()
+        assert not app_test.exception, [str(e.value) for e in app_test.exception]
+        text = " ".join(m.value or "" for m in app_test.markdown)
+        assert "requirements this checks" in text, text[:300]
 
-    def test_rule_state_is_shown_in_the_sidebar(self, app_test):
-        """A reviewer must see that no rule is certified."""
+    def test_sidebar_says_how_many_rules_are_applied(self, app_test):
+        """A reviewer has to see the scope of what was checked."""
         app_test.run()
         sidebar_text = " ".join(m.value or "" for m in app_test.sidebar.markdown)
-        assert "certified by a person" in sidebar_text
+        assert "Rules applied" in sidebar_text
+        assert str(len(engine.load_rules())) in sidebar_text
 
 
 class TestUploadDegradation:

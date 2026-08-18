@@ -35,48 +35,50 @@ does not depend on a diagram renderer running in the reader's browser.
 
 ```mermaid
 flowchart TB
-    portal["DNREC permit portal<br/>den.dnrec.delaware.gov"]
-    csv["Permit CSV export<br/>data.delaware.gov"]
-    harvest["harvest<br/>septic/harvest/"]
-    s3[("S3<br/>dnrec-septic-permits-241809646258")]
-    textract["Textract<br/>StartDocumentAnalysis<br/>FORMS and TABLES"]
-    cache[("Textract cache on disk<br/>keyed by document SHA256")]
-    layout["block parser<br/>ingest/layout.py"]
-    extract["field extractor<br/>ingest/extract.py"]
-    engine["rule engine<br/>rules/engine.py"]
-    yaml[("rules_7101.yaml<br/>15 rules, 0 certified")]
+    portal["DNREC permit portal"]
+    csv["Permit CSV export"]
+    harvest["harvest"]
+    s3[("S3 bucket")]
+    textract["Amazon Textract<br/>FORMS and TABLES"]
+    cache[("Textract cache<br/>keyed by SHA256")]
+    layout["block parser"]
+    extract["field extractor"]
     pdf[("Regulation PDF<br/>2014, 245 pages")]
-    reggraph[("Regulation graph<br/>reg_graph.json")]
-    embed["Bedrock Titan v2<br/>embeddings only"]
-    index[("Local vector index<br/>permit_index.json")]
-    compose["report composer<br/>report/compose.py"]
-    wording["Bedrock text model<br/>remedy wording only"]
-    report["Reviewer report<br/>text and HTML"]
+    reggraph[("Regulation graph")]
+    yaml[("rules_7101.yaml<br/>15 requirements")]
+    engine["rule engine"]
+    embed["Bedrock Titan<br/>embeddings only"]
+    index[("Permit index")]
+    compose["report composer"]
+    wording["Bedrock text<br/>wording only"]
+    report["Reviewer report"]
 
-    csv -->|"which permits to fetch"| harvest
-    portal -->|"permit pages and PDFs"| harvest
-    harvest -->|"PDFs and manifest"| s3
-    s3 -->|"S3 object reference"| textract
-    textract -->|"blocks, cached once"| cache
-    cache -->|"blocks"| layout
-    layout -->|"lines, form fields, tables"| extract
-    extract -->|"facts with provenance"| engine
-    yaml -->|"thresholds and citations"| engine
-    pdf -->|"parsed once into"| reggraph
-    reggraph -->|"cross references and definitions"| compose
-    engine -->|"PASS, FAIL, UNKNOWN per rule"| compose
-    csv -->|"permit summaries"| embed
-    embed -->|"vectors"| index
-    index -->|"similar prior permits, context only"| compose
-    compose -->|"optional rephrasing"| wording
-    wording -->|"plainer wording, no findings"| compose
-    compose -->|"verdict, findings, citations"| report
+    portal --> harvest
+    csv --> harvest
+    harvest --> s3
+    s3 --> textract
+    textract --> cache
+    cache --> layout
+    layout --> extract
+    pdf --> reggraph
+    extract --> engine
+    yaml --> engine
+    engine --> compose
+    reggraph --> compose
+    csv --> embed
+    embed --> index
+    index --> compose
+    compose --> wording
+    compose --> report
 
+    linkStyle 8 stroke-width:2px
+    linkStyle 9 stroke-width:2px
+    linkStyle 10 stroke-width:2px
     style engine fill:#1b4332,color:#fff
     style yaml fill:#1b4332,color:#fff
-    style embed fill:#555,color:#fff
-    style wording fill:#555,color:#fff
-    style index fill:#555,color:#fff
+    style embed fill:#6b7280,color:#fff
+    style wording fill:#6b7280,color:#fff
+    style index fill:#6b7280,color:#fff
 ```
 
 </details>
