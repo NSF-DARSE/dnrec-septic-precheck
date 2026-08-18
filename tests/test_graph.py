@@ -299,7 +299,13 @@ class TestOrphans:
         assert len(result) > 0, "Expected at least some orphan sections"
 
     def test_orphans_have_obligation_language(self, regulation_graph):
-        """Each orphan section must contain obligation language."""
+        """Each orphan must carry obligation language in its heading or body.
+
+        The heading matters. Sections here put their first sentence in the heading
+        line, so "5.3.4.1 The minimum isolation distances set forth in Exhibit C
+        shall be maintained" has its whole obligation in the title and an empty
+        body. Searching the body alone undercounted the coverage gap by about half.
+        """
         import re
         G = regulation_graph
         OBLIGATION_RE = re.compile(
@@ -309,12 +315,45 @@ class TestOrphans:
             re.IGNORECASE,
         )
         result = orphans(G)
-        for item in result[:20]:  # spot check first 20
+        for item in result[:40]:
             section_id = f"section:{item['section']}"
             if section_id in G:
-                text = G.nodes[section_id].get("text", "")
-                assert OBLIGATION_RE.search(text), (
-                    f"Orphan {item['section']} has no obligation language in text"
+                attrs = G.nodes[section_id]
+                combined = f"{attrs.get('title', '')} {attrs.get('text', '')}"
+                assert OBLIGATION_RE.search(combined), (
+                    f"orphan {item['section']} has no obligation language"
+                )
+
+    def test_orphans_counts_headings_not_only_bodies(self, regulation_graph):
+        """A regression guard on the undercount.
+
+        Restricting the search to the body returned 570 where the correct answer
+        is 993, and the smaller number was being quoted as the coverage gap.
+        """
+        import re
+        G = regulation_graph
+        OBLIGATION_RE = re.compile(
+            r"\b(shall|must|minimum|maximum|prohibited|is\s+required)\b", re.I
+        )
+        title_only = [
+            node_id for node_id, attrs in G.nodes(data=True)
+            if attrs.get("type") == "Section"
+            and not (attrs.get("text") or "").strip()
+            and OBLIGATION_RE.search(attrs.get("title", ""))
+        ]
+        assert title_only, "expected sections whose obligation is in the heading"
+        reported = {f"section:{item['section']}" for item in orphans(G)}
+        cited = set()
+        for node_id, attrs in G.nodes(data=True):
+            if attrs.get("type") == "Rule":
+                for _s, target, data in G.out_edges(node_id, data=True):
+                    if data.get("type") == "CITES":
+                        cited.add(target)
+        for node_id in title_only:
+            if node_id not in cited:
+                assert node_id in reported, (
+                    f"{node_id} has an obligation in its heading and no rule "
+                    f"cites it, but orphans() omitted it"
                 )
 
 

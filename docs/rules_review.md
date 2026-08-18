@@ -993,51 +993,51 @@ extractor produces one more fact, or once someone checks the paper copy.
 
 ## Coverage gap
 
-570 sections in the regulation use obligation language (shall,
+993 sections in the regulation use obligation language (shall,
 must, minimum) and are not cited by any rule. That is the backlog, and it
 is the honest measure of how much of the regulation this tool does not yet
 check. The first 40 are listed as a starting point for the next round.
 
 | section | page | opening text |
 | --- | --- | --- |
+| 1.2 | 9 | These Regulations shall apply to all aspects of: |
 | 1.3 | 9 | These Regulations shall supersede and replace the Regulations Governing the |
+| 1.5 | 65 | times the expected flow rate with a minimum liquid working capacity of 1,500 |
 | 2 | 2 | TABLE OF CONTENTS |
+| 2.1 | 10 | The following words and terms, when used in this Regulation, shall have the foll |
+| 3.4 | 26 | Administrative and judicial review and the enforcement under these Regulations s |
 | 3.5 | 26 | If any part of these Regulations, or the application of any part thereof, is hel |
 | 3.6 | 26 | These Regulations, being necessary for the health and welfare of the State and i |
 | 3.7 | 26 | At the sole discretion of the Department, if the proposed operation of a system  |
+| 3.7.1 | 26 | In no case shall an active OWTDS be installed over or dispose of wastewater on |
+| 3.8 | 26 | All wastewater shall be treated and disposed of in a manner approved by the |
+| 3.9 | 26 | No person shall dispose of wastewater at any location other than those authorize |
 | 3.10 | 26 | Discharge of untreated or partially treated wastewater or septic tank effluent d |
 | 3.11 | 26 | Except where specifically allowed within these Regulations, no person shall conn |
+| 3.12 | 26 | Except as provided in these Regulations, the spare area shall be kept vacant, fr |
+| 3.13 | 26 | All systems shall be operated and maintained so as not to create a public health |
 | 3.15 | 27 | The Department shall impose, in any permit, standards for evaluating treatment |
+| 3.19 | 27 | The permittee shall at all times properly maintain and operate all structures, |
+| 3.20 | 27 | The permittee shall take all necessary actions to eliminate and correct any adve |
+| 3.21 | 27 | All electrical connections and components utilized in an OWTDS, must, at a minim |
+| 3.22 | 27 | FEMA guidelines must be adhered to when siting OWTDS’ in flood prone areas |
 | 3.22.1 | 27 | Certification by a registered professional engineer (Class C) that all new and |
 | 3.23.1 | 27 | When the Department determines that construction of on-site wastewater |
+| 3.23.2 | 27 | The order shall be issued only after a public hearing which shall insure that 20 |
+| 3.23.3 | 27 | The order shall contain a specific description of the moratorium area and shall |
+| 3.23.4 | 27 | In issuing an order under this Section the Department shall consider the factors |
+| 3.23.5 | 27 | The moratorium shall be limited to a period of five (5) years after which re￾est |
 | 3.24 | 27 | Whenever the preparation of reports or other documents required by these |
+| 3.25 | 28 | All Occupational Safety and Health Act (OSHA) regulations must be complied with |
+| 3.26.1 | 28 | The provisions of these regulations shall be enforced by the Department as |
 | 3.26.2 | 28 | The failure of the Department to enforce any of the provisions of these |
 | 3.29.2.1 | 28 | Require a new application package and review fee in order to continue |
 | 3.30 | 28 | All new and replacement systems permitted within 1,000 feet of the Chesapeake |
+| 3.31.1 | 28 | No person shall construct, install, modify, rehabilitate, or replace an on-site |
 | 3.31.2 | 28 | Each system shall have adequate capacity to properly treat and dispose of the |
 | 3.31.3 | 28 | A recorded utility easement is required whenever a system crosses a property |
 | 3.31.6 | 29 | Whenever real property is recorded as two separate lots under common |
-| 3.31.9.3 | 29 | For proposed subdivision or other developments with more than five (5) |
-| 3.31.11 | 29 | When a central wastewater system is deemed both physically and legally |
-| 3.31.13 | 29 | For all properties utilizing an OWTDS that are sold or otherwise transferred to |
-| 3.31.15.1.1.1 | 30 | For single family residences, only the area within the property |
-| 3.31.15.1.1.2 | 30 | For multiple family dwellings or where more than one (1) |
-| 3.31.15.1.1.2.1 | 30 | For projects utilizing only a septic tank for treatment prior |
-| 3.31.15.1.2 | 30 | For commercial facilities the maximum siting density shall be |
-| 3.31.15.1.3 | 30 | In establishing maximum siting densities the Department may |
-| 3.31.15.2.2 | 31 | At the time the permit is issued or feasibility study is approved, the |
-| 3.31.16 | 31 | All new and replacement small systems requiring advanced treatment units |
-| 3.32.1 | 31 | Whenever the preparation of reports or other documents required by these |
-| 3.32.2 | 31 | For large systems which serve communities that experience a significant |
-| 3.32.3 | 31 | Unless otherwise required by a permit the permittee and operator, if |
-| 3.32.6.5.4 | 32 | In writing as soon as possible but within five (5) days of the date |
-| 3.32.6.5.5 | 32 | In writing as soon as possible after the permittee becomes aware |
-| 4.0 | 2 | Licenses |
-| 4.4 | 33 | On-Site System Advisory Board (Board) approval to take an exam is valid for six  |
-| 4.6 | 33 | In the event an applicant fails to receive a passing grade on the examination, h |
-| 4.8.1 | 34 | Class D.1 is licensed to perform individual site evaluations for both new |
-| 4.8.1.7 | 34 | Pass a field practicum prepared and administered by the Site |
-| 4.8.3 | 35 | Class D.3 is licensed to perform all soils work licensed under Sections 4.8.1 |
-| 4.9.1 | 35 | E.1 is licensed to install all conventional on-site wastewater treatment and |
-| 4.9.1.2 | 35 | A minimum of two (2) years of experience under the guidance of an |
+| 3.31.7 | 29 | No person shall transfer any portion of real property if the transfer would crea |
+| 3.31.8 | 29 | No person shall transfer any portion of real property after the issuance of a |
+| 3.31.9 | 29 | A central wastewater system shall be deemed physically available if its nearest |
 

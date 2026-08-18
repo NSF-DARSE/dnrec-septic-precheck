@@ -854,20 +854,28 @@ def orphans(G: nx.DiGraph) -> list[dict[str, Any]]:
                 if d.get("type") == "CITES":
                     cited_sections.add(target)
 
-    # Find sections with obligation language not cited by any rule
+    # Find sections with obligation language not cited by any rule.
+    #
+    # The obligation is searched for in the heading line as well as the body.
+    # Sections in this regulation carry their first sentence in the heading, so
+    # "5.3.4.1 The minimum isolation distances set forth in Exhibit C shall be
+    # maintained" holds its entire obligation in the title with an empty body.
+    # Checking only the body undercounted the coverage gap by roughly half, which
+    # understated the exact number this query exists to report.
     orphan_list: list[dict[str, Any]] = []
     for node_id, attrs in G.nodes(data=True):
         if attrs.get("type") != "Section":
             continue
         if node_id in cited_sections:
             continue
+        title = attrs.get("title", "")
         text = attrs.get("text", "")
-        if OBLIGATION_RE.search(text):
+        if OBLIGATION_RE.search(f"{title} {text}"):
             orphan_list.append({
                 "section": attrs.get("number", ""),
-                "title": attrs.get("title", ""),
+                "title": title,
                 "page": attrs.get("page"),
-                "text_preview": text[:150],
+                "text_preview": (text or title)[:150],
             })
 
     # Sort by section number
