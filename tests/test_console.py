@@ -512,16 +512,64 @@ class TestAppRuns:
         app_test.run()
         assert not app_test.exception, [str(e.value) for e in app_test.exception]
 
-    def test_sidebar_offers_an_uploader_and_no_preselected_list(self, app_test):
+    def test_an_uploader_is_the_only_way_in_and_no_preselected_list(self, app_test):
         """A reviewer brings the packet in front of them, not one off a menu.
 
         The console used to preselect from a fixed list, which reads as a canned
-        demo. Selection is now the upload itself, so the uploader must be the
-        only way in.
+        demo. Selection is now the upload itself, so an uploader must be the only
+        way in.
+
+        This asserted that the uploader was in the sidebar. It is now the large
+        drop target in the main column, because a big dashed box telling a reviewer
+        to use a smaller control somewhere else is an instruction to ignore the
+        obvious target. The sidebar was never what the test was protecting. The
+        property is that there is exactly one way to load a packet and it is an
+        upload, which is asserted here over the whole page rather than one column
+        of it, so this is stricter than it was: a reinstated list in either column
+        now fails it.
         """
         app_test.run()
-        assert app_test.sidebar.get("file_uploader"), "no uploader rendered"
-        assert not app_test.sidebar.radio, "a preselected application list came back"
+        uploaders = app_test.get("file_uploader")
+        assert len(uploaders) == 1, f"{len(uploaders)} uploaders rendered, want 1"
+        assert not app_test.radio, "a preselected application list came back"
+        assert not app_test.sidebar.radio, "a list came back in the sidebar"
+        assert not app_test.selectbox, "a list of applications came back"
+
+    def test_a_loaded_packet_does_not_leave_a_dropzone_above_the_findings(
+        self, app_test
+    ):
+        """Once there is a report the drop target gives up the column.
+
+        The uploader is the large dashed box while there is nothing to show, which
+        is the whole point of it being in the main column. A reviewer reading
+        findings should not have to scroll past an empty one to reach them, so the
+        loaded state folds the same control into a closed expander. The way in has
+        to survive that fold: exactly one uploader either way.
+        """
+        pdfs = cached_examples()
+        if not pdfs:
+            pytest.skip("no cached examples present")
+
+        pdf = pdfs[0]
+
+        class Packet:
+            name = pdf.name
+
+            def getvalue(self):
+                return pdf.read_bytes()
+
+        app_test.session_state["application_packet"] = Packet()
+        app_test.run()
+        assert not app_test.exception, [str(e.value) for e in app_test.exception]
+        empty = [
+            m.value for m in app_test.markdown
+            if m.value and "class='empty'" in m.value
+        ]
+        assert not empty, "the empty dropzone is still taking the column"
+        assert len(app_test.get("expander")) == 1, "the uploader was not folded away"
+        assert len(app_test.get("file_uploader")) == 1, "the way in disappeared"
+        text = " ".join(m.value or "" for m in app_test.markdown)
+        assert "banner-verdict" in text, "no verdict rendered for a loaded packet"
 
     def test_the_screen_addresses_the_reviewer(self, app_test):
         """The audience is the reviewer assessing an application, not an applicant.

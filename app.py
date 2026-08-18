@@ -154,6 +154,25 @@ html, body { font-family:$f_sans; }
 .empty p { font-size:$t_body; max-width:78ch; margin:0 auto $s_md; }
 .empty b { color:var(--ink); }
 
+/* The drop target itself. The uploader used to be a small control in the sidebar
+   while a large dashed box in the middle of the screen told the reviewer to go
+   and use it, so the obvious target was the one thing that did not accept a
+   packet. The dashed box is now the uploader's own dropzone, which means the
+   thing that looks droppable is the thing a drop lands on.
+
+   Scoped to the container key so the compact uploader offered once a packet is
+   loaded keeps Streamlit's own small form. */
+.st-key-dropzone [data-testid="stFileUploaderDropzone"] {
+  padding:$s_xxxl $s_xl; border:$b_accent dashed var(--line);
+  border-radius:$r_lg; flex-direction:column; justify-content:center;
+  align-items:center; gap:$s_md; text-align:center;
+}
+/* Inside the drop target the instruction is that box's caption, not a second
+   box of its own, so it keeps the words and gives up the border. */
+.st-key-dropzone .empty {
+  border:0; padding:0; margin:0 0 $s_md;
+}
+
 /* The rule reference. A reviewer asks what failed, and then asks what gets
    checked at all and on whose authority. This is the second answer, so it reads
    as a reference table rather than a wall of prose. */
@@ -474,23 +493,19 @@ def estimate_height(payload: dict) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Left panel
+# Left panel. The rule reference only. The uploader lives in the main column,
+# because that is where the large dashed box a reviewer aims a packet at is.
 # ---------------------------------------------------------------------------
 
 warm_layers()
 load_graph_once()
 
-with st.sidebar:
-    st.markdown("### Application packet")
-    st.caption(
-        "Drop a scanned application PDF here. Packets analysed before are served "
-        "from the local cache, with no network and no credentials."
-    )
-    uploaded = st.file_uploader(
-        "Application PDF", type=["pdf"], label_visibility="collapsed"
-    )
+# The uploader's session state key. Read before the widget is built, so the page
+# knows whether a packet is loaded and can put the control where it belongs:
+# large and central while there is nothing to show, folded away once there is.
+PACKET = "application_packet"
 
-    st.divider()
+with st.sidebar:
     rules = engine.load_rules()
     st.markdown("### Rules applied")
     st.markdown(
@@ -514,6 +529,56 @@ st.markdown(
     "</div>",
     unsafe_allow_html=True,
 )
+
+def drop_zone():
+    """The empty state and the uploader as one control.
+
+    The instruction and the thing it refers to used to be different elements in
+    different columns: a large dashed box in the middle of the screen reading
+    "drop a packet into the panel on the left", and the actual uploader as a small
+    control in that panel. A reviewer following the biggest target on the screen
+    got nothing, so the box is now the uploader's own dropzone. The stylesheet
+    gives it the dashed border and the size, scoped to this container's key.
+
+    The three outcomes stay, because they are what somebody facing an empty screen
+    needs to know before they upload anything. The three verdict names take their
+    colours from the same table the banner reads, so the legend here and the real
+    verdict a reviewer sees later cannot disagree about what a colour means.
+    """
+    legend = " ".join(
+        f"<b style='color:{BANNER_COLOR[name][0]}'>{name}</b>{rest}"
+        for name, rest in (
+            ("DEFICIENCIES FOUND", ", each item cited."),
+            ("NO DEFICIENCIES FOUND", ", which is not an approval."),
+            ("CANNOT VERIFY", ", when nothing could be checked."),
+        )
+    )
+    with st.container(key="dropzone"):
+        st.markdown(
+            "<div class='empty'>"
+            "<div class='empty-title'>Drop an application packet here.</div>"
+            f"<p>Three answers are possible. {legend}</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        return st.file_uploader(
+            "Application PDF", type=["pdf"], key=PACKET,
+            label_visibility="collapsed",
+        )
+
+
+if st.session_state.get(PACKET) is None:
+    uploaded = drop_zone()
+else:
+    # A packet is loaded, so the findings need the column. The same uploader,
+    # folded shut: a reviewer reading a report should not have to scroll past a
+    # large empty dropzone to reach it, and still has to be able to load the next
+    # packet without hunting for the control.
+    with st.expander("Review a different packet", expanded=False):
+        uploaded = st.file_uploader(
+            "Application PDF", type=["pdf"], key=PACKET,
+            label_visibility="collapsed",
+        )
 
 if uploaded is not None:
     # An uploaded packet may already be cached. Analysing a new one needs
@@ -567,34 +632,13 @@ if uploaded is not None:
 elif show_rules:
     # The report itemises what a packet failed. This is the other question a
     # reviewer asks, which is what gets checked at all and on whose authority.
+    # It sits under the drop target rather than replacing it, so the way in stays
+    # on the screen while the reference is open.
     st.markdown(f"### The {len(rules)} requirements this checks")
     st.caption(
         "Every one is quoted from the 2014 regulation. The section and page are "
         "shown so any of them can be read back at the source."
     )
     st.markdown(rules_reference(rules), unsafe_allow_html=True)
-
-else:
-    # One instruction, then what the three answers mean, and nothing else. This
-    # was five sentences and about ninety words, which is a wall of prose to hand
-    # somebody facing an empty screen. The three verdict names take their colours
-    # from the same table the banner reads, so the legend here and the real
-    # verdict a reviewer sees later cannot disagree about what a colour means.
-    legend = " ".join(
-        f"<b style='color:{BANNER_COLOR[name][0]}'>{name}</b>{rest}"
-        for name, rest in (
-            ("DEFICIENCIES FOUND", ", each item cited."),
-            ("NO DEFICIENCIES FOUND", ", which is not an approval."),
-            ("CANNOT VERIFY", ", when nothing could be checked."),
-        )
-    )
-    st.markdown(
-        "<div class='empty'>"
-        "<div class='empty-title'>Drop an application packet into the panel on "
-        "the left.</div>"
-        f"<p>Three answers are possible. {legend}</p>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
 
 st.markdown(attribution_band(), unsafe_allow_html=True)

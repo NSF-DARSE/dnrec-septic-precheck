@@ -189,6 +189,23 @@ class TestTheConsoleDoesNotBreakTheShell:
         )
         assert "padding-top:$k_top_clearance" in app_css
 
+    def test_the_drop_target_is_the_uploaders_own_dropzone(self, app_css,
+                                                           app_source):
+        """The dashed box has to be the element that accepts a drop.
+
+        It used to be a plain div, with the real uploader as a small control in
+        the sidebar, so the largest target on the screen was the one thing a
+        packet could not be dropped on. The styling is scoped to the container
+        key, and the key is read out of the source here rather than typed twice:
+        renaming the container would otherwise leave a selector that matches
+        nothing, which is the failure mode this file already has a test for.
+        """
+        keys = re.findall(r'st\.container\(key="([^"]+)"\)', app_source)
+        assert keys, "the drop target is not in a keyed container"
+        for key in keys:
+            assert f'.st-key-{key} [data-testid="stFileUploaderDropzone"]' in app_css
+        assert "dashed" in app_css
+
     def test_streamlit_elements_are_matched_on_test_id_alone(self, app_css):
         """A tag qualified selector dies silently when the tag changes.
 
