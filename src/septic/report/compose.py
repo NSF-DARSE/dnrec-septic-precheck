@@ -96,9 +96,10 @@ def coverage_sentence(coverage: dict) -> str:
         )
     if unreadable:
         sentences.append(
-            f"{unreadable} could not be read and are itemised below with the "
-            f"reason for each. A check that did not run is not a check that "
-            f"passed."
+            f"{unreadable} could not be read and are itemised below, each one "
+            f"naming the value to read, where the packet normally carries it, and "
+            f"the section to compare it against. A check that did not run is not "
+            f"a check that passed."
         )
     return " ".join(sentences)
 
@@ -120,6 +121,10 @@ class Finding:
     quote: str | None
     remedy: str | None
     verified: bool
+    # The fact this rule compares. Carried so the surfaces can name the value a
+    # reviewer has to go and read, rather than recovering it out of requirement
+    # text that also holds an operator and a threshold.
+    parameter: str = ""
     provenance: str | None = None
     cross_references: list[dict] = field(default_factory=list)
     definitions: list[dict] = field(default_factory=list)
@@ -142,6 +147,7 @@ class Finding:
             "applicability": self.applicability,
             "excluded_by": self.excluded_by,
             "requirement": self.requirement,
+            "parameter": self.parameter,
             "reason": self.reason,
             "observed": self.observed,
             "threshold": self.threshold,
@@ -317,6 +323,7 @@ def _finding_from(evaluation, graph, provenance: dict,
         quote=rule.citation.quote,
         remedy=rule.remedy,
         verified=rule.verified,
+        parameter=rule.parameter,
         provenance=fact.describe() if fact else None,
         cross_references=ctx["cross_references"],
         definitions=ctx["definitions"],
@@ -386,7 +393,9 @@ def compose(
         )
 
     # Which parameters the rules actually wanted but the packet did not supply.
-    # Reported explicitly, never folded into a pass.
+    # Reported explicitly, never folded into a pass. Each one carries where the
+    # packet normally holds it, from the same table the unread checks are worded
+    # from, so the two lists cannot describe the same value differently.
     wanted = {e.rule.parameter for e in report.evaluations}
     missing_information = []
     try:
@@ -394,6 +403,7 @@ def compose(
     except Exception:  # noqa: BLE001
         def parameter_help(name):  # type: ignore
             return name
+    from .wording import parameter_location, parameter_name
     for parameter in sorted(wanted):
         if parameter in report.facts:
             continue
@@ -403,6 +413,8 @@ def compose(
         missing_information.append({
             "parameter": parameter,
             "means": parameter_help(parameter),
+            "named": parameter_name(parameter),
+            "normally_found": parameter_location(parameter),
             "blocks_rules": rules_needing,
         })
 

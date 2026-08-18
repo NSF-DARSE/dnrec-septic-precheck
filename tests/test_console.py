@@ -18,7 +18,12 @@ from septic.ingest import layout  # noqa: E402
 from septic.ingest.extract import extract_facts  # noqa: E402
 from septic.ingest.textract import TextractClient, document_hash  # noqa: E402
 from septic.report import compose as compose_mod  # noqa: E402
-from septic.report.render import VERDICT_COLOR, render_html  # noqa: E402
+from septic.report.render import (  # noqa: E402
+    VERDICT_COLOR,
+    render_html,
+    render_text,
+)
+from septic.report.wording import UNREAD_INTRO  # noqa: E402
 from septic.rules import engine  # noqa: E402
 
 
@@ -150,6 +155,232 @@ class TestConsoleModule:
             "rules that never applied"
         )
         assert "counts.get(" not in banner_body
+
+
+class TestTheVerdictIsStatedOnceOnScreen:
+    """The console banner and the report body were both stating the verdict.
+
+    Each surface was correct on its own, which is why no test caught it: the banner
+    read the payload and rendered the headline, the coverage line and a tail
+    sentence, and the report body in the iframe below rendered its own headline,
+    the same coverage string and an explanation paragraph saying the same thing.
+    On screen that was the whole block twice inside about a hundred pixels.
+
+    The fix is a render mode, not a deletion, because the standalone report is
+    printed and forwarded with no console around it and has to say which document
+    it covers and what the verdict was. So both are asserted here: embedded says it
+    once, standalone still says everything.
+    """
+
+    def payload(self):
+        from septic.rules.schema import Citation, Operator, Rule, Severity
+
+        def make(rule_id, parameter, **overrides):
+            defaults = dict(
+                id=rule_id, description="d",
+                citation=Citation(section="TEST-0.0", page=1, quote="q"),
+                parameter=parameter, operator=Operator.GE, threshold=1,
+                units="feet", severity=Severity.RETURN, verified=True,
+                remedy="r",
+            )
+            defaults.update(overrides)
+            return Rule(**defaults)
+
+        rules = [
+            make("RAN", "perc_rate"),
+            make("OUT", "design_flow", applies_to={"system_type": "mound"}),
+            make("UNREAD", "dist_disposal_to_well"),
+        ]
+        report = engine.evaluate({"perc_rate": 5, "system_type": "gravity"}, rules)
+        return compose_mod.compose(
+            report, subject={"document": "packet.pdf", "pages": 13}
+        ).to_json()
+
+    def test_the_embedded_report_states_the_headline_once(self):
+        payload = self.payload()
+        embedded = render_html(payload, embedded=True)
+        assert embedded.count(payload["headline"]) == 1, (
+            "the headline appears more than once in the embedded body, and the "
+            "banner above it makes that twice on screen"
+        )
+        # The one occurrence is the page title, which is the browser tab and not
+        # anything a reviewer reads on the page.
+        assert f"<title>Septic permit review: {payload['headline']}" in embedded
+
+    def test_the_embedded_report_states_the_coverage_figure_no_times(self):
+        """The banner owns it. Two copies of a count is how numbers drift."""
+        payload = self.payload()
+        text = payload["coverage"]["text"]
+        assert text, "the fixture produced no coverage line"
+        assert render_html(payload, embedded=True).count(text) == 0
+
+    def test_the_embedded_report_drops_the_explanation_paragraph(self):
+        payload = self.payload()
+        embedded = render_html(payload, embedded=True)
+        assert payload["explanation"] not in embedded
+        assert "class='verdict'" not in embedded
+        assert "class='counts'" not in embedded
+
+    def test_the_standalone_report_still_carries_all_of_it(self):
+        """Printed or opened from disk, it has to stand on its own."""
+        payload = self.payload()
+        standalone = render_html(payload)
+        assert payload["coverage"]["text"] in standalone
+        assert payload["explanation"] in standalone
+        assert "class='verdict'" in standalone
+        assert "DNREC septic permit application review" in standalone
+        assert "packet.pdf" in standalone
+        assert UNREAD_INTRO in standalone
+
+    def test_both_modes_carry_the_same_findings(self):
+        """Only the header block differs. A reviewer must not lose a finding."""
+        payload = self.payload()
+        embedded = render_html(payload, embedded=True)
+        standalone = render_html(payload)
+        for rule_id in ("RAN", "OUT", "UNREAD"):
+            assert rule_id in embedded
+            assert rule_id in standalone
+        assert UNREAD_INTRO in embedded, (
+            "the itemised list keeps its own lead paragraph, which is the right "
+            "length beside the list it introduces"
+        )
+
+    def test_the_console_embeds_rather_than_reprinting(self):
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        assert "render_html(payload, embedded=True)" in source, (
+            "the console is embedding the standalone report, which repeats the "
+            "verdict block the banner already shows"
+        )
+
+    def test_the_banner_tail_is_one_short_sentence(self):
+        """It is read across a room. The paragraph belongs beside the list."""
+        from septic.report.wording import (
+            NOT_APPLICABLE_BANNER,
+            UNREAD_BANNER,
+        )
+
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        assert "tail = UNREAD_BANNER" in source
+        assert "tail = NOT_APPLICABLE_BANNER" in source
+        assert "UNREAD_INTRO" not in source, (
+            "the banner is printing the report's paragraph again"
+        )
+        for sentence in (UNREAD_BANNER, NOT_APPLICABLE_BANNER):
+            assert sentence.count(".") == 1, f"more than one sentence: {sentence}"
+            assert len(sentence.split()) <= 26, f"too long for a banner: {sentence}"
+
+
+class TestNothingLeaksHowTheAnalysisWasObtained:
+    """A reviewer needs the document, not the plumbing.
+
+    The subject used to carry a source line naming the service and saying whether a
+    cache was used, and on the harvested permit path that line held the full S3
+    key. Everything in subject is rendered, so it went onto a projected screen and
+    into any report a reviewer forwarded. It also read as a caveat that made a real
+    review look like a replayed demo, which is backwards: the cache is keyed by the
+    SHA256 of the document, so a hit means this exact packet was analysed before.
+
+    The offline guarantee itself is untouched and is asserted elsewhere in this
+    file. It just is not narrated on screen.
+    """
+
+    def rendered_surfaces(self):
+        pdfs = cached_examples()
+        if not pdfs:
+            pytest.skip("no cached examples present")
+        client = TextractClient()
+        analysis = client.cached_by_hash(document_hash(pdfs[0].read_bytes()))
+        extraction = extract_facts(layout.parse_blocks(analysis.blocks))
+        composed = compose_mod.compose(
+            engine.evaluate(extraction.facts), extraction=extraction,
+            subject={"document": pdfs[0].name, "pages": 1},
+        )
+        payload = composed.to_json()
+        return {
+            "text report": render_text(payload),
+            "standalone html": render_html(payload),
+            "embedded html": render_html(payload, embedded=True),
+        }
+
+    def test_no_rendered_surface_contains_an_s3_path(self):
+        for name, surface in self.rendered_surfaces().items():
+            assert "s3://" not in surface, f"{name} renders an S3 path"
+
+    def test_no_rendered_surface_narrates_the_cache_or_the_service(self):
+        for name, surface in self.rendered_surfaces().items():
+            lowered = surface.lower()
+            for leak in ("textract", "no network used", "cached analysis",
+                         "bedrock", "boto3"):
+                assert leak not in lowered, f"{name} renders {leak!r}"
+
+    def test_the_console_does_not_narrate_it_either(self):
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        rendered = [
+            line for line in source.splitlines()
+            if ("st.markdown(" in line or "st.success(" in line
+                or "st.caption(" in line)
+        ]
+        assert not any("s3://" in line for line in rendered)
+        assert "already in the local Textract cache" not in source, (
+            "this reads as a caveat and names the cache on a projected screen"
+        )
+        assert "subject.get('source'" not in source
+
+    def test_the_review_module_puts_no_storage_path_in_the_subject(self):
+        """subject is rendered in full, so a key must never reach it."""
+        source = (ROOT / "src" / "septic" / "review.py").read_text(encoding="utf-8")
+        for line in source.splitlines():
+            if "subject[" in line and "=" in line:
+                assert "s3://" not in line, line.strip()
+                assert "Textract" not in line, line.strip()
+
+    def test_a_harvested_permit_subject_holds_only_the_file_name(self):
+        """The bucket and the key prefix must not survive into the subject.
+
+        Uses a permit with no staged example PDF, so analyze falls through to the
+        harvested document branch, which is the one that used to print the key.
+        """
+        from septic.ingest.textract import Analysis
+
+        key = "documents/permits/permit_999999/60839580.pdf"
+
+        class FakeClient:
+            def cached(self, requested):
+                assert requested == key
+                return Analysis(
+                    s3_key=requested, job_id=None, status="SUCCEEDED",
+                    pages=1, blocks=[{"BlockType": "PAGE"}], from_cache=True,
+                )
+
+            def cached_by_hash(self, digest):
+                return None
+
+        def fake_key(permit, manifest=None):
+            return key
+
+        import septic.review as review_module
+
+        assert review_module.find_local_pdf("999999") is None, (
+            "this permit was expected to have no staged example"
+        )
+        original = review_module.s3_key_for_permit
+        review_module.s3_key_for_permit = fake_key
+        try:
+            _, subject, offline = review_module.analyze(
+                permit="999999", client=FakeClient(), allow_network=False
+            )
+        finally:
+            review_module.s3_key_for_permit = original
+
+        assert offline is True
+        assert subject["document"] == "60839580.pdf"
+        assert "source" not in subject, (
+            "the subject is rendered in full, so a mechanism line reaches the "
+            "screen and the printed report"
+        )
+        for value in subject.values():
+            assert "s3://" not in str(value)
+            assert "documents/" not in str(value)
 
 
 class TestOfflineReviewPath:
@@ -317,6 +548,26 @@ class TestAppRuns:
         assert "sample" not in text.lower()
         assert "testdata" not in text.lower()
         assert not app_test.exception, [str(e.value) for e in app_test.exception]
+
+    def test_a_cold_page_load_constructs_no_aws_client(self, app_test,
+                                                       monkeypatch):
+        """The page has to render with no credentials in the environment.
+
+        Nothing on the first paint needs AWS: the GIS layers and the regulation
+        graph come off disk, and the Textract cache is only consulted once a
+        packet is uploaded. This breaks the session factory for the duration of
+        the run, so any attempt to build a client fails the test rather than
+        surfacing as a slow spinner in front of an audience.
+        """
+        def explode(*args, **kwargs):
+            raise AssertionError("the console built an AWS client on page load")
+
+        monkeypatch.setattr(config, "session", explode)
+        app_test.run()
+        assert not app_test.exception, [str(e.value) for e in app_test.exception]
+        text = " ".join(m.value or "" for m in app_test.markdown)
+        assert "Septic permit application review" in text
+        assert "Drop an application packet" in text
 
     def test_all_rules_can_be_shown(self, app_test):
         """A reviewer asks two questions: what failed, and what gets checked.
