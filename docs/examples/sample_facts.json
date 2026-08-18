@@ -1,0 +1,20 @@
+{
+  "_comment": "Synthetic facts for exercising the reviewer console. Not a real permit. Field names are the rule parameters in src/septic/rules/rules_7101.yaml; values are shaped like what the Textract extractor produces, including the OCR noise.",
+  "permit_number": "SP-2026-004417",
+  "parcel_id": "13-014.00-039",
+  "applicant": "Sample Applicant",
+  "county": "Sussex",
+  "system_type": "gravity",
+  "application_type": "new",
+  "site_plan": "Sheet 2 of 3, site plan dated 2026-04-12",
+  "perc_rate": "18 mpi",
+  "lot_area": "",
+  "design_flow": "375 gpd",
+  "soil_texture": "sandy loam",
+  "water_table_depth": "34 in",
+  "distance_to_well": "112 ft",
+  "distance_to_surface_water": "illegible",
+  "disposal_area": "1,050 square feet",
+  "trench_depth": "18 in",
+  "percolation_tester_license": "PT-1188"
+}

@@ -1,0 +1,26 @@
+# Demo and development only. Not imported by anything under src/septic, so the
+# pipeline and the test suite run without these.
+#
+# Install with:
+#   pip install -r requirements.txt -r requirements-dev.txt
+
+-r requirements.txt
+
+# The reviewer console (app.py). Kept out of requirements.txt because the
+# harvest, ingest, rules and report path never imports it, and a reviewer
+# running the CLI should not have to install a web server.
+#
+# 1.61.1 is pinned for two reasons. It has st.write_stream, which the chat panel
+# uses to stream the Bedrock reply. And it is the line that resolves against the
+# pins in requirements.txt without moving any of them: it adds no numpy, pandas,
+# pillow or matplotlib requirement that pip would satisfy by upgrading.
+#
+# Do not drop to 1.41: that line caps pillow below 12 while pdfplumber 0.11.10
+# requires 12.2 or later, and pip cannot solve it.
+#
+# Check the same way before changing this pin:
+#   pip install --dry-run streamlit==<version>
+# and confirm numpy, pandas, pillow and matplotlib are absent from the
+# "Would install" line. Anything that upgrades numpy to 2.x breaks pandas 1.5.3
+# and takes the test suite with it, for the reason at the top of requirements.txt.
+streamlit==1.61.1

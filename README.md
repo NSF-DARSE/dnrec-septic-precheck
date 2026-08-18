@@ -101,8 +101,11 @@ src/septic/
   rules/                        rule schema, engine, YAML rule set, candidates
   retrieval/                    similarity search over prior permits (stub)
   report/                       report composition and rendering (stub)
+  chat/                         reviewer assistant: Bedrock client and context assembly
+app.py                          the reviewer console (dashboard and chat)
+docs/examples/sample_facts.json a synthetic packet for the console
 scripts/                        thin runnable wrappers, no business logic
-tests/                          72 tests covering parsing, rules, and layout
+tests/                          the suite, run with pytest
 out/                            run artifacts (gitignored)
 ```
 
@@ -149,6 +152,51 @@ Recheck permits recorded with zero documents (rate limited, 1 request per second
 ```bash
 python -m septic verify --limit 15
 ```
+
+## The reviewer console
+
+`app.py` is the two panel screen a reviewer would actually be handed. The left
+panel is the rule engine's output: the verdict, then every finding itemised with
+the regulation citation, the value read off the packet, and the fix. The right
+panel is a chat that explains any of it.
+
+Streamlit is a demo dependency and is kept out of `requirements.txt`, because
+nothing under `src/septic` imports it and a reviewer running the CLI should not
+have to install a web server:
+
+```bash
+pip install -r requirements-dev.txt
+streamlit run app.py
+```
+
+Click **Load example packet** to review the synthetic packet in
+`docs/examples/sample_facts.json`, or upload your own extracted facts as a flat
+JSON object keyed by rule parameter.
+
+The chat answers two kinds of question. With a packet loaded it explains that
+packet's findings: which rule fired, what value was read, which of the three
+causes of CANNOT VERIFY applies, and what the applicant has to change. With no
+packet loaded it answers questions about the regulation itself, retrieving
+sections out of the regulation graph.
+
+Two things it will not do. It never produces a verdict: the engine computes the
+verdict before the model is called and passes it in as a finished result, so a
+reply cannot change a finding. And it will not state a threshold that is not in
+the retrieved text, because a wrong regulatory number shown to permitting staff
+is the failure the `verified` flag exists to prevent.
+
+The chat needs Bedrock. Everything on the left panel does not, so the findings
+still render with no credentials and the chat panel says why it cannot answer.
+
+Two optional context sources make the answers better:
+
+```bash
+python -m septic graph build   # regulation sections, needed to quote the regulation
+```
+
+and the **Extract passages** button in the sidebar, which pulls the 644 verbatim
+numeric passages out of the regulation PDF. It reads all 245 pages and takes
+about a minute, so it is opt in and cached to `out/rule_candidates.json`.
 
 ## Current status
 
