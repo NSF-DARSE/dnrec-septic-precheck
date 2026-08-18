@@ -352,7 +352,8 @@ class TestNoNetworkNeeded:
         text = render_mod.render_text(composed)
         html = render_mod.render_html(composed)
         assert composed.verdict
-        assert "PRE-SUBMISSION REVIEW" in text
+        assert "APPLICATION REVIEW" in text
+        assert "PRE-SUBMISSION" not in text
         assert "<!doctype html>" in html
 
     def test_shipped_rules_run_offline_against_a_real_packet(self, clean_document):

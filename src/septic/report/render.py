@@ -2,8 +2,8 @@
 
 Every finding shows its citation: section number, page, and the verbatim quote. A
 reviewer has to be able to check the requirement against the regulation without
-taking this tool's word for it, and an applicant told to move a drainfield 40 feet
-is owed the sentence that requires it.
+taking this tool's word for it, and anyone told to move a drainfield 40 feet is
+owed the sentence that requires it.
 
 The text renderer is for the terminal. The HTML renderer is for projection, so it
 is sized for reading at a distance: one clear verdict at the top, findings as a
@@ -76,7 +76,7 @@ def render_text(composed) -> str:
     add = L.append
 
     add(RULE)
-    add("DNREC SEPTIC PERMIT PRE-SUBMISSION REVIEW")
+    add("DNREC SEPTIC PERMIT APPLICATION REVIEW")
     add(RULE)
 
     subject = c.get("subject") or {}
@@ -267,7 +267,7 @@ def render_text(composed) -> str:
 
     add(RULE)
     for line in _wrap(
-        "This is a pre-submission check, not a decision. The verdict and every "
+        "This is a first pass for the reviewer, not a decision. The verdict and "
         "finding above were produced by rules traced to the 2014 Delaware On-Site "
         "Wastewater regulation. The reviewer decides."
     ):
@@ -366,7 +366,7 @@ def render_html(composed) -> str:
     add(f"<title>Septic permit review: {_esc(c['headline'])}</title>")
     add(f"<style>{CSS}</style></head><body><div class='wrap'>")
 
-    add("<header><h1>DNREC septic permit pre-submission review</h1><div class='meta'>")
+    add("<header><h1>DNREC septic permit application review</h1><div class='meta'>")
     subject = c.get("subject") or {}
     for key in ("document", "permit_number", "detail_id", "pages"):
         if subject.get(key):
@@ -521,7 +521,7 @@ def render_html(composed) -> str:
         add("</table>")
         add(f"<p class='caveat'>{_esc(precedents.get('limits'))}</p>")
 
-    add("<footer>This is a pre-submission check, not a decision. The verdict and "
+    add("<footer>This is a first pass for the reviewer, not a decision. The "
         "every finding were produced by rules traced to the Delaware Regulations "
         "Governing On-Site Wastewater Treatment and Disposal Systems, January 11, "
         "2014. The reviewer decides.<br>")

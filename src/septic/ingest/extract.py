@@ -84,7 +84,18 @@ FACTS: dict[str, dict[str, Any]] = {
             (r"\b(single\s+family\s+dwelling|single\s+family)\b", "residential"),
             (r"\b(multi[\s-]?family)\b", "residential"),
             (r"\b(residential)\b", "residential"),
+            # Packets rarely write "residential" on the form. They write what the
+            # structure is. "4 Bedroom House" was being discarded as unreadable,
+            # which left the two design flow rules unevaluable on a packet that
+            # plainly stated its use.
+            (r"\b\d+\s*bed\s*room\b", "residential"),
+            (r"\b\d+\s*bedroom\b", "residential"),
+            (r"\b(house|dwelling|home|residence)\b", "residential"),
+            (r"\b(mobile\s+home|manufactured\s+home|trailer)\b", "residential"),
+            (r"\b(apartment|condominium|townhouse|duplex)\b", "residential"),
             (r"\b(commercial)\b", "commercial"),
+            (r"\b(office|restaurant|retail|store|school|church|business)\b",
+             "commercial"),
         ],
         "help": "residential or commercial",
     },
