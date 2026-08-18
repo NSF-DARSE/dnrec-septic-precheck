@@ -17,6 +17,9 @@ because it has to open from a file on a laptop with no network.
 from __future__ import annotations
 
 import html
+from string import Template
+
+from .assets import TOKENS
 
 RULE = "=" * 78
 THIN = "-" * 78
@@ -45,10 +48,21 @@ def _data_uri(path) -> str | None:
     kind = "svg+xml" if p.suffix.lower() == ".svg" else p.suffix.lower().lstrip(".")
     return f"data:image/{kind};base64,{base64.b64encode(p.read_bytes()).decode('ascii')}"
 
+# Foreground and background per verdict. The meanings are load bearing and a
+# reviewer reads the page by them: one colour for a deficiency found, one for
+# nothing found, one for no answer. The values come from the token set, which the
+# console imports as well, so the banner on screen and the box in the report are
+# the same colour by construction rather than by two people remembering a hex.
 VERDICT_COLOR = {
-    "NO DEFICIENCIES FOUND": ("#1b4332", "#d8f3dc"),
-    "DEFICIENCIES FOUND": ("#7f1d1d", "#fee2e2"),
-    "CANNOT VERIFY": ("#78350f", "#fef3c7"),
+    "NO DEFICIENCIES FOUND": (
+        TOKENS["colour"]["clear_fg"], TOKENS["colour"]["clear_bg"],
+    ),
+    "DEFICIENCIES FOUND": (
+        TOKENS["colour"]["deficiency_fg"], TOKENS["colour"]["deficiency_bg"],
+    ),
+    "CANNOT VERIFY": (
+        TOKENS["colour"]["unverified_fg"], TOKENS["colour"]["unverified_bg"],
+    ),
 }
 
 
@@ -320,89 +334,206 @@ def render_text(composed) -> str:
 # HTML
 # ---------------------------------------------------------------------------
 
-CSS = """
-:root { --ink:#111827; --muted:#4b5563; --line:#d1d5db; --bg:#ffffff; }
+# The stylesheet is a template rather than an f-string because CSS is mostly
+# braces, and every value in it comes from the token set the console reads too.
+# Substitution is by $name, which CSS never uses, so nothing has to be escaped.
+CSS_TEMPLATE = """
+:root {
+  --ink:$c_ink; --muted:$c_muted; --line:$c_line; --bg:$c_surface;
+}
 * { box-sizing:border-box; }
 body {
-  margin:0; padding:32px 40px 64px; background:var(--bg); color:var(--ink);
-  font:19px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  margin:0; padding:$s_xxl $s_xxxl $s_xxxl; background:var(--bg); color:var(--ink);
+  font:$t_body_large/$lh_normal $f_sans;
 }
 .wrap { max-width:1100px; margin:0 auto; }
-header { border-bottom:3px solid var(--ink); padding-bottom:14px; margin-bottom:26px; }
-h1 { font-size:26px; margin:0 0 6px; letter-spacing:-0.01em; }
-.meta { color:var(--muted); font-size:16px; }
-.meta span { margin-right:22px; white-space:nowrap; }
-.verdict {
-  padding:24px 28px; border-radius:10px; margin:0 0 12px;
-  border:2px solid currentColor;
+header {
+  border-bottom:$b_rule solid var(--ink); padding-bottom:$s_lg;
+  margin-bottom:$s_xl;
 }
-.verdict h2 { margin:0; font-size:42px; letter-spacing:-0.02em; line-height:1.1; }
-/* Coverage sits inside the verdict box on purpose. A headline of NO
+h1 { font-size:$t_title; margin:0 0 $s_xs; letter-spacing:-0.015em; }
+.meta { color:var(--muted); font-size:$t_caption; }
+.meta span { margin-right:$s_xl; white-space:nowrap; }
+.meta b { color:var(--ink); font-variant-numeric:tabular-nums; }
+
+/* The verdict box. Coverage sits inside it on purpose: a headline of NO
    DEFICIENCIES FOUND means nothing without it, and anything placed outside the
    box gets skimmed past or cropped out of a screenshot. */
-.verdict .coverage {
-  margin:10px 0 0; font-size:27px; font-weight:650; letter-spacing:-0.01em;
+.verdict {
+  padding:$s_xl $s_xl; border-radius:$r_lg; margin:0 0 $s_md;
+  border:2px solid currentColor;
 }
-.verdict p { margin:12px 0 0; font-size:18px; max-width:74ch; color:var(--ink); }
-.counts { font-size:17px; color:var(--muted); margin:14px 0 30px; }
-.counts b { color:var(--ink); }
+.verdict h2 {
+  margin:0; font-size:$t_verdict; letter-spacing:-0.02em; line-height:$lh_tight;
+}
+.verdict .coverage {
+  margin:$s_md 0 0; font-size:$t_section; font-weight:$w_medium;
+  letter-spacing:-0.01em;
+}
+.verdict p {
+  margin:$s_md 0 0; font-size:$t_body; max-width:74ch; color:var(--ink);
+}
+.counts { font-size:$t_body; color:var(--muted); margin:$s_lg 0 $s_xxl; }
+.counts b { color:var(--ink); font-variant-numeric:tabular-nums; }
 .notice {
-  border-left:5px solid #b45309; background:#fffbeb; padding:14px 18px;
-  margin:0 0 18px; font-size:17px;
+  border-left:$b_accent solid $c_unverified_edge; background:$c_notice_bg;
+  color:$c_notice_fg; padding:$s_lg $s_xl; margin:0 0 $s_lg;
+  font-size:$t_body; border-radius:0 $r_sm $r_sm 0;
 }
 h3 {
-  font-size:15px; text-transform:uppercase; letter-spacing:0.09em;
-  color:var(--muted); margin:36px 0 14px; padding-bottom:7px;
+  font-size:$t_caption; text-transform:uppercase; letter-spacing:0.09em;
+  color:var(--muted); margin:$s_xxl 0 $s_lg; padding-bottom:$s_sm;
   border-bottom:1px solid var(--line);
 }
-.finding { border:1px solid var(--line); border-radius:9px; padding:20px 22px; margin:0 0 16px; }
-.finding.fail { border-left:7px solid #b91c1c; }
-.finding.unknown { border-left:7px solid #b45309; }
-.finding.pass { border-left:7px solid #15803d; }
-.req { font-size:22px; font-weight:650; margin:0 0 6px; }
-.rule-id { font:14px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--muted); }
-.reason { margin:10px 0; font-size:18px; }
-.observed { font-size:17px; color:var(--muted); margin:6px 0; }
+
+/* A finding. The failed ones have to be unmissable from across a desk, so they
+   get the accent, the larger requirement line and the severity chip, and their
+   citation sits immediately under the reason rather than at the end of the
+   page. */
+.finding {
+  border:1px solid var(--line); border-radius:$r_md; padding:$s_xl $s_xl;
+  margin:0 0 $s_lg;
+}
+.finding.fail { border-left:$b_accent solid $c_deficiency_edge; }
+.finding.unknown { border-left:$b_accent solid $c_unverified_edge; }
+.finding.pass { border-left:$b_accent solid $c_clear_edge; }
+.req { font-size:$t_subhead; font-weight:$w_medium; margin:0 0 $s_xs; }
+.finding.fail .req { font-size:$t_section; letter-spacing:-0.01em; }
+.rule-id {
+  font:$t_micro/1.4 $f_mono; color:var(--muted); text-transform:none;
+}
+.chip {
+  display:inline-block; font:$w_bold $t_micro/1 $f_sans; text-transform:uppercase;
+  letter-spacing:0.08em; padding:$s_xs $s_sm; border-radius:$r_sm;
+  color:$c_deficiency_fg; background:$c_deficiency_bg; margin-left:$s_sm;
+}
+.chip.advisory { color:$c_unverified_fg; background:$c_unverified_bg; }
+.reason { margin:$s_md 0; font-size:$t_body_large; }
+.observed { font-size:$t_body; color:var(--muted); margin:$s_xs 0; }
+.observed b { color:var(--ink); font-family:$f_mono; }
 .cite {
-  margin:16px 0 0; padding:16px 20px; background:#f9fafb;
-  border-left:6px solid #374151; border-radius:0 8px 8px 0;
+  margin:$s_lg 0 0; padding:$s_lg $s_xl; background:$c_surface_quote;
+  border-left:$b_accent solid $c_citation_fg; border-radius:0 $r_md $r_md 0;
 }
 .cite .where {
-  font-weight:700; font-size:14px; text-transform:uppercase;
-  letter-spacing:0.08em; color:#374151; margin-bottom:9px;
+  font-weight:$w_bold; font-size:$t_micro; text-transform:uppercase;
+  letter-spacing:0.08em; color:$c_citation_fg; margin-bottom:$s_sm;
+  font-variant-numeric:tabular-nums;
 }
 /* The verbatim regulation text. This is the difference between a tool that
    asserts and a tool that cites, so it outweighs the finding text above it
    rather than sitting below it as a footnote. */
 .cite blockquote {
-  margin:0; font-style:italic; color:#111827; font-size:19px;
-  line-height:1.5; max-width:88ch;
+  margin:0; font-style:italic; color:var(--ink); font-size:$t_body_large;
+  line-height:$lh_normal; max-width:88ch;
 }
-.fix { margin:14px 0 0; padding:13px 16px; background:#eff6ff; border-radius:6px; font-size:17.5px; }
-.fix b { display:block; font-size:14px; text-transform:uppercase; letter-spacing:0.07em; color:#1e40af; margin-bottom:5px; }
-.aside { font-size:15.5px; color:var(--muted); margin:10px 0 0; }
-table { border-collapse:collapse; width:100%; font-size:16.5px; }
-th,td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
-th { font-size:13.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); }
+.fix {
+  margin:$s_lg 0 0; padding:$s_md $s_lg; background:$c_remedy_bg;
+  color:$c_remedy_fg; border-radius:$r_sm; font-size:$t_body;
+}
+.fix b {
+  display:block; font-size:$t_micro; text-transform:uppercase;
+  letter-spacing:0.07em; color:$c_remedy_fg; margin-bottom:$s_xs;
+}
+.aside { font-size:$t_caption; color:var(--muted); margin:$s_md 0 0; }
+table { border-collapse:collapse; width:100%; font-size:$t_body; }
+th,td {
+  text-align:left; padding:$s_sm $s_md; border-bottom:1px solid var(--line);
+  vertical-align:top;
+}
+th {
+  font-size:$t_micro; text-transform:uppercase; letter-spacing:0.07em;
+  color:var(--muted);
+}
+td code { font-variant-numeric:tabular-nums; }
 /* A rule that was never applied must not look like a requirement that was met.
    The met table carries the same green the passing findings use. The out of
    scope table is deliberately grey and set back, because it is context, not a
    result: nothing on this packet was compared against these rules. */
-table.met { border-left:7px solid #15803d; }
+table.met { border-left:$b_accent solid $c_clear_edge; }
 table.out-of-scope {
-  border-left:7px solid #6b7280; background:#f3f4f6; color:#374151;
+  border-left:$b_accent solid $c_out_of_scope_edge; background:$c_surface_sunken;
+  color:$c_citation_fg;
 }
 table.met th, table.met td,
-table.out-of-scope th, table.out-of-scope td { padding-left:16px; }
-table.out-of-scope code { color:#374151; }
-code { font:15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
-.caveat { font-size:16px; color:var(--muted); max-width:84ch; margin:0 0 14px; }
-footer {
-  margin-top:44px; padding-top:16px; border-top:1px solid var(--line);
-  font-size:16px; color:var(--muted); max-width:84ch;
+table.out-of-scope th, table.out-of-scope td { padding-left:$s_lg; }
+table.out-of-scope code { color:$c_citation_fg; }
+code { font:$t_caption $f_mono; }
+.caveat { font-size:$t_body; color:var(--muted); max-width:84ch; margin:0 0 $s_lg; }
+
+/* The location map. It is the one picture in the report and it is the easiest
+   thing to misread, so it is framed as a figure with its caption attached rather
+   than dropped into the flow. */
+figure.map {
+  margin:$s_lg 0 0; padding:0; border:1px solid var(--line);
+  border-radius:$r_md; overflow:hidden; background:var(--bg);
 }
-@media print { body { padding:0; font-size:11pt; } .finding { break-inside:avoid; } }
+figure.map img { display:block; width:100%; height:auto; }
+figure.map figcaption {
+  padding:$s_lg $s_xl; border-top:1px solid var(--line);
+  background:$c_surface_sunken; font-size:$t_body; color:var(--ink);
+}
+figure.map figcaption b { display:block; margin-bottom:$s_xs; }
+figure.map figcaption .not-a-determination {
+  display:block; margin-top:$s_sm; color:$c_notice_fg; font-weight:$w_medium;
+}
+figure.map figcaption .figure-detail {
+  display:block; margin-top:$s_sm; color:var(--muted); font-size:$t_caption;
+  font-variant-numeric:tabular-nums;
+}
+footer {
+  margin-top:$s_xxxl; padding-top:$s_lg; border-top:1px solid var(--line);
+  font-size:$t_body; color:var(--muted); max-width:84ch;
+}
+
+/* A reviewer prints this and puts it in the file. Backgrounds are kept, because
+   the verdict box and the out of scope table carry meaning in their colour, and
+   nothing that belongs together is allowed to break across a page. */
+@media print {
+  body { padding:0; font-size:11pt; }
+  .wrap { max-width:none; }
+  .verdict, .notice, .fix, table.out-of-scope, table.met {
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .finding, figure.map, tr { break-inside:avoid; }
+  .cite { break-inside:avoid; }
+  h3 { break-after:avoid; }
+}
 """
+
+
+def _css() -> str:
+    """The stylesheet with every token substituted in.
+
+    Built once at import. The console reads the same tokens, so the report and the
+    screen around it cannot drift: there is one palette, one type scale and one
+    spacing scale in this project and both surfaces import it.
+    """
+    values: dict[str, object] = {
+        f"c_{name}": value for name, value in TOKENS["colour"].items()
+    }
+    values.update(
+        {f"t_{name}": f"{value}px" for name, value in TOKENS["type_scale"].items()}
+    )
+    values.update(
+        {f"s_{name}": f"{value}px" for name, value in TOKENS["space"].items()}
+    )
+    values.update(
+        {f"r_{name}": f"{value}px" for name, value in TOKENS["radius"].items()}
+    )
+    values.update(
+        {f"b_{name}": f"{value}px" for name, value in TOKENS["border"].items()}
+    )
+    values.update(
+        {f"lh_{name}": value for name, value in TOKENS["line_height"].items()}
+    )
+    values.update({f"w_{name}": value for name, value in TOKENS["weight"].items()})
+    values["f_sans"] = TOKENS["font"]["sans"]
+    values["f_mono"] = TOKENS["font"]["mono"]
+    return Template(CSS_TEMPLATE).substitute(values)
+
+
+CSS = _css()
 
 
 def _esc(value) -> str:
@@ -411,7 +542,9 @@ def _esc(value) -> str:
 
 def render_html(composed) -> str:
     c = composed if isinstance(composed, dict) else composed.to_json()
-    fg, bg = VERDICT_COLOR.get(c["headline"], ("#111827", "#f3f4f6"))
+    fg, bg = VERDICT_COLOR.get(
+        c["headline"], (TOKENS["colour"]["ink"], TOKENS["colour"]["surface_sunken"])
+    )
 
     H: list[str] = []
     add = H.append
@@ -454,9 +587,14 @@ def render_html(composed) -> str:
         add(f"<h3>Deficiencies ({len(deficiencies)})</h3>")
         for i, f in enumerate(deficiencies, 1):
             add("<div class='finding fail'>")
-            add(f"<p class='req'>{i}. {_esc(f['requirement'])}</p>")
-            add(f"<div class='rule-id'>{_esc(f['rule_id'])} &middot; "
-                f"severity {_esc(f['severity'])}</div>")
+            severity = str(f.get("severity") or "")
+            chip = (
+                "<span class='chip'>Would be returned for correction</span>"
+                if severity == "return"
+                else "<span class='chip advisory'>Advisory</span>"
+            )
+            add(f"<p class='req'>{i}. {_esc(f['requirement'])}{chip}</p>")
+            add(f"<div class='rule-id'>{_esc(f['rule_id'])}</div>")
             add(f"<p class='reason'>{_esc(f['reason'])}</p>")
             if f.get("observed") is not None:
                 add(f"<p class='observed'>Read from the packet: "
@@ -489,6 +627,12 @@ def render_html(composed) -> str:
             add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
                 f"<td>{_esc(f['reason'])}</td><td>{_esc(f['citation'])}</td></tr>")
         add("</table>")
+
+    # The screening sits here, directly under the checks that could not run,
+    # because most of those are isolation distances on a scanned drawing and this
+    # is the prompt for exactly them. It is context, not a finding, and says so in
+    # its own heading and caption.
+    H.extend(_screening_block(c))
 
     missing = c.get("missing_information") or []
     if missing:
@@ -566,38 +710,6 @@ def render_html(composed) -> str:
                 f"<td>{_esc(fact['where'])}</td></tr>")
         add("</table>")
 
-    screening = c.get("screening") or {}
-    if screening.get("flags"):
-        add("<h3>Location screening</h3>")
-        add("<p class='caveat'>Computed from the permit's mapped coordinates "
-            "against state hydrography layers. This is a screening prompt, not a "
-            "measurement of compliance: the regulation measures isolation distance "
-            "from the disposal area, and this measures from the geocoded address "
-            "point, which is somewhere else on the parcel. It tells a reviewer "
-            "what to check on the site plan.</p>")
-        point = screening.get("point") or {}
-        nearest = screening.get("nearest_water")
-        add("<table>")
-        if point:
-            checked = " (cross checked against Geocoded Location)" if point.get(
-                "cross_checked") else ""
-            add(f"<tr><th>coordinates</th><td>{_esc(point.get('lat'))}, "
-                f"{_esc(point.get('lon'))}{_esc(checked)}</td></tr>")
-        if nearest:
-            add(f"<tr><th>nearest mapped surface water</th><td>"
-                f"<b>{nearest['distance_feet']:.0f} ft</b> to "
-                f"{_esc(nearest['label'])} ({_esc(nearest['layer'])})</td></tr>")
-        add("</table>")
-        for flag in screening["flags"]:
-            add(f"<div class='notice'>{_esc(flag)}</div>")
-        figure = screening.get("figure_png")
-        if figure:
-            src = _data_uri(figure)
-            if src:
-                add(f"<p><img src='{src}' alt='Location map' "
-                    f"style='max-width:100%;border:1px solid #d1d5db;"
-                    f"border-radius:8px'></p>")
-
     precedents = c.get("precedents") or {}
     entries = precedents.get("precedents") or []
     if entries:
@@ -622,3 +734,82 @@ def render_html(composed) -> str:
     add("</div></body></html>")
 
     return "\n".join(H)
+
+
+def _screening_block(c: dict) -> list[str]:
+    """The location screening, as a figure with its caption attached.
+
+    The map is the one picture in the report and the easiest thing in it to
+    misread, because it looks like a measurement. Every claim about what it is and
+    is not travels with the image rather than sitting in a paragraph somewhere
+    above it, so a screenshot of the figure carries its own caveat.
+    """
+    screening = c.get("screening") or {}
+    if not screening.get("flags"):
+        return []
+
+    out: list[str] = []
+    add = out.append
+    subject = c.get("subject") or {}
+    permit = subject.get("permit_number")
+    point = screening.get("point") or {}
+    nearest = screening.get("nearest_water")
+    radius = screening.get("screen_radius_feet")
+
+    add("<h3>Location screening, not a finding</h3>")
+    add("<p class='caveat'>Computed from the permit's mapped coordinates against "
+        "state hydrography layers. It tells a reviewer what to check on the site "
+        "plan. No rule cites it and it cannot change the verdict above.</p>")
+
+    add("<table>")
+    if point:
+        checked = " (cross checked against Geocoded Location)" if point.get(
+            "cross_checked") else ""
+        add(f"<tr><th>coordinates</th><td><code>{_esc(point.get('lat'))}, "
+            f"{_esc(point.get('lon'))}</code>{_esc(checked)}, from "
+            f"{_esc(point.get('source'))}</td></tr>")
+    if nearest:
+        add(f"<tr><th>nearest mapped surface water</th><td>"
+            f"<b>{nearest['distance_feet']:.0f} ft</b> to "
+            f"{_esc(nearest['label'])} ({_esc(nearest['layer'])})</td></tr>")
+    if radius:
+        add(f"<tr><th>screening radius</th><td>{_esc(f'{radius:.0f}')} ft from the "
+            f"address point</td></tr>")
+    add("</table>")
+
+    for flag in screening["flags"]:
+        add(f"<div class='notice'>{_esc(flag)}</div>")
+
+    figure = screening.get("figure_png")
+    src = _data_uri(figure) if figure else None
+    if not src:
+        return out
+
+    subject_label = f"permit {_esc(permit)}" if permit else "this permit"
+    alt = (
+        f"Map of mapped surface water and hydrography around the geocoded address "
+        f"point for {subject_label}, with a scale bar in feet and a north arrow"
+    )
+    add("<figure class='map'>")
+    add(f"<img src='{src}' alt='{alt}'>")
+    add("<figcaption>")
+    add(f"<b>Mapped surface water around the address point for "
+        f"{subject_label}.</b>")
+    add("Centred on the geocoded address point, which is marked, with every mapped "
+        "hydrography feature in the window drawn and the nearest one labelled. The "
+        "scale bar is in feet, because the regulation is written in feet, and north "
+        "is up the arrow.")
+    if nearest:
+        add(f"<span class='figure-detail'>Nearest mapped surface water "
+            f"{nearest['distance_feet']:.0f} ft, {_esc(nearest['label'])}"
+            + (f". Screening radius {radius:.0f} ft." if radius else ".")
+            + "</span>")
+    add("<span class='not-a-determination'>This is a screening prompt, never a "
+        "compliance determination. The regulation measures an isolation distance "
+        "from the absorption facility. This is measured from the geocoded address "
+        "point, which is somewhere else on the parcel, so the tool supplies "
+        "dist_point_to_mapped_water and deliberately never "
+        "dist_disposal_to_watercourse. The distance on the site plan is the one "
+        "that counts.</span>")
+    add("</figcaption></figure>")
+    return out
