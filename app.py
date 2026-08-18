@@ -33,11 +33,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from septic import config  # noqa: E402
-from septic.ingest import layout  # noqa: E402
-from septic.ingest.extract import extract_facts  # noqa: E402
+from septic import review as review_mod  # noqa: E402
 from septic.ingest.textract import TextractClient, document_hash  # noqa: E402
-from septic.report import compose as compose_mod  # noqa: E402
-from septic.report.render import render_html  # noqa: E402
 from septic.rules import engine  # noqa: E402
 
 st.set_page_config(
@@ -95,6 +92,22 @@ st.markdown(
 # ---------------------------------------------------------------------------
 
 @st.cache_resource(show_spinner=False)
+def warm_layers() -> int:
+    """Load the GIS layers once at start up rather than on the first review.
+
+    Roughly 100,000 geometries across five layers. With the on disk WKB cache
+    this is a fraction of a second, but it still belongs at boot: the first
+    upload of a session should not be the one that pays for it, because that is
+    the one somebody is watching.
+    """
+    try:
+        from septic import geo
+        return sum(len(geo.load_layer(n).geometries) for n in geo.available_layers())
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+@st.cache_resource(show_spinner=False)
 def load_graph_once():
     """The graph adds cross references to a finding. Absence is not fatal."""
     try:
@@ -108,31 +121,30 @@ def load_graph_once():
 def review_from_cache(pdf_path: str) -> tuple[str, dict] | None:
     """Run the whole chain from the on-disk cache. No network, no credentials.
 
+    Delegates to septic.review rather than repeating the chain here. An earlier
+    version rebuilt it inline and silently omitted the location screening, so the
+    map never appeared on this screen even though the command line report carried
+    it. That is exactly the drift the module docstring warns about: two paths
+    through the same pipeline, and the one nobody is watching loses a stage.
+
     Returns the rendered HTML and the composed payload, or None when there is no
     cached analysis, so the caller can explain instead of crashing.
     """
-    client = TextractClient()
     path = Path(pdf_path)
-    analysis = client.cached_by_hash(document_hash(path.read_bytes()))
-    if analysis is None or not analysis.ok:
+    client = TextractClient()
+    if client.cached_by_hash(document_hash(path.read_bytes())) is None:
         return None
-
-    document = layout.parse_blocks(analysis.blocks)
-    extraction = extract_facts(document)
-    # The rules are the only thing that produces a verdict.
-    report = engine.evaluate(extraction.facts)
-    composed = compose_mod.compose(
-        report,
-        extraction=extraction,
-        graph=load_graph_once(),
-        precedents=None,
-        subject={
-            "document": path.name,
-            "pages": document.pages,
-            "source": "cached Textract analysis, no network used",
-        },
-    )
-    return render_html(composed), composed.to_json()
+    try:
+        result = review_mod.review(
+            pdf=path,
+            allow_network=False,
+            with_precedents=False,
+            with_screening=True,
+            with_map=True,
+        )
+    except Exception:  # noqa: BLE001
+        return None
+    return result.html, result.composed.to_json()
 
 
 def estimate_height(payload: dict) -> int:
@@ -157,6 +169,9 @@ def estimate_height(payload: dict) -> int:
 # Left panel
 # ---------------------------------------------------------------------------
 
+warm_layers()
+load_graph_once()
+
 with st.sidebar:
     st.markdown("### Application packet")
     st.caption(
@@ -166,7 +181,6 @@ with st.sidebar:
     uploaded = st.file_uploader(
         "Application PDF", type=["pdf"], label_visibility="collapsed"
     )
-    st.caption(f"Sample packets: `{TESTDATA.name}/`")
 
     st.divider()
     rules = engine.load_rules()
@@ -207,7 +221,8 @@ if uploaded is not None:
         target = uploads / uploaded.name
         target.write_bytes(data)
         started = time.perf_counter()
-        result = review_from_cache(str(target))
+        with st.spinner("Reading the packet and applying the rules"):
+            result = review_from_cache(str(target))
         elapsed = time.perf_counter() - started
         if result:
             html, payload = result
@@ -264,22 +279,8 @@ elif show_rules:
             )
 
 else:
-    ready = [p for p in sorted(TESTDATA.glob("*.pdf"))] if TESTDATA.exists() else []
     st.markdown(
         "<div class='empty'>Drop an application packet into the panel on the "
         "left to review it.</div>",
         unsafe_allow_html=True,
     )
-    if ready:
-        st.markdown(
-            f"Sample packets are in <code>{TESTDATA.name}/</code>, already "
-            f"analysed and cached so they review with no network:",
-            unsafe_allow_html=True,
-        )
-        for p in ready:
-            st.markdown(
-                f"<div class='rule-row'><b>{p.name}</b>"
-                f"<span class='rule-cite'>{p.stat().st_size / 1e6:.1f} MB</span>"
-                f"</div>",
-                unsafe_allow_html=True,
-            )

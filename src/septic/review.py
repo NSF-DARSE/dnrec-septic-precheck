@@ -204,7 +204,8 @@ def draw_location_map(permit: str | None, screening) -> str | None:
         return None
     try:
         result = maps.permit_map(
-            permit, screening.point.lat, screening.point.lon
+            permit, screening.point.lat, screening.point.lon,
+            details=permit_row(permit),
         )
     except Exception:  # noqa: BLE001 - a figure is never worth failing a report
         return None

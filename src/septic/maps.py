@@ -29,13 +29,19 @@ from matplotlib.patches import Circle, Patch, Polygon as MplPolygon  # noqa: E40
 from . import config, geo  # noqa: E402
 
 # Paul Tol bright. Distinguishable under the common colour vision deficiencies.
-INK = "#000000"
-WATER = "#4477AA"
-WATER_FILL = "#A8C4E0"
-PERMIT = "#EE6677"
-RING = "#228833"
-RING_ALT = "#CCBB44"
-ESCARPMENT = "#AA3377"
+INK = "#111111"
+WATER = "#33638D"
+WATER_FILL = "#BBD3E8"
+WATER_LABEL = "#1B3D5C"
+PERMIT = "#CC3311"
+RING = "#117733"
+# Paul Tol's #CCBB44 is a pale yellow. It survives a colour vision deficiency but
+# not a white background: at roughly 1.8:1 against white the ring label was the
+# hardest thing on the figure to read, and this is projected. Swapped for the
+# dark amber from the same family, which keeps the hue separation and clears
+# 4.5:1.
+RING_ALT = "#8A6D00"
+ESCARPMENT = "#882255"
 GRID = "#DDDDDD"
 
 # Buffer rings come from the promoted rules rather than being chosen for the
@@ -115,6 +121,19 @@ def ring_specs() -> list[tuple[float, list[str], str]]:
     return specs
 
 
+def _compass(x0: float, y0: float, x1: float, y1: float) -> str:
+    """Sixteen point compass bearing from one projected point to another.
+
+    Grid north in UTM, not true north. Over a window this size the difference is
+    well under one compass point, and a reviewer reading "471 ft NNW" wants the
+    direction to look at on the plan, not a survey bearing.
+    """
+    angle = math.degrees(math.atan2(x1 - x0, y1 - y0)) % 360
+    points = ("N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+              "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW")
+    return points[int((angle + 11.25) % 360 // 22.5)]
+
+
 def _draw_geometry(ax, geometry, colour, fill, linewidth, zorder):
     """Draw one shapely geometry in UTM metres."""
     kind = geometry.geom_type
@@ -176,6 +195,7 @@ def permit_map(
     lon: float,
     out_dir: Path | None = None,
     radius_feet: float = 900.0,
+    details: dict | None = None,
 ) -> MapResult | None:
     """Draw the location map for one permit.
 
@@ -204,6 +224,7 @@ def permit_map(
     nearest_distance = math.inf
     nearest_label = None
     nearest_point = None
+    nearest_layer = None
     drawn = 0
     labelled: set[str] = set()
 
@@ -222,6 +243,7 @@ def permit_map(
             if math.isfinite(distance) and distance < nearest_distance:
                 nearest_distance = distance
                 nearest_label = label
+                nearest_layer = name
                 from shapely.ops import nearest_points
                 nearest_point = nearest_points(origin, geometry)[1]
             # Label named features once each, inside the window.
@@ -232,10 +254,10 @@ def permit_map(
                 if window.contains(centre):
                     ax.annotate(
                         label, xy=(centre.x, centre.y), fontsize=13,
-                        color="#20476B", fontweight="semibold", zorder=6,
+                        color=WATER_LABEL, fontweight="semibold", zorder=6,
                         ha="center",
-                        bbox=dict(boxstyle="round,pad=0.24", facecolor="white",
-                                  edgecolor="none", alpha=0.78),
+                        bbox=dict(boxstyle="round,pad=0.26", facecolor="white",
+                                  edgecolor=WATER, linewidth=0.8, alpha=0.97),
                     )
                     labelled.add(label)
 
@@ -272,19 +294,33 @@ def permit_map(
     ax.plot(easting, northing, marker="*", markersize=30, color=PERMIT,
             markeredgecolor=INK, markeredgewidth=1.7, zorder=10)
 
-    # The measured distance to the nearest feature, annotated.
+    # An arrow from the permit point to the nearest feature, so the measurement
+    # reads as a direction and a target rather than a line between two dots.
+    nearest_feet = None
+    nearest_bearing = None
     if nearest_point is not None and math.isfinite(nearest_distance):
-        feet = nearest_distance * geo.METRES_TO_FEET
-        ax.plot([easting, nearest_point.x], [northing, nearest_point.y],
-                color=INK, linewidth=2.4, linestyle=":", zorder=9)
+        nearest_feet = nearest_distance * geo.METRES_TO_FEET
+        nearest_bearing = _compass(easting, northing,
+                                   nearest_point.x, nearest_point.y)
+        ax.annotate(
+            "", xy=(nearest_point.x, nearest_point.y), xytext=(easting, northing),
+            zorder=9,
+            arrowprops=dict(
+                arrowstyle="-|>,head_width=0.42,head_length=0.85",
+                color=INK, linewidth=2.6, shrinkA=17, shrinkB=2,
+                connectionstyle="arc3,rad=0",
+            ),
+        )
         mid_x = (easting + nearest_point.x) / 2
         mid_y = (northing + nearest_point.y) / 2
+        target = nearest_label if nearest_label and not str(nearest_label).isdigit() \
+            else "nearest mapped water"
         ax.annotate(
-            f"{feet:.0f} ft to nearest\nmapped water",
-            xy=(mid_x, mid_y), fontsize=14, fontweight="bold", color=INK,
+            f"{nearest_feet:.0f} ft {nearest_bearing}\nto {target}",
+            xy=(mid_x, mid_y), fontsize=14.5, fontweight="bold", color=INK,
             ha="center", va="center", zorder=11,
-            bbox=dict(boxstyle="round,pad=0.36", facecolor="white",
-                      edgecolor=INK, linewidth=1.7),
+            bbox=dict(boxstyle="round,pad=0.38", facecolor="white",
+                      edgecolor=INK, linewidth=1.8),
         )
 
     xmin, ymin = easting - radius_m, northing - radius_m
@@ -292,8 +328,27 @@ def permit_map(
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_aspect("equal")
-    ax.set_xticks([])
-    ax.set_yticks([])
+
+    # The frame is drawn in UTM metres but labelled in degrees, because degrees
+    # are what a reviewer can paste into any other mapping tool. Five ticks a
+    # side, converted back through the projection one by one rather than
+    # interpolated, since latitude and longitude are not linear in easting and
+    # northing across the window.
+    xticks = [xmin + (xmax - xmin) * f for f in (0.02, 0.26, 0.5, 0.74, 0.98)]
+    yticks = [ymin + (ymax - ymin) * f for f in (0.02, 0.26, 0.5, 0.74, 0.98)]
+    ax.set_xticks(xticks)
+    ax.set_yticks(yticks)
+    ax.set_xticklabels(
+        [f"{geo.to_wgs84(x, northing)[0]:.4f}°" for x in xticks],
+        fontsize=11, color="#333333",
+    )
+    ax.set_yticklabels(
+        [f"{geo.to_wgs84(easting, y)[1]:.4f}°" for y in yticks],
+        fontsize=11, color="#333333", rotation=90, va="center",
+    )
+    ax.set_xlabel("longitude (WGS84)", fontsize=12, color="#333333", labelpad=6)
+    ax.set_ylabel("latitude (WGS84)", fontsize=12, color="#333333", labelpad=6)
+    ax.tick_params(length=5, width=1.2, color=INK)
     for spine in ax.spines.values():
         spine.set_edgecolor(INK)
         spine.set_linewidth(1.6)
@@ -306,8 +361,9 @@ def permit_map(
                markeredgecolor=INK, markersize=22, label="Permit location"),
         Line2D([], [], color=WATER, linewidth=3, label="Mapped surface water"),
         Patch(facecolor=WATER_FILL, edgecolor=WATER, label="Lake or pond"),
-        Line2D([], [], color=INK, linewidth=2.2, linestyle=":",
-               label="Measured distance"),
+        Line2D([], [], color=INK, linewidth=2.4,
+               marker=">", markersize=9, markevery=[-1],
+               label="Measured distance to nearest feature"),
     ]
     for index, (feet, _rule_ids, label) in enumerate(rings):
         handles.append(Line2D(
@@ -322,15 +378,59 @@ def permit_map(
         fontsize=20, fontweight="bold", color=INK, pad=16,
     )
 
+    # Everything the figure knows, in one block, so the map can be read on its
+    # own without the surrounding report.
+    panel: list[str] = [f"PERMIT {permit}"]
+    if details:
+        # Raw CSV column names, which is what permit_row returns. The manifest
+        # uses camelCase for the same fields and looking them up by those names
+        # silently produced an empty panel.
+        for key, label, unit in (
+            ("TaxParcelNumbers", "parcel", ""),
+            ("County", "county", ""),
+            ("SepticSystemType", "system", ""),
+            ("ConstructionType", "work", ""),
+            ("SepticPropUseCode", "use", ""),
+            ("PerkRate", "perc rate", " mpi"),
+            ("Flow Rate", "design flow", " gpd"),
+        ):
+            value = details.get(key)
+            if value in (None, "", "nan") or str(value) == "nan":
+                continue
+            if isinstance(value, float) and value.is_integer():
+                value = int(value)
+            panel.append(f"{label:<11} {value}{unit}")
+    panel.append(f"{'latitude':<11} {lat:.6f}")
+    panel.append(f"{'longitude':<11} {lon:.6f}")
+    if nearest_feet is not None:
+        panel.append("")
+        panel.append("NEAREST MAPPED FEATURE")
+        panel.append(f"{'name':<11} {nearest_label or 'unnamed'}")
+        if nearest_layer:
+            panel.append(f"{'layer':<11} {nearest_layer.replace('_', ' ')}")
+        panel.append(f"{'distance':<11} {nearest_feet:.0f} ft")
+        panel.append(f"{'bearing':<11} {nearest_bearing}")
+    panel.append("")
+    panel.append(f"{'features':<11} {drawn} within {radius_feet:.0f} ft")
+
+    ax.text(
+        0.985, 0.015, "\n".join(panel), transform=ax.transAxes,
+        fontsize=11.5, family="monospace", color=INK, ha="right", va="bottom",
+        multialignment="left", zorder=12,
+        bbox=dict(boxstyle="round,pad=0.55", facecolor="white",
+                  edgecolor=INK, linewidth=1.4, alpha=0.96),
+    )
+
     # Wrapped by hand rather than relying on wrap=True, which measures against
     # the figure edge and was overflowing the right margin.
     caption_lines = [
-        "Dashed rings are isolation distances read from the staged rule set, "
-        "not chosen for this figure. Surface water from Delaware FirstMap (NHD),",
-        "generalised on download. Projection UTM zone 18N.",
+        "Dashed rings are isolation distances read from the rule set, not chosen "
+        "for this figure. Surface water from Delaware FirstMap (NHD),",
+        "generalised on download. Projection UTM zone 18N, axes labelled in "
+        "WGS84 degrees.",
         "Distance is measured from the geocoded address point, not from the "
-        "disposal area, so this is a screening prompt and not a compliance",
-        "determination. No rule in the set has been certified by a person yet.",
+        "disposal area, so this is a screening prompt for the reviewer",
+        "and not a compliance determination.",
     ]
     fig.text(0.5, 0.018, "\n".join(caption_lines), ha="center", va="bottom",
              fontsize=11.5, color="#333333")

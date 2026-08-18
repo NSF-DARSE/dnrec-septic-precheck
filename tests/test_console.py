@@ -39,14 +39,21 @@ class TestConsoleModule:
         """streamlit run app.py is the documented command."""
         assert (ROOT / "app.py").exists()
 
-    def test_app_reuses_the_shared_renderer(self):
-        """The console must not carry a second report implementation.
+    def test_app_reuses_the_shared_pipeline(self):
+        """The console must not carry a second copy of the review chain.
 
-        Two renderers drift, and the one nobody is looking at drifts first.
+        It originally imported the shared renderer but rebuilt the stages feeding
+        it, and silently omitted the location screening, so the map never reached
+        the screen while the command line report carried it. Delegating to
+        septic.review makes that class of drift impossible: there is one chain.
         """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
-        assert "from septic.report.render import render_html" in source
+        assert "from septic import review as review_mod" in source
+        assert "review_mod.review(" in source
         assert "components.html" in source
+        assert "engine.evaluate(" not in source, (
+            "the console is evaluating rules itself instead of delegating"
+        )
 
     def test_app_references_no_remote_resource(self):
         """Venue wifi will fail. Nothing may be fetched at render time."""
@@ -200,18 +207,18 @@ class TestAppRuns:
         assert "Septic permit application review" in text
         assert "pre-submission" not in text.lower()
 
-    def test_empty_state_points_at_the_sample_packets(self, app_test):
-        """With nothing uploaded the screen must say what to do next.
+    def test_empty_state_says_what_to_do_next(self, app_test):
+        """With nothing uploaded the screen must still direct the reviewer.
 
-        Upload only means the first screen is empty, so it has to name where the
-        ready made packets live or the demo starts with a dead end.
+        It must not advertise prepared sample packets. A reviewer is bringing the
+        packet in front of them, and naming a folder of canned files makes the
+        console read as a demo rather than a tool.
         """
-        testdata = ROOT / "testdata"
-        if not list(testdata.glob("*.pdf")):
-            pytest.skip("no testdata packets present")
         app_test.run()
         text = " ".join(m.value or "" for m in app_test.markdown)
-        assert "testdata" in text, "empty state does not name the sample folder"
+        assert "Drop an application packet" in text
+        assert "sample" not in text.lower()
+        assert "testdata" not in text.lower()
         assert not app_test.exception, [str(e.value) for e in app_test.exception]
 
     def test_all_rules_can_be_shown(self, app_test):

@@ -217,6 +217,23 @@ def _transformer():
     return Transformer.from_crs(WGS84, UTM_18N, always_xy=True)
 
 
+@lru_cache(maxsize=1)
+def _inverse_transformer():
+    from pyproj import Transformer
+
+    return Transformer.from_crs(UTM_18N, WGS84, always_xy=True)
+
+
+def to_wgs84(easting: float, northing: float) -> tuple[float, float]:
+    """Projected metres back to (lon, lat).
+
+    Needed to label a map drawn in UTM with the degrees a reviewer can type into
+    any other mapping tool.
+    """
+    lon, lat = _inverse_transformer().transform(easting, northing)
+    return lon, lat
+
+
 def to_utm(lon: float, lat: float) -> tuple[float, float]:
     """Project one WGS84 point to UTM 18N metres."""
     return _transformer().transform(lon, lat)
@@ -245,6 +262,56 @@ def _label_for(properties: dict) -> str:
     return str(ftype).strip() if ftype else "unnamed water feature"
 
 
+def _binary_cache_path(name: str) -> Path:
+    return config.OUT_DIR / "cache" / "gis" / f"{name}.wkb.pickle"
+
+
+def _read_binary_cache(name: str, source_mtime: float) -> "Layer | None":
+    """Return the parsed layer from the binary cache, or None if unusable.
+
+    Any failure returns None and the caller reparses the GeoJSON. A stale or
+    corrupt cache must never be able to change what the map shows.
+    """
+    path = _binary_cache_path(name)
+    if not path.is_file():
+        return None
+    try:
+        import pickle
+
+        import shapely
+
+        with path.open("rb") as handle:
+            payload = pickle.load(handle)
+        if payload.get("source_mtime") != source_mtime:
+            return None
+        geometries = list(shapely.from_wkb(payload["wkb"]))
+        return Layer(name=name, geometries=geometries, labels=list(payload["labels"]))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _write_binary_cache(name: str, layer: "Layer", source_mtime: float) -> None:
+    """Best effort. A cache that cannot be written is not an error."""
+    try:
+        import pickle
+
+        import shapely
+
+        path = _binary_cache_path(name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "source_mtime": source_mtime,
+            "wkb": [shapely.to_wkb(g) for g in layer.geometries],
+            "labels": list(layer.labels),
+        }
+        tmp = path.with_suffix(".tmp")
+        with tmp.open("wb") as handle:
+            pickle.dump(payload, handle, protocol=5)
+        tmp.replace(path)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 @lru_cache(maxsize=8)
 def load_layer(name: str) -> Layer:
     """Load one GeoJSON layer, projected to UTM 18N.
@@ -252,11 +319,24 @@ def load_layer(name: str) -> Layer:
     Projecting once at load time rather than per query is the difference between a
     console that answers in milliseconds and one that stalls. Cached, so the app
     pays this cost once.
+
+    The five layers hold about 100,000 geometries between them, and parsing that
+    much GeoJSON and projecting it takes roughly eighteen seconds, every process
+    start. So the projected result is also cached to disk as WKB, keyed by the
+    source file's modification time, which brings the same load down to about a
+    tenth of a second. The GeoJSON stays the source of truth: the binary cache is
+    only ever a faster route to the identical geometries, and any doubt about it
+    falls back to reparsing.
     """
     from shapely.geometry import shape
     from shapely.ops import transform as shapely_transform
 
     path = GIS_DIR / f"{name}.geojson.gz"
+    source = path if path.exists() else GIS_DIR / f"{name}.geojson"
+    if source.exists():
+        cached = _read_binary_cache(name, source.stat().st_mtime)
+        if cached is not None:
+            return cached
     if not path.exists():
         plain = GIS_DIR / f"{name}.geojson"
         if not plain.exists():
@@ -295,7 +375,10 @@ def load_layer(name: str) -> Layer:
             labels.append(_label_for(feature.get("properties") or {}))
         except Exception:  # noqa: BLE001 - a bad geometry is skipped, not fatal
             continue
-    return Layer(name=name, geometries=geometries, labels=labels)
+    layer = Layer(name=name, geometries=geometries, labels=labels)
+    if source.exists() and geometries:
+        _write_binary_cache(name, layer, source.stat().st_mtime)
+    return layer
 
 
 def available_layers() -> list[str]:
