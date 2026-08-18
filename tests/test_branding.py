@@ -166,16 +166,16 @@ class TestTheAttributionBand:
         it is not, and that misrepresentation in front of the agency itself is the
         one branding mistake worth failing a build over.
         """
-        appbar = app_source.split("class='appbar'", 1)[1].split("</div>\"", 1)[0]
+        appbar = app_source.split("class='brand-band'", 1)[1].split("</div>\"", 1)[0]
         assert "<img" not in appbar
         assert "logo" not in appbar.lower()
 
     def test_the_band_comes_after_the_report(self, app_source):
         """Attribution belongs at the foot of the page, not above the finding."""
-        assert app_source.index("class='appbar'") < app_source.index(
+        assert app_source.index("class='brand-band'") < app_source.index(
             "st.markdown(attribution_band()"
         )
-        assert app_source.index("components.html") < app_source.index(
+        assert app_source.index("render_findings(payload)") < app_source.index(
             "st.markdown(attribution_band()"
         )
 

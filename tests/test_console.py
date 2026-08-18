@@ -51,11 +51,15 @@ class TestConsoleModule:
         it, and silently omitted the location screening, so the map never reached
         the screen while the command line report carried it. Delegating to
         septic.review makes that class of drift impossible: there is one chain.
+
+        The console renders the composed payload natively and offers render_html
+        as a downloadable printable report rather than embedding it in an iframe.
         """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
         assert "from septic import review as review_mod" in source
         assert "review_mod.review(" in source
-        assert "components.html" in source
+        assert "render_html(payload" in source
+        assert "st.download_button" in source
         assert "engine.evaluate(" not in source, (
             "the console is evaluating rules itself instead of delegating"
         )
@@ -77,17 +81,18 @@ class TestConsoleModule:
 
         The console is the surface a reviewer sees first and from furthest away.
         It reads both numbers out of the composed payload, so it cannot disagree
-        with the report body embedded underneath it.
+        with the report body. The metric row now carries the verdict and
+        coverage in a card with a segmented bar.
         """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
-        assert "def banner(payload: dict) -> str:" in source
-        assert "st.markdown(banner(payload), unsafe_allow_html=True)" in source
-        banner_body = source.split("def banner(payload: dict) -> str:")[1].split(
+        assert "def metric_row(payload: dict) -> str:" in source
+        assert "st.markdown(metric_row(payload), unsafe_allow_html=True)" in source
+        metric_body = source.split("def metric_row(payload: dict) -> str:")[1].split(
             "\ndef "
         )[0]
-        assert 'payload.get("headline"' in banner_body
-        assert 'payload.get("coverage")' in banner_body
-        assert "banner-coverage" in banner_body
+        assert 'payload.get("headline"' in metric_body
+        assert 'payload.get("coverage")' in metric_body
+        assert "verdict-card-coverage" in metric_body
 
     def test_console_banner_reads_the_same_coverage_the_report_shows(self):
         """One number, produced by the rules, positioned twice.
@@ -245,11 +250,22 @@ class TestTheVerdictIsStatedOnceOnScreen:
             "length beside the list it introduces"
         )
 
-    def test_the_console_embeds_rather_than_reprinting(self):
+    def test_the_console_renders_natively_and_offers_download(self):
+        """The console renders the payload natively and offers the HTML report
+        as a downloadable file rather than embedding it in an iframe.
+
+        This ensures the console is not an iframe wrapper around a print document
+        but an application that reads the same payload.
+        """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
-        assert "render_html(payload, embedded=True)" in source, (
-            "the console is embedding the standalone report, which repeats the "
-            "verdict block the banner already shows"
+        assert "render_html(payload, embedded=False)" in source, (
+            "the console must produce the standalone report for download"
+        )
+        assert "st.download_button" in source, (
+            "the printable report must be offered as a download"
+        )
+        assert "render_findings(payload)" in source, (
+            "the console must render findings natively"
         )
 
     def test_the_banner_tail_is_one_short_sentence(self):
@@ -268,6 +284,60 @@ class TestTheVerdictIsStatedOnceOnScreen:
         for sentence in (UNREAD_BANNER, NOT_APPLICABLE_BANNER):
             assert sentence.count(".") == 1, f"more than one sentence: {sentence}"
             assert len(sentence.split()) <= 26, f"too long for a banner: {sentence}"
+
+
+class TestConsoleAndReportAgree:
+    """The console and the printable report must show the same coverage and verdict.
+
+    One payload, two presentations. The metric row on screen and the report
+    offered for download both read from compose() output, so they carry the same
+    numbers. This test guards against the drift that happens when a surface
+    derives a count of its own.
+    """
+
+    def payload(self):
+        from septic.rules.schema import Citation, Operator, Rule, Severity
+
+        def make(rule_id, parameter, **overrides):
+            defaults = dict(
+                id=rule_id, description="d",
+                citation=Citation(section="TEST-0.0", page=1, quote="q"),
+                parameter=parameter, operator=Operator.GE, threshold=1,
+                units="feet", severity=Severity.RETURN, verified=True,
+                remedy="r",
+            )
+            defaults.update(overrides)
+            return Rule(**defaults)
+
+        rules = [
+            make("RAN", "perc_rate"),
+            make("OUT", "design_flow", applies_to={"system_type": "mound"}),
+            make("UNREAD", "dist_disposal_to_well"),
+        ]
+        report = engine.evaluate({"perc_rate": 5, "system_type": "gravity"}, rules)
+        return compose_mod.compose(
+            report, subject={"document": "packet.pdf", "pages": 13}
+        ).to_json()
+
+    def test_same_coverage_text(self):
+        """The coverage text in the console metric row is the same string
+        the printable report renders."""
+        payload = self.payload()
+        coverage_text = payload["coverage"]["text"]
+        html_report = render_html(payload)
+        assert coverage_text in html_report, (
+            "the printable report does not contain the coverage text"
+        )
+
+    def test_same_verdict(self):
+        """The headline in the console metric row is the same string
+        the printable report renders."""
+        payload = self.payload()
+        headline = payload["headline"]
+        html_report = render_html(payload)
+        assert headline in html_report, (
+            "the printable report does not contain the verdict headline"
+        )
 
 
 class TestNothingLeaksHowTheAnalysisWasObtained:
@@ -569,7 +639,7 @@ class TestAppRuns:
         assert len(app_test.get("expander")) == 1, "the uploader was not folded away"
         assert len(app_test.get("file_uploader")) == 1, "the way in disappeared"
         text = " ".join(m.value or "" for m in app_test.markdown)
-        assert "banner-verdict" in text, "no verdict rendered for a loaded packet"
+        assert "verdict-card-headline" in text, "no verdict rendered for a loaded packet"
 
     def test_the_screen_addresses_the_reviewer(self, app_test):
         """The audience is the reviewer assessing an application, not an applicant.
