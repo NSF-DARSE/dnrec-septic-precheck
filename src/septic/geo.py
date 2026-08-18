@@ -340,6 +340,7 @@ class Screening:
     per_layer: dict[str, NearestFeature] = field(default_factory=dict)
     unavailable: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    figure_png: str | None = None
 
     @property
     def has_location(self) -> bool:
@@ -387,6 +388,7 @@ class Screening:
             "per_layer": {k: v.to_json() for k, v in self.per_layer.items()},
             "unavailable": self.unavailable,
             "flags": self.flags(),
+            "figure_png": self.figure_png,
             "screen_radius_feet": SCREEN_FEET,
         }
 

@@ -189,6 +189,35 @@ def screen_location(permit: str | None):
         return None
 
 
+def draw_location_map(permit: str | None, screening) -> str | None:
+    """Draw the location map for a screened permit, or None.
+
+    Returns a path relative to the report, so the HTML can reference it without an
+    absolute path that breaks when the file is moved. Failure is never fatal: a
+    report without a map is still a complete report.
+    """
+    if not permit or screening is None or screening.point is None:
+        return None
+    try:
+        from . import maps
+    except ImportError:
+        return None
+    try:
+        result = maps.permit_map(
+            permit, screening.point.lat, screening.point.lon
+        )
+    except Exception:  # noqa: BLE001 - a figure is never worth failing a report
+        return None
+    if result is None:
+        return None
+    try:
+        # Forward slashes, because this goes into an HTML src attribute and a
+        # Windows backslash does not resolve there.
+        return result.png.relative_to(config.OUT_DIR).as_posix()
+    except ValueError:
+        return result.png.as_posix()
+
+
 def review(
     pdf: Path | None = None,
     permit: str | None = None,
@@ -196,6 +225,7 @@ def review(
     allow_network: bool = True,
     with_precedents: bool = True,
     with_screening: bool = True,
+    with_map: bool = True,
     rephrase: bool = False,
     client: TextractClient | None = None,
 ) -> ReviewResult:
@@ -232,6 +262,10 @@ def review(
         screening = screen_location(candidate)
         if screening is not None:
             extraction.facts.update(screening.facts())
+            if with_map and screening.point is not None:
+                figure = draw_location_map(candidate, screening)
+                if figure is not None:
+                    screening.figure_png = figure
 
     # The rules are the only thing that produces a verdict.
     report = engine.evaluate(extraction.facts)
