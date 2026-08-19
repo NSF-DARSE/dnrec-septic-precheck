@@ -889,3 +889,78 @@ class TestNoOperatorsOnAnySurface:
                     f"{pdf.name} renders a comparison operator to a reviewer: "
                     f"{found[:3]}"
                 )
+
+
+class TestChatbotIntegration:
+    """The reviewer chatbot must render after a permit is reviewed.
+
+    Regression: the _chatbot_section(payload) call was lost during the PR #2
+    merge. This test fails when the call is absent, catching it before release.
+    """
+
+    @pytest.fixture
+    def app_test(self):
+        pytest.importorskip("streamlit")
+        from streamlit.testing.v1 import AppTest
+
+        return AppTest.from_file(str(ROOT / "app.py"), default_timeout=120)
+
+    def test_chatbot_function_called_in_reviewed_path(self):
+        """_chatbot_section must be both defined AND called in app.py."""
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        assert "def _chatbot_section(" in source, (
+            "_chatbot_section function definition is missing"
+        )
+        assert "_chatbot_section(payload)" in source, (
+            "_chatbot_section is defined but never called — "
+            "the chatbot will not render after review"
+        )
+        # Definition must come before call
+        def_pos = source.index("def _chatbot_section(")
+        call_pos = source.index("_chatbot_section(payload)")
+        assert def_pos < call_pos, (
+            "_chatbot_section is called before it is defined"
+        )
+
+    def test_reviewer_assistant_renders_with_cached_pdf(self, app_test, monkeypatch):
+        """A reviewed permit must show the 'Reviewer assistant' section."""
+        testdata = ROOT / "testdata"
+        if not testdata.exists():
+            pytest.skip("testdata/ not present")
+
+        pdfs = sorted(testdata.glob("*.pdf"))
+        if not pdfs:
+            pytest.skip("no demo PDFs in testdata/")
+
+        from septic.ingest.textract import TextractClient, document_hash
+
+        client = TextractClient()
+        cached_pdfs = [
+            p for p in pdfs
+            if client.cached_by_hash(document_hash(p.read_bytes())) is not None
+        ]
+        if not cached_pdfs:
+            pytest.skip("no cached examples present")
+
+        # Set env so chatbot is available
+        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
+        monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", "true")
+
+        pdf = cached_pdfs[0]
+
+        class Packet:
+            name = pdf.name
+
+            def getvalue(self):
+                return pdf.read_bytes()
+
+        app_test.session_state["application_packet"] = Packet()
+        app_test.run()
+        assert not app_test.exception, (
+            f"Exception: {[str(e.value) for e in app_test.exception]}"
+        )
+        text = " ".join(m.value or "" for m in app_test.markdown)
+        assert "Reviewer assistant" in text, (
+            "The chatbot section did not render — "
+            "check that _chatbot_section(payload) is called in app.py"
+        )
