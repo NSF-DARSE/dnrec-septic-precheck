@@ -193,27 +193,52 @@ def _north_arrow(ax, xmax, ymax, span_metres):
 
 
 IMAGERY_DIR = config.ROOT / "data" / "gis" / "imagery"
-IMAGERY_ALPHA = 0.45
+
+# How strongly each cached basemap is drawn. The aerial photograph is dark and
+# busy and has to be held back or the water line and the point disappear into
+# it. The topographic sheet is mostly white with thin coloured linework, so it
+# can be drawn closer to full strength and still leaves everything on top of it
+# legible.
+BASEMAP_ALPHA = {"topo": 0.65, "imagery": 0.45}
+IMAGERY_ALPHA = BASEMAP_ALPHA["imagery"]
+
+# Which cached tile to prefer. Topographic first: it carries contours, and a
+# septic system is approved or refused on ground that drains, so elevation is
+# the thing a reviewer is looking for. The aerial photograph is the fallback,
+# and a tile cached before the layer was named in the filename is the last one.
+BASEMAP_PREFERENCE = ("topo", "imagery")
 
 
-def _imagery_path(lat: float, lon: float) -> Path | None:
-    """Find a cached imagery tile for the given coordinates, or None."""
+def _imagery_path(lat: float, lon: float) -> tuple[Path, str] | None:
+    """Find the best cached basemap tile for a point, with the layer it is.
+
+    Returns None when nothing is cached, which is not an error: the map draws
+    its own roads and water and reads perfectly well without a photograph
+    underneath it.
+    """
     lat_r = round(lat, 4)
     lon_r = round(lon, 4)
-    key = f"usgs_{lat_r}_{lon_r}.png"
-    path = IMAGERY_DIR / key
-    return path if path.is_file() else None
+    for layer in BASEMAP_PREFERENCE:
+        path = IMAGERY_DIR / f"usgs_{layer}_{lat_r}_{lon_r}.png"
+        if path.is_file():
+            return path, layer
+    # Tiles cached before the layer was part of the name are aerial imagery.
+    legacy = IMAGERY_DIR / f"usgs_{lat_r}_{lon_r}.png"
+    if legacy.is_file():
+        return legacy, "imagery"
+    return None
 
 
 def _draw_cached_imagery(ax, lat, lon, easting, northing, radius_m):
-    """Draw cached USGS aerial imagery under the map at low opacity.
+    """Draw the cached USGS basemap under the map at low opacity.
 
     A cache miss does nothing: no error, no blank panel.
-    The imagery is decoration and orientation only. It never enters a measurement.
+    The basemap is decoration and orientation only. It never enters a measurement.
     """
-    path = _imagery_path(lat, lon)
-    if path is None:
+    found = _imagery_path(lat, lon)
+    if found is None:
         return
+    path, layer = found
     try:
         img = plt.imread(str(path))
     except Exception:  # noqa: BLE001
@@ -226,7 +251,8 @@ def _draw_cached_imagery(ax, lat, lon, easting, northing, radius_m):
     ymin = northing - radius_m
     ymax = northing + radius_m
     ax.imshow(img, extent=[xmin, xmax, ymin, ymax], aspect="auto",
-              alpha=IMAGERY_ALPHA, zorder=0, interpolation="bilinear")
+              alpha=BASEMAP_ALPHA.get(layer, IMAGERY_ALPHA), zorder=0,
+              interpolation="bilinear")
 
 
 def permit_map(
@@ -448,7 +474,7 @@ def permit_map(
     # the figure edge and was overflowing the right margin.
     caption_lines = [
         "Dashed rings are isolation distances read from the rule set, not chosen for this figure.",
-        "Surface water from Delaware FirstMap (NHD), generalised on download. Aerial imagery from USGS National Map.",
+        "Surface water from Delaware FirstMap (NHD), generalised on download. Base map from USGS National Map.",
         "Projection UTM zone 18N. Distance is measured from the geocoded address point, not from the disposal area,",
         "so this is a screening prompt for the reviewer and not a compliance determination.",
     ]

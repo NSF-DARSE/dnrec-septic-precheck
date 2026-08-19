@@ -65,7 +65,15 @@ class TestConsoleModule:
         )
 
     def test_app_references_no_remote_resource(self):
-        """Venue wifi will fail. Nothing may be fetched at render time."""
+        """Venue wifi will fail. The review may not depend on a fetch.
+
+        One panel does need a network now, the Google map beside the screening
+        figure, and its address lives in septic.report.googlemap rather than
+        here. That is the point of the split: the file that renders the verdict,
+        the findings and the citations still names nothing remote, so this
+        assertion keeps meaning what it always meant. TestTheOnlyRemoteThing
+        below pins the panel itself.
+        """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
         for pattern in ("http://", "https://", "fonts.googleapis", "cdn."):
             assert pattern not in source, f"app.py references {pattern}"
@@ -852,10 +860,81 @@ class TestPDFViewer:
             )
 
     def test_no_http_in_app(self):
-        """The console must not reference any remote resource."""
+        """The console must not reference any remote resource.
+
+        See TestTheOnlyRemoteThing for the single exception and where it lives.
+        """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
         for pattern in ("http://", "https://", "fonts.googleapis", "cdn."):
             assert pattern not in source, f"found {pattern!r} in app.py"
+
+
+class TestTheOnlyRemoteThing:
+    """The Google panel is the one thing on the page that needs a network.
+
+    It was added because a topographic sheet cannot show what a parcel looks
+    like, and a reviewer opening Google Maps in another tab was doing that
+    anyway. It is beside the screening figure and never instead of it, so a
+    failed network costs a photograph and nothing a finding rests on.
+    """
+
+    def test_the_screening_figure_owes_it_nothing(self):
+        """A review with no network at all still produces the figure."""
+        from pathlib import Path as _Path
+
+        from septic.review import review
+
+        packet = _Path("out/examples/permit_284102_60862118.pdf")
+        if not packet.exists():
+            pytest.skip("no demonstration packet staged")
+        result = review(pdf=packet, allow_network=False, with_precedents=False)
+        screening = result.composed.to_json().get("screening") or {}
+        assert screening.get("figure_png"), (
+            "the screening figure did not draw without a network"
+        )
+
+    def test_the_panel_carries_the_point_it_was_given(self):
+        from septic.report.googlemap import embed_url, link_url, panel_html
+
+        lat, lon = 38.9126, -75.4279
+        for address in (embed_url(lat, lon), link_url(lat, lon)):
+            assert str(lat) in address and str(lon) in address
+
+        html = panel_html(lat, lon)
+        assert embed_url(lat, lon) in html
+        assert "iframe" in html
+
+    def test_the_panel_says_what_it_is_not(self):
+        """It is orientation. No measurement may appear to come off it."""
+        from septic.report.googlemap import panel_html
+
+        html = panel_html(38.9126, -75.4279).lower()
+        assert "orientation only" in html
+        assert "not part of any finding" in html or "part of any finding" in html
+
+    def test_the_panel_survives_not_loading(self):
+        """A message sits behind the frame, so a blank panel is not a mystery."""
+        from septic.report.googlemap import panel_html
+
+        html = panel_html(38.9126, -75.4279)
+        assert "needs a network" in html
+        assert "Open in Google Maps" in html, (
+            "with no iframe there has to be a way to reach the same view"
+        )
+
+    def test_nothing_else_reaches_google(self):
+        """One named module, so the remote dependency stays findable."""
+        from pathlib import Path as _Path
+
+        root = _Path(__file__).resolve().parent.parent
+        allowed = {"googlemap.py"}
+        offenders = []
+        for path in list((root / "src").rglob("*.py")) + [root / "app.py"]:
+            if path.name in allowed:
+                continue
+            if "google.com" in path.read_text(encoding="utf-8"):
+                offenders.append(path.name)
+        assert not offenders, f"google.com appears outside googlemap.py: {offenders}"
 
 
 class TestNoOperatorsOnAnySurface:

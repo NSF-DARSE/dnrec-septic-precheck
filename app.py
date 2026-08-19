@@ -85,6 +85,13 @@ st.set_page_config(
 # Styling. Local only, and every value comes from the shared token set.
 # ---------------------------------------------------------------------------
 
+# The two location panels are one height. The street map is a component, which
+# means its height is declared rather than measured, so the pair is sized from
+# that number: the map itself, then the room its caption, coordinates and link
+# need under it. The screening card is given the same total in CSS.
+STREET_MAP_HEIGHT = 490
+LOCATION_PAIR_HEIGHT = STREET_MAP_HEIGHT + 150
+
 STYLE_TEMPLATE = """
 :root { --ink:$c_ink; --muted:$c_muted; --line:$c_line; }
 
@@ -331,6 +338,32 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
   border:$b_hairline solid var(--line); border-radius:$r_md;
   padding:$s_xl; background:$c_surface; margin:$s_md 0 $s_xl;
 }
+/* Beside the street map the two are a pair, and a pair with one panel taller
+   than the other reads as a mistake. The street map is a component with a
+   declared height, so this card is given the same one and the caveat, which is
+   the only part whose length is not known in advance, is folded away. */
+.map-card.paired {
+  /* No top margin. The street map beside this is a Streamlit component, whose
+     container has none, so a margin here drops this card below it and the pair
+     stops reading as a pair. */
+  height:${k_location_pair}; box-sizing:border-box; margin:0 0 $s_lg;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+/* Sized so the measurements and the folded caveat below the figure both land
+   inside the fixed height rather than being clipped by it. The figure is very
+   nearly square, so this is what decides how big it draws. */
+.map-card.paired img { max-height:428px; }
+.map-card.paired .map-card-dl { margin-top:$s_sm; }
+.map-card-caveat { margin-top:auto; }
+/* The browser's own disclosure triangle. A custom marker was drawn with a CSS
+   hex escape, and the stylesheet is handed to st.markdown, which reads a
+   backslash as a markdown escape and printed the digits of the escape as text
+   on the summary line. */
+.map-card-caveat > summary {
+  cursor:pointer; font-size:$t_caption; color:$c_unverified_fg;
+  background:$c_unverified_bg; padding:$s_sm $s_md; border-radius:$r_sm;
+}
+.map-card-caveat .map-card-note { max-height:180px; overflow-y:auto; }
 .map-card-caption {
   font-size:$t_caption; color:var(--muted); margin-bottom:$s_md;
   text-transform:uppercase; letter-spacing:0.07em;
@@ -523,6 +556,7 @@ def stylesheet() -> str:
     )
     values.update({f"w_{name}": value for name, value in TOKENS["weight"].items()})
     values["k_top_clearance"] = f"{TOKENS['chrome']['top_clearance']}px"
+    values["k_location_pair"] = f"{LOCATION_PAIR_HEIGHT}px"
     values["f_sans"] = TOKENS["font"]["sans"]
     values["f_mono"] = TOKENS["font"]["mono"]
     values["circular_h"] = TOKENS["sponsor_strip"]["circular_logo_height"]
@@ -904,8 +938,30 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
     )
 
 
-def map_figure_card(payload: dict) -> str:
-    """The location screening as a figure card with measurements as a definition list."""
+# The GIS layer names are file names. A reviewer reading "205 ft to 460
+# (surface_water_lakes_ponds)" is being shown the inside of the data directory.
+LAYER_NAMES = {
+    "surface_water_major_rivers": "major river",
+    "surface_water_lakes_ponds": "lake or pond",
+    "surface_water_flowlines": "stream or ditch",
+    "public_ponds": "public pond",
+    "tax_ditches": "tax ditch",
+    "roads_centerline": "road",
+}
+
+
+def layer_name(layer: str) -> str:
+    """The readable name of a GIS layer, or a readable guess at one."""
+    if layer in LAYER_NAMES:
+        return LAYER_NAMES[layer]
+    return layer.replace("surface_water_", "").replace("_", " ") or layer
+
+
+def map_figure_card(payload: dict, paired: bool = False) -> str:
+    """The location screening as a figure card with measurements as a definition list.
+
+    paired says the card is drawn beside the street map, which fixes its height.
+    """
     screening = payload.get("screening") or {}
     if not screening.get("flags") and not screening.get("figure_png"):
         return ""
@@ -915,7 +971,8 @@ def map_figure_card(payload: dict) -> str:
     if not point:
         return ""
 
-    parts = ["<div class='map-card'>"]
+    classes = "map-card paired" if paired else "map-card"
+    parts = [f"<div class='{classes}'>"]
     parts.append(
         "<div class='map-card-caption'>Location screening</div>"
     )
@@ -939,7 +996,7 @@ def map_figure_card(payload: dict) -> str:
         cross = " (cross-checked)" if point.get("cross_checked") else ""
         parts.append(
             f"<dt>COORDINATES</dt>"
-            f"<dd>{lat}, {lon} &mdash; {html_lib.escape(source)}{cross}</dd>"
+            f"<dd>{lat}, {lon} ({html_lib.escape(source)}{cross})</dd>"
         )
 
     nearest = screening.get("nearest_water")
@@ -949,8 +1006,8 @@ def map_figure_card(payload: dict) -> str:
         layer = nearest.get("layer", "")
         parts.append(
             f"<dt>NEAREST MAPPED SURFACE WATER</dt>"
-            f"<dd>{dist:.0f} ft &mdash; {html_lib.escape(label)} "
-            f"({html_lib.escape(layer)})</dd>"
+            f"<dd>{dist:.0f} ft to {html_lib.escape(label)} "
+            f"({html_lib.escape(layer_name(layer))})</dd>"
         )
 
     radius = screening.get("screen_radius_feet")
@@ -975,7 +1032,10 @@ def map_figure_card(payload: dict) -> str:
     if caveat_parts:
         caveat = " ".join(caveat_parts)
         parts.append(
+            "<details class='map-card-caveat'>"
+            "<summary>What this screening does not tell you</summary>"
             f"<div class='map-card-note'>{html_lib.escape(caveat)}</div>"
+            "</details>"
         )
 
     parts.append("</div>")
@@ -1215,6 +1275,43 @@ def _viewer_html(page_uris: list[str], start_page: int = 1) -> str:
         "".join(blocks),
         scroll_to,
     )
+
+
+def render_location(payload: dict) -> None:
+    """The screening figure, with the street map beside it when there is a point."""
+    point = (payload.get("screening") or {}).get("point") or {}
+    lat, lon = point.get("lat"), point.get("lon")
+    paired = lat is not None and lon is not None
+
+    map_html = map_figure_card(payload, paired=paired)
+    if not map_html:
+        return
+    if not paired:
+        st.markdown(map_html, unsafe_allow_html=True)
+        return
+
+    from septic.report.googlemap import panel_html
+
+    figure_col, street_col = st.columns([1, 1], gap="medium")
+    with figure_col:
+        st.markdown(map_html, unsafe_allow_html=True)
+    with street_col:
+        components.html(
+            panel_html(
+                lat, lon, height=STREET_MAP_HEIGHT,
+                tokens={
+                    "surface": TOKENS["colour"]["surface"],
+                    "line": TOKENS["colour"]["line"],
+                    "muted": TOKENS["colour"]["muted"],
+                    "radius": f"{TOKENS['radius']['md']}px",
+                    "font": TOKENS["font"]["sans"],
+                },
+            ),
+            # The component frame has to clear the card's own padding, caption
+            # and footer or Streamlit crops the bottom of it.
+            height=LOCATION_PAIR_HEIGHT,
+            scrolling=False,
+        )
 
 
 def render_pdf_viewer(
@@ -1487,9 +1584,6 @@ if uploaded is not None:
                 # findings now, and full height in the Location tab beside them.
                 render_findings(payload)
 
-                map_html = map_figure_card(payload)
-                if map_html:
-                    st.markdown(map_html, unsafe_allow_html=True)
 
                 # Download the printable HTML report
                 html_report = render_html(payload, embedded=False)
@@ -1536,6 +1630,20 @@ if uploaded is not None:
                         else VIEWER_ALONE,
                     )
                     _chatbot_section(payload)
+
+            # The screening figure and a street map, side by side and full
+            # width. Ours carries the measurement, the setback ring, the scale
+            # bar and the provenance line, and it works with no network. The
+            # Google panel carries what a topographic sheet cannot show, which
+            # is what the parcel actually looks like. It is the only part of the
+            # page that needs a network, and it is beside our figure rather than
+            # instead of it for exactly that reason.
+            #
+            # Full width because inside half of the findings column the figure
+            # was bound by width, not height: about 290 pixels of picture next
+            # to a 420 pixel map, which read as the smaller of the two even
+            # though the panels matched.
+            render_location(payload)
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"

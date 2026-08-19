@@ -1,15 +1,21 @@
-"""Fetch USGS aerial imagery tiles and cache them under data/gis/imagery/.
+"""Fetch USGS National Map basemap tiles and cache them under data/gis/imagery/.
 
 Usage:
     python scripts/fetch_imagery.py --lat 38.9126 --lon -75.4279
     python scripts/fetch_imagery.py --all-demo
+    python scripts/fetch_imagery.py --all-demo --layer imagery
 
-Downloads a single 900x700 PNG tile from the USGS National Map imagery
-service for the given coordinates and caches it keyed by the rounded
-bounding box. Nothing is fetched at render time: maps.py reads the cache
-only, and a cache miss draws the existing roads basemap with no error.
+Downloads a single 900x700 PNG tile from the USGS National Map for the given
+coordinates and caches it keyed by the layer and the rounded bounding box.
+Nothing is fetched at render time: maps.py reads the cache only, and a cache
+miss draws the existing roads basemap with no error.
 
-The imagery is US federal, public domain, and free to cache and commit.
+Two layers are available. topo is the default: a topographic map, which shows
+contours, the road network and named water, and reads as a map a reviewer is
+being asked to check something against. imagery is the aerial photograph, which
+is striking on a projector but says nothing about elevation, and elevation is
+what a septic system cares about. Both are US federal, public domain, and free
+to cache and commit.
 """
 import argparse
 import hashlib
@@ -25,19 +31,26 @@ IMAGERY_DIR = ROOT / "data" / "gis" / "imagery"
 
 USGS_URL = (
     "https://basemap.nationalmap.gov/arcgis/rest/services/"
-    "USGSImageryOnly/MapServer/export"
+    "{service}/MapServer/export"
 )
+
+# The service name behind each layer we ask for.
+LAYERS = {
+    "topo": "USGSTopo",
+    "imagery": "USGSImageryOnly",
+}
+DEFAULT_LAYER = "topo"
 
 # Buffer around the point in degrees (roughly 900 ft at Delaware latitudes)
 BUFFER_DEG = 0.004
 
 
-def tile_key(lat: float, lon: float) -> str:
-    """A stable filename for the tile, keyed by the rounded bounding box."""
+def tile_key(lat: float, lon: float, layer: str = DEFAULT_LAYER) -> str:
+    """A stable filename for the tile, keyed by the layer and bounding box."""
     # Round to 4 decimal places (about 11 metres) for stable keys
     lat_r = round(lat, 4)
     lon_r = round(lon, 4)
-    return f"usgs_{lat_r}_{lon_r}.png"
+    return f"usgs_{layer}_{lat_r}_{lon_r}.png"
 
 
 def tile_bbox(lat: float, lon: float) -> tuple[float, float, float, float]:
@@ -50,10 +63,14 @@ def tile_bbox(lat: float, lon: float) -> tuple[float, float, float, float]:
     )
 
 
-def fetch_tile(lat: float, lon: float, force: bool = False) -> Path:
-    """Download the USGS imagery tile for a point and cache it."""
+def fetch_tile(
+    lat: float, lon: float, force: bool = False, layer: str = DEFAULT_LAYER,
+) -> Path:
+    """Download one USGS basemap tile for a point and cache it."""
+    if layer not in LAYERS:
+        raise ValueError(f"unknown layer {layer!r}, expected {sorted(LAYERS)}")
     IMAGERY_DIR.mkdir(parents=True, exist_ok=True)
-    key = tile_key(lat, lon)
+    key = tile_key(lat, lon, layer)
     path = IMAGERY_DIR / key
 
     if path.exists() and not force:
@@ -73,7 +90,7 @@ def fetch_tile(lat: float, lon: float, force: bool = False) -> Path:
         "transparent": "false",
         "f": "image",
     })
-    url = f"{USGS_URL}?{params}"
+    url = f"{USGS_URL.format(service=LAYERS[layer])}?{params}"
     print(f"  Fetching: {url[:120]}...")
 
     try:
@@ -110,15 +127,17 @@ def main():
                         help="Fetch tiles for all demonstration packets")
     parser.add_argument("--force", action="store_true",
                         help="Re-fetch even if cached")
+    parser.add_argument("--layer", choices=sorted(LAYERS), default=DEFAULT_LAYER,
+                        help="Which National Map layer to fetch")
     args = parser.parse_args()
 
     if args.all_demo:
-        print("Fetching imagery for all demo points:")
+        print("Fetching " + args.layer + " for all demo points:")
         for name, lat, lon in DEMO_POINTS:
             print(f"\n  {name} ({lat}, {lon}):")
-            fetch_tile(lat, lon, force=args.force)
+            fetch_tile(lat, lon, force=args.force, layer=args.layer)
     elif args.lat is not None and args.lon is not None:
-        fetch_tile(args.lat, args.lon, force=args.force)
+        fetch_tile(args.lat, args.lon, force=args.force, layer=args.layer)
     else:
         parser.print_help()
         return 1
