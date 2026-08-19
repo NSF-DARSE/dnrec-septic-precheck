@@ -117,6 +117,18 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
   font-size:$t_micro; color:$c_on_band_muted; letter-spacing:0.08em;
   text-transform:uppercase; font-weight:$w_medium;
 }
+.brand-band-doc {
+  margin-left:auto; text-align:right; display:flex; flex-direction:column;
+  gap:1px; padding-left:$s_xl;
+  border-left:$b_hairline solid rgba(255,255,255,0.14);
+}
+.brand-band-doc-name {
+  font-family:$f_mono; font-size:$t_caption; color:$c_on_band;
+}
+.brand-band-doc-meta {
+  font-size:$t_micro; color:$c_on_band_muted;
+  letter-spacing:0.06em; text-transform:uppercase;
+}
 
 /* Verdict strip, pinned under the brand band */
 .verdict-strip {
@@ -313,7 +325,10 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
   font-size:$t_caption; color:var(--muted); margin-bottom:$s_md;
   text-transform:uppercase; letter-spacing:0.07em;
 }
-.map-card img { max-width:100%; border-radius:$r_sm; }
+.map-card img {
+  max-width:100%; max-height:420px; width:auto; display:block;
+  margin:0 auto; border-radius:$r_sm;
+}
 .map-card-dl { margin-top:$s_md; font-size:$t_body; }
 .map-card-dl dt {
   font-size:$t_micro; text-transform:uppercase; letter-spacing:0.05em;
@@ -586,15 +601,29 @@ def _data_uri(path_str: str) -> str | None:
     return f"data:image/{kind};base64,{base64.b64encode(p.read_bytes()).decode('ascii')}"
 
 
-def brand_band() -> str:
-    """The product identity band at the top of the page."""
+def brand_band(subject: dict | None = None) -> str:
+    """The band at the top: who this is, and which packet is open."""
+    subject = subject or {}
+    document = subject.get("document")
+    pages = subject.get("pages")
+    if document:
+        detail = (
+            f"<div class='brand-band-doc'>"
+            f"<span class='brand-band-doc-name'>{html_lib.escape(document)}</span>"
+            f"<span class='brand-band-doc-meta'>{pages} pages</span>"
+            f"</div>"
+        )
+    else:
+        detail = ""
     return (
         "<div class='brand-band'>"
         "<div class='brand-mark'><i></i><i></i><i></i></div>"
         "<div class='brand-band-text'>"
         "<div class='brand-band-title'>Septic permit application review</div>"
-        "<div class='brand-band-sub'>Delaware on-site wastewater regulations, 2014</div>"
+        "<div class='brand-band-sub'>Delaware on-site wastewater regulations, "
+        "January 2014</div>"
         "</div>"
+        f"{detail}"
         "</div>"
     )
 
@@ -618,66 +647,35 @@ def loading_skeleton(doc_name: str = "") -> str:
     )
 
 
-def verdict_strip(payload: dict, doc_name: str = "") -> str:
-    """Verdict, an outcome bar, and the counts that explain it.
+def verdict_strip(payload: dict) -> str:
+    """The verdict, and one sentence saying what it rests on.
 
-    The bar used to colour by coverage alone, so a packet with three failures
-    showed a full green bar beside the word DEFICIENCIES. Green read as "all
-    good" while the table below said otherwise. It now segments by outcome, so
-    failures are visible in the bar itself and the colours mean the same thing
-    they mean on every row: red failed, green passed, grey did not apply, amber
-    could not be read.
+    This carried a segmented bar and a row of counts as well, which stated the
+    same fact three times: 3 requirements not met, beside 3 failed and 12
+    passed, beside a bar in the same proportions. The sentence is the one that
+    reads at a glance and the only one that survives being read aloud, so it is
+    the one that stayed.
+
+    The sentence still has to carry the honest part. A verdict of NO
+    DEFICIENCIES FOUND on a packet where most checks could not run must say so
+    in the same breath, because that is the misreading this tool exists to
+    prevent.
     """
     coverage = payload.get("coverage") or {}
     headline = payload.get("headline", "")
-    not_applicable = coverage.get("not_applicable", 0)
     unreadable = coverage.get("unreadable", 0)
-    total = coverage.get("total", 0)
-
     failed = len(payload.get("deficiencies") or [])
     passed = len(payload.get("satisfied") or [])
+    not_applicable = coverage.get("not_applicable", 0)
 
     fg, _bg = BANNER_COLOR.get(
         headline, (TOKENS["colour"]["ink"], TOKENS["colour"]["surface_sunken"])
     )
 
-    segments = [
-        (failed, TOKENS["colour"]["deficiency_edge"], "failed"),
-        (passed, TOKENS["colour"]["clear_edge"], "passed"),
-        (not_applicable, TOKENS["colour"]["out_of_scope_edge"], "not applicable"),
-        (unreadable, TOKENS["colour"]["unverified_edge"], "could not be read"),
-    ]
-
-    seg_parts = []
-    count_parts = []
-    for count, colour, label in segments:
-        if not count:
-            continue
-        if total > 0:
-            seg_parts.append(
-                f"<div class='seg-bar-segment' title='{count} {label}' "
-                f"style='width:{count / total * 100:.1f}%;"
-                f"background:{colour}'></div>"
-            )
-        count_parts.append(
-            f"<span class='count'><span class='dot' style='background:{colour}'>"
-            f"</span><b>{count}</b> {label}</span>"
-        )
-
-    seg_bar = f"<div class='seg-bar'>{''.join(seg_parts)}</div>"
-    counts_html = "".join(count_parts)
-
-    # The headline needs one plain sentence under it saying what the numbers
-    # add up to, because 15 of 15 beside DEFICIENCIES FOUND is not self
-    # explanatory: it says everything was checked, not that everything is fine.
-    # The coverage figure earns its place only when something could not be read.
-    # On a packet where every requirement was checked, saying so is noise: the
-    # bar already shows it and the reviewer cares about what was found. Where
-    # checks did not run, the count is the whole point and stays.
     checked = failed + passed + not_applicable
     noun = "requirement" if failed == 1 else "requirements"
     if unreadable and not checked:
-        summary = f"Nothing on this packet could be checked."
+        summary = "Nothing on this packet could be checked."
     elif unreadable:
         summary = (
             f"{failed} {noun} not met. {unreadable} could not be checked."
@@ -688,10 +686,6 @@ def verdict_strip(payload: dict, doc_name: str = "") -> str:
         summary = f"{failed} {noun} not met."
     else:
         summary = "Nothing flagged against any requirement."
-
-    subject = payload.get("subject") or {}
-    pages = subject.get("pages", 0)
-    meta = f"{html_lib.escape(doc_name)} &middot; {pages} pages" if doc_name else ""
 
     tint = {
         "DEFICIENCIES FOUND": "v-fail",
@@ -704,11 +698,6 @@ def verdict_strip(payload: dict, doc_name: str = "") -> str:
         f"<div class='verdict-strip-headline' style='color:{fg}'>{headline}</div>"
         f"<div class='verdict-strip-summary'>{html_lib.escape(summary)}</div>"
         "</div>"
-        "<div class='verdict-strip-metrics'>"
-        f"{seg_bar}"
-        f"<div class='verdict-strip-counts'>{counts_html}</div>"
-        "</div>"
-        f"<div class='verdict-strip-meta'>{meta}</div>"
         "</div>"
     )
 
@@ -1129,23 +1118,20 @@ def render_findings(payload: dict) -> None:
             st.markdown(findings_table(unresolved, "unresolved"), unsafe_allow_html=True)
 
     if satisfied:
-        st.markdown(
-            f"<div class='findings-section section-head pass'>Checks that passed "
-            f"<span class='findings-section-count'>({len(satisfied)})</span></div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(findings_table(satisfied, "satisfied"), unsafe_allow_html=True)
+        with st.expander(f"Checks that passed ({len(satisfied)})", expanded=False):
+            st.markdown(
+                findings_table(satisfied, "satisfied"), unsafe_allow_html=True
+            )
 
     if not_applicable:
-        st.markdown(
-            f"<div class='findings-section section-head na'>Does not apply to this system "
-            f"<span class='findings-section-count'>({len(not_applicable)})</span></div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            findings_table(not_applicable, "not_applicable", deemphasised=True),
-            unsafe_allow_html=True,
-        )
+        with st.expander(
+            f"Does not apply to this system ({len(not_applicable)})",
+            expanded=False,
+        ):
+            st.markdown(
+                findings_table(not_applicable, "not_applicable", deemphasised=True),
+                unsafe_allow_html=True,
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -1255,7 +1241,10 @@ rules = engine.load_rules()
 # Main panel
 # ---------------------------------------------------------------------------
 
-st.markdown(brand_band(), unsafe_allow_html=True)
+# The band names the packet once a review has run, so it is filled in
+# after the payload exists rather than rendered twice.
+brand_slot = st.empty()
+brand_slot.markdown(brand_band(), unsafe_allow_html=True)
 
 
 def drop_zone():
@@ -1314,23 +1303,24 @@ if uploaded is not None:
         elapsed = time.perf_counter() - started
         if payload:
             subject = payload.get("subject") or {}
+            brand_slot.markdown(brand_band(subject), unsafe_allow_html=True)
+
             # Verdict strip with segmented bar
-            st.markdown(
-                verdict_strip(payload, subject.get("document", "")),
-                unsafe_allow_html=True,
-            )
+            st.markdown(verdict_strip(payload), unsafe_allow_html=True)
 
             # Split layout: findings left, PDF viewer right.
             findings_col, viewer_col = st.columns([58, 42], gap="medium")
 
             with findings_col:
-                # Map figure card at the top of the left pane
+                # Findings first. The map is a screening prompt, not a finding,
+                # and at full size above the tables it pushed the first
+                # deficiency 684 pixels below the fold. It sits under the
+                # findings now, and full height in the Location tab beside them.
+                render_findings(payload)
+
                 map_html = map_figure_card(payload)
                 if map_html:
                     st.markdown(map_html, unsafe_allow_html=True)
-
-                # Findings rendered natively
-                render_findings(payload)
 
                 # Download the printable HTML report
                 html_report = render_html(payload, embedded=False)

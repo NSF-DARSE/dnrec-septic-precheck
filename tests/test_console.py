@@ -647,11 +647,11 @@ class TestAppRuns:
             if m.value and "class='empty'" in m.value
         ]
         assert not empty, "the empty dropzone is still taking the column"
-        # One expander for the collapsed uploader, plus possibly one for the
-        # correction letter if the packet has deficiencies.
-        expanders = app_test.get("expander")
-        assert len(expanders) >= 1, "the uploader was not folded away"
-        assert len(expanders) <= 2, "unexpected extra expanders"
+        # The property is that the uploader folds away and stays reachable, not
+        # how many expanders the page happens to have. Passed and not applicable
+        # findings are collapsed too, because they are reference rather than the
+        # answer, so counting expanders pins the wrong thing.
+        assert app_test.get("expander"), "the uploader was not folded away"
         assert len(app_test.get("file_uploader")) == 1, "the way in disappeared"
         text = " ".join(m.value or "" for m in app_test.markdown)
         assert "verdict-strip-headline" in text, "no verdict rendered for a loaded packet"
