@@ -672,6 +672,36 @@ def run_review(pdf_path: str, doc_hash: str = "") -> dict | None:
     return result.composed.to_json()
 
 
+def run_review_live(pdf_path: str) -> tuple[dict | None, str]:
+    """Read a packet that is not in the cache, over the network, and review it.
+
+    Returns the payload and an empty string, or None and the reason it failed, so
+    the caller can say what went wrong instead of showing a blank page.
+
+    This is what makes the console a tool rather than a viewer for a fixed corpus.
+    A reviewer drops in a packet nobody has seen before and it is read: Textract
+    over the pages, and the drawing measured separately in the Location tab. The
+    read is slower than a cached one, on the order of a minute for a long packet,
+    because Textract on a multi-page PDF is asynchronous and is genuinely doing the
+    work. It is held behind the same loading skeleton either way.
+
+    review writes the analysis to the content-hash cache on its way through, so the
+    second look at the same packet is the fast path with no network at all.
+    """
+    path = Path(pdf_path)
+    try:
+        result = review_mod.review(
+            pdf=path,
+            allow_network=True,
+            with_precedents=False,
+            with_screening=True,
+            with_map=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return None, f"{type(exc).__name__}: {exc}"
+    return result.composed.to_json(), ""
+
+
 # ---------------------------------------------------------------------------
 # Verdict colour map (imported from the report renderer)
 # ---------------------------------------------------------------------------
@@ -1988,7 +2018,12 @@ if uploaded is not None:
     client = TextractClient()
     cached = client.cached_by_hash(doc_hash)
 
-    if cached is not None and cached.ok:
+    # A packet that is not in the cache is read rather than refused. This gate used
+    # to require a cache hit and explain itself when there was none, which made the
+    # console a viewer for a corpus somebody had prepared elsewhere. A reviewer's
+    # packet is by definition one nobody has read yet, so that is the case that has
+    # to work: the cache is the fast path, not the only path.
+    if uploaded is not None:
         uploads = config.OUT_DIR / "uploads"
         uploads.mkdir(parents=True, exist_ok=True)
         target = uploads / uploaded.name
@@ -2010,7 +2045,20 @@ if uploaded is not None:
             skeleton.markdown(
                 loading_skeleton(uploaded.name), unsafe_allow_html=True
             )
-            st.session_state["review_payload"] = run_review(str(target), doc_hash)
+            if cached is not None and cached.ok:
+                st.session_state["review_payload"] = run_review(
+                    str(target), doc_hash
+                )
+                st.session_state["review_error"] = ""
+            else:
+                # First sight of this packet. Textract has to read the pages, and
+                # on a long packet that is asynchronous and takes about a minute.
+                # The skeleton stays up for the duration, and the analysis is
+                # written to the cache on the way through, so this happens once
+                # per document and never again.
+                payload, why = run_review_live(str(target))
+                st.session_state["review_payload"] = payload
+                st.session_state["review_error"] = why
             st.session_state["review_token"] = token
             skeleton.empty()
         payload = st.session_state.get("review_payload")
@@ -2106,14 +2154,14 @@ if uploaded is not None:
                         _chatbot_section(payload)
     else:
         st.info(
-            f"**{uploaded.name} has not been analysed yet.**\n\n"
-            f"Reading a new packet means running Amazon Textract over it, which "
-            f"needs AWS credentials. This console is serving the local cache and "
-            f"is not configured for live analysis, so nothing was sent anywhere "
-            f"and nothing was changed.\n\n"
+            f"**{uploaded.name} could not be read.**\n\n"
+            f"This packet was not in the local cache, so it was read live, and "
+            f"that failed. Reading the pages needs Amazon Textract, which needs "
+            f"credentials and a bucket it can stage the PDF in, because Textract "
+            f"on a multi-page PDF is asynchronous and only reads from S3.\n\n"
             f"Document fingerprint `{doc_hash[:16]}`\n\n"
-            f"To add it to the cache, run this where credentials are available:\n\n"
-            f"`python -m septic review --pdf {uploaded.name}`"
+            f"What went wrong:\n\n"
+            f"`{st.session_state.get('review_error') or 'no reason reported'}`"
         )
 
 # ---------------------------------------------------------------------------
