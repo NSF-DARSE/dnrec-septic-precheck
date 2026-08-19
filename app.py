@@ -173,10 +173,10 @@ html, body { font-family:$f_sans; }
 .findings-table tr:last-child td { border-bottom:none; }
 .ft-rule-id {
   font-family:$f_mono; font-size:$t_micro; color:$c_citation_fg;
-  font-weight:$w_medium;
+  font-weight:$w_medium; white-space:nowrap;
 }
 .ft-section {
-  font-size:$t_micro; color:var(--muted); margin-top:2px;
+  font-size:$t_micro; color:var(--muted); margin-top:2px; white-space:nowrap;
 }
 .ft-requirement {
   font-weight:$w_medium; color:var(--ink); line-height:$lh_normal;
@@ -718,10 +718,10 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
     return (
         f"<table class='{cls}'>"
         "<colgroup>"
-        "<col style='width:8%'>"
-        "<col style='width:46%'>"
+        "<col style='width:12%'>"
+        "<col style='width:40%'>"
         "<col style='width:16%'>"
-        "<col style='width:16%'>"
+        "<col style='width:18%'>"
         "<col style='width:14%'>"
         "</colgroup>"
         "<tr>"
