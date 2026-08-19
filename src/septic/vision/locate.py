@@ -897,20 +897,25 @@ class SymbolLocator:
             for label in wanted
         }
 
-        content = styleguide.content_blocks(self.guide)
-        content.append({
-            "text": (
-                f"That is the end of the reference symbols. The next image is the "
-                f"permit sheet to read, {width} by {height} pixels."
-            )
-        })
-        content.append({
-            "image": {
-                "format": SUPPORTED_FORMATS[suffix],
-                "source": {"bytes": data},
-            }
-        })
-        content.append({"text": _prompt(width, height, wanted, descriptions)})
+        # One image goes in: the sheet. The crops under assets/*_style are the
+        # source material the drawing conventions in STYLE_SOURCES were written
+        # from, and those written conventions are what the prompt carries. Sending
+        # the crops as well cost more than it bought twice over. They pushed the
+        # request past twenty images, and past twenty Bedrock caps every image at
+        # 2000 pixels a side, which does not shrink a 2376 pixel sheet, it makes the
+        # model refuse the call. Reducing the render to fit was not an option: the
+        # pixel frame is what the coordinates are pinpointed in and what the dpi
+        # cross-check against the written scale ratio depends on. So the sheet keeps
+        # its resolution and the examples stay in the prompt as words.
+        content = [
+            {
+                "image": {
+                    "format": SUPPORTED_FORMATS[suffix],
+                    "source": {"bytes": data},
+                }
+            },
+            {"text": _prompt(width, height, wanted, descriptions)},
+        ]
 
         try:
             response = self.client.converse(

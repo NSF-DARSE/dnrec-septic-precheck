@@ -671,14 +671,35 @@ class ScaleReader:
                     # 0.5988 ft/px on a 216 dpi render when the true answer was
                     # 0.4630: the model put the bar 450 px from where it sits, the
                     # crop missed it, and 334 px of unrelated ink measured cleanly.
-                    raise ScaleUnavailable(
-                        f"the bar measurement was cut off by the edge of its own "
-                        f"search window, so {bar.measured_length_px} px is a lower "
-                        f"bound rather than a length, and it disagrees with the "
-                        f"written ratio at {agreement:.0f} percent. A clipped run "
-                        f"that also fails the cross check means the bar was not "
-                        f"found, so no scale was established"
+                    #
+                    # So the bar is discarded. What is not discarded is the sheet:
+                    # the written ratio is still there and the render resolution is
+                    # still known, and those two give a scale without the bar at all.
+                    # Refusing the sheet here threw away a whole drawing over a
+                    # failure to find one graphic, which is the wrong trade when the
+                    # alternative is stated plainly. The reproduction caveat comes
+                    # with it, because a stale ratio is exactly the risk the bar
+                    # existed to catch and there is now nothing catching it.
+                    chosen, source = ratio_fpp, "ratio_and_dpi"
+                    warnings.append(
+                        f"the graphic bar was discarded: the measurement was cut off "
+                        f"by the edge of its own search window, so "
+                        f"{bar.measured_length_px} px is a lower bound rather than a "
+                        f"length, and it agrees with the written ratio to only "
+                        f"{agreement:.0f} percent. The written ratio and the known "
+                        f"render resolution were used instead. Nothing confirms the "
+                        f"ratio is the one this copy was plotted at, so if the sheet "
+                        f"was reduced on a copier every distance below is off by "
+                        f"that reduction"
                     )
+                    if not (MIN_FEET_PER_PIXEL <= chosen <= MAX_FEET_PER_PIXEL):
+                        raise ScaleUnavailable(
+                            f"the bar was cut off by its own search window and the "
+                            f"written ratio falls back to {chosen:.4g} feet per "
+                            f"pixel, outside the plausible range "
+                            f"{MIN_FEET_PER_PIXEL} to {MAX_FEET_PER_PIXEL}, so "
+                            f"neither could be used"
+                        )
 
         scale = Scale(
             feet_per_pixel=chosen,

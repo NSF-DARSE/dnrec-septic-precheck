@@ -1396,6 +1396,238 @@ def jump_to_page(doc_hash: str, page: int) -> None:
 
 
 # ---------------------------------------------------------------------------
+# The site plan drawing, measured off the sheet, in the background.
+#
+# Ten of the rules need a distance between two things drawn on a scanned site
+# plan, and no OCR service returns those: the number is in the geometry, not in
+# the text. Reading them means rendering the sheet and asking a vision model
+# where the septic tank, the wells and the disposal area are, then measuring the
+# graphic scale bar to turn pixels into feet. That takes around half a minute,
+# which is far too long to hold the page for.
+#
+# So it does not hold the page. The review renders and the reviewer starts
+# reading it while the drawing is still being measured on a worker thread, and
+# the Location tab fills in underneath them when the answer lands. Nothing in
+# the review path waits on this and nothing in it depends on the result: the
+# rules that can be decided from the text are already decided by the time the
+# first box is drawn.
+# ---------------------------------------------------------------------------
+
+# How often the Location tab looks to see whether the drawing has been measured.
+DRAWING_POLL_SECONDS = 2.0
+# Two workers, because the sheet is measured once per packet and a reviewer
+# opening a second packet while the first is still going is the only case that
+# needs more than one. Bounded so a queue of uploads cannot fan out into the
+# model rate limit.
+DRAWING_WORKERS = 2
+
+
+@st.cache_resource(show_spinner=False)
+def drawing_pool():
+    """The threads the drawing is measured on. One pool for the whole server."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    return ThreadPoolExecutor(
+        max_workers=DRAWING_WORKERS, thread_name_prefix="drawing"
+    )
+
+
+@st.cache_resource(show_spinner=False)
+def drawing_jobs() -> dict:
+    """Futures for the drawings being measured, keyed by document hash.
+
+    A cache_resource dict rather than session state because the job outlives the
+    script run that started it. Streamlit re-runs this file top to bottom on every
+    interaction, and session state is rewritten as it goes; the futures have to
+    survive that or every rerun would start the model calls again.
+    """
+    return {}
+
+
+def _measure_drawing(pdf_path: str, doc_hash: str, rule_set) -> dict:
+    """Find the site plan, measure it, and return plain data. Runs off-thread.
+
+    Touches no Streamlit API. Everything it needs is passed in and everything it
+    returns is a dict, because calling st.* from a worker thread has no script run
+    to attach to and the write is silently dropped.
+    """
+    from septic.ingest import layout
+    from septic.vision.measure import measure_best_sheet
+    from septic.vision.sheet import drawn_candidates, find_site_plan
+
+    # The pages have already been read by the time the review is on screen, so the
+    # sheet is picked from that same cached analysis rather than reading again.
+    analysis = TextractClient().cached_by_hash(doc_hash)
+    if analysis is None or not analysis.ok:
+        return {
+            "state": "unavailable",
+            "reason": "The pages have not been read, so there is no sheet to pick.",
+        }
+
+    document = layout.parse_blocks(analysis.blocks)
+    candidates = drawn_candidates(document, limit=2)
+    if not candidates:
+        return {
+            "state": "no_sheet",
+            "reason": (
+                "No page in this packet reads as a site plan, so there is no "
+                "drawing to measure."
+            ),
+        }
+
+    # The text ranking shortlists, detection decides. Both candidates are read at
+    # once, so settling it costs about what reading one page cost.
+    facts = measure_best_sheet(
+        Path(pdf_path), candidates, rules=rule_set,
+        annotate=True, concurrency=len(candidates),
+    )
+    pick = find_site_plan(document)
+    return {
+        "state": "measured",
+        "page": facts.page,
+        "score": pick.score if pick else 0.0,
+        "evidence": list(pick.evidence) if pick else [],
+        "png": str(facts.annotated_png) if facts.annotated_png else "",
+        "feet_per_pixel": facts.feet_per_pixel,
+        "measurements": [m.to_json() for m in facts.measurements],
+        "warnings": list(facts.warnings),
+    }
+
+
+@st.cache_data(show_spinner=False, max_entries=8)
+def _drawing_uri(png_path: str, size: int) -> str:
+    """The annotated sheet as a data URI, cached on path and size.
+
+    size is in the key so a sheet re-measured to a different result is re-encoded
+    rather than served stale. The encoding is cached because the Location tab polls
+    every couple of seconds and the annotated sheet is a few megabytes: re-reading
+    and re-encoding it on every poll would keep a core busy for as long as the tab
+    is open.
+    """
+    p = Path(png_path)
+    if not p.is_file():
+        return ""
+    return "data:image/png;base64," + base64.b64encode(p.read_bytes()).decode("ascii")
+
+
+def _drawing_pending_card(name: str) -> str:
+    """What the Location tab says while the drawing is still being measured."""
+    return (
+        "<div class='map-card'>"
+        "<div class='map-card-caption'>Site plan &mdash; measuring</div>"
+        "<div class='map-card-note'>"
+        "Finding the site plan, locating the tank, the wells and the disposal "
+        "area on it, and reading the scale bar. This runs beside the review "
+        "rather than in front of it, so the findings on the left are already "
+        "final: nothing here can change them, it can only add the distances "
+        "that are drawn rather than written."
+        "</div>"
+        "</div>"
+    )
+
+
+def site_plan_card(result: dict) -> str:
+    """The measured sheet as a figure card: the drawing, then what came off it."""
+    state = result.get("state")
+    if state != "measured":
+        return (
+            "<div class='map-card'>"
+            "<div class='map-card-caption'>Site plan</div>"
+            f"<div class='map-card-note'>{html_lib.escape(result.get('reason', ''))}"
+            "</div></div>"
+        )
+
+    parts = ["<div class='map-card'>"]
+    parts.append(
+        f"<div class='map-card-caption'>Site plan &mdash; page {result.get('page')}"
+        "</div>"
+    )
+
+    uri = _drawing_uri(result.get("png", ""), len(result.get("measurements") or []))
+    if uri:
+        parts.append(
+            f"<img src='{uri}' alt='Site plan with the located features and the "
+            "measured setbacks drawn on it'>"
+        )
+
+    # The distances, with the allowance on each. A measurement without its
+    # allowance invites a reviewer to read 73 feet as exact when the pixel error on
+    # a scanned sheet is several feet wide, so the two are never shown apart.
+    used = [m for m in (result.get("measurements") or []) if m.get("emitted")]
+    held = [m for m in (result.get("measurements") or []) if not m.get("emitted")]
+
+    if used:
+        parts.append("<dl class='map-card-dl'>")
+        for m in used:
+            label = str(m.get("parameter", "")).replace("_", " ").upper()
+            corridor = " at least" if m.get("corridor") else ""
+            parts.append(
+                f"<dt>{html_lib.escape(label)}</dt>"
+                f"<dd>{corridor} {m.get('value_feet')} ft "
+                f"&plusmn; {m.get('uncertainty_feet')} ft, "
+                f"{html_lib.escape(str(m.get('from')))} to "
+                f"{html_lib.escape(str(m.get('to')))}</dd>"
+            )
+        parts.append("</dl>")
+
+    # Everything the sheet was measured for and then refused to report, with the
+    # reason. A distance that sits inside its own allowance of the threshold cannot
+    # decide the rule either way, and saying so is the honest result.
+    notes = [
+        f"{str(m.get('parameter', '')).replace('_', ' ')}: "
+        f"{m.get('value_feet')} ft measured, not used because "
+        f"{m.get('withheld_because')}."
+        for m in held
+    ]
+    notes.extend(result.get("warnings") or [])
+    if notes:
+        parts.append(
+            "<details class='map-card-caveat'>"
+            "<summary>What was measured but not used</summary>"
+            f"<div class='map-card-note'>{html_lib.escape(' '.join(notes))}</div>"
+            "</details>"
+        )
+
+    parts.append("</div>")
+    return "".join(parts)
+
+
+@st.fragment(run_every=DRAWING_POLL_SECONDS)
+def drawing_pane(pdf_path: str, doc_hash: str, doc_name: str = "") -> None:
+    """The Location tab: the annotated sheet, or a note while it is being measured.
+
+    A fragment so the poll redraws this pane alone. Re-running the whole script
+    every couple of seconds would re-render the packet viewer and the assistant
+    thread as well, and the viewer would jump back to its first page each time.
+    """
+    jobs = drawing_jobs()
+    job = jobs.get(doc_hash)
+    if job is None:
+        job = drawing_pool().submit(_measure_drawing, pdf_path, doc_hash, rules)
+        jobs[doc_hash] = job
+
+    if not job.done():
+        st.markdown(_drawing_pending_card(doc_name), unsafe_allow_html=True)
+        return
+
+    try:
+        result = job.result()
+    except Exception as exc:  # noqa: BLE001
+        # The drawing failing is not the review failing. Say what went wrong and
+        # leave the findings, which were decided without it, alone.
+        st.markdown(
+            "<div class='map-card'>"
+            "<div class='map-card-caption'>Site plan</div>"
+            "<div class='map-card-note'>The drawing could not be measured: "
+            f"{html_lib.escape(str(exc))}</div></div>",
+            unsafe_allow_html=True,
+        )
+        return
+
+    st.markdown(site_plan_card(result), unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
 # Rules and toggle, in the main column.
 # ---------------------------------------------------------------------------
 
@@ -1697,19 +1929,32 @@ if uploaded is not None:
                             )
 
             with viewer_col:
-                # The pane held two tabs, Packet and Location, and the Location
-                # tab drew the same map that is already under the findings on
-                # the left. One of the two was always redundant, and the one
-                # worth keeping is the one beside the findings, because that is
-                # where the screening is read. The pane is the packet now, with
-                # the assistant under it: a question about a finding is asked
-                # with the page it came from still on screen.
+                # Two tabs over one pane. The Location tab used to draw the same
+                # screening map that is already under the findings on the left,
+                # which made it redundant and it was taken out. It carries
+                # something else now: the site plan sheet with the tank, the
+                # wells and the disposal area boxed on it and the setbacks drawn
+                # between them. That cannot go beside the findings, because it is
+                # read against the packet, one tab away from the page it was
+                # measured off.
+                #
+                # The assistant stays under both, so a question about a finding
+                # is asked with either the page or the drawing still on screen.
                 with st.container(key="viewer_pane"):
-                    render_pdf_viewer(
-                        data, doc_hash, payload,
-                        height=VIEWER_WITH_ASSISTANT if chatbot_available()
-                        else VIEWER_ALONE,
-                    )
+                    packet_tab, location_tab = st.tabs(["Packet", "Location"])
+                    with packet_tab:
+                        render_pdf_viewer(
+                            data, doc_hash, payload,
+                            height=VIEWER_WITH_ASSISTANT if chatbot_available()
+                            else VIEWER_ALONE,
+                        )
+                    with location_tab:
+                        # Streamlit renders every tab's body whichever one is
+                        # showing, so the measurement starts as the review lands
+                        # rather than waiting for the tab to be clicked. By the
+                        # time a reviewer has read the findings it is usually
+                        # already there.
+                        drawing_pane(str(target), doc_hash, uploaded.name)
                     with st.container(key="assistant_box"):
                         _chatbot_section(payload)
     else:

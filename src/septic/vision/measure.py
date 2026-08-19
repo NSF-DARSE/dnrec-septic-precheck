@@ -417,21 +417,112 @@ def measure_pdf(pdf: Path, page: int, rules=None, offline: bool = True,
                 f"no cached scale for page {page} of {Path(pdf).name}"
             )
     else:
-        located = locator.locate(image, page=page, refine=True, use_cache=False)
-        scale = reader.read(image, dpi=dpi, use_cache=False)
+        # The cache is consulted rather than bypassed. Detection is written to it
+        # unconditionally, so when the sheet has already been read once, by the
+        # candidate selection below or by an earlier run on the same packet, reading
+        # it again would be a second model call for an answer already on disk. The
+        # cache is keyed on the hash of the rendered image, so a different sheet, or
+        # the same sheet rendered at a different scale, is a different key and is
+        # read fresh.
+        located = locator.locate(image, page=page, refine=True, use_cache=True)
+        scale = reader.read(image, dpi=dpi, use_cache=True)
 
     out = measure(located, scale, page=page, rules=rules,
                   validated_labels=set(guide.exemplar_labels))
     if annotate:
+        # The measurements go in so the overlay draws the line each distance was
+        # actually taken along. Without them the sheet comes back with boxes and no
+        # setbacks on it, which is the half of the picture a reviewer cannot check.
         out.annotated_png = overlay.annotate(
-            image, located, scale=scale,
+            image, located, scale=scale, measurements=out.measurements,
             out_path=image.with_name(f"{image.stem}-annotated.png"), upscale=2.0,
+        )
+    return out
+
+
+# A setback can only be measured where both of its ends are drawn, and every setback
+# in the rule set runs from one of these two. A sheet without either is a sheet with
+# nothing to measure, whatever its text says.
+ANCHOR_LABELS = ("septic_tank", "disposal_area")
+
+
+def _sheet_score(located) -> tuple[int, int, int]:
+    """How measurable a detected sheet is. Higher sorts better.
+
+    Anchors first, because a sheet drawing the tank and the disposal area can carry
+    a setback and a sheet drawing neither cannot, however much else is on it. Then
+    the number of distinct classes, then the raw symbol count as a last tie break.
+    """
+    sited = [s for s in located.symbols if s.context == "sited"]
+    labels = {s.label for s in sited}
+    return (
+        sum(1 for a in ANCHOR_LABELS if a in labels),
+        len(labels),
+        len(sited),
+    )
+
+
+def measure_best_sheet(pdf: Path, pages: list[int], rules=None,
+                       render_scale: float = 3.0, annotate: bool = False,
+                       concurrency: int = 2) -> SitePlanFacts:
+    """Detect on several candidate pages at once and measure the most measurable.
+
+    The page ranking reads text, and text cannot separate the sheet that names the
+    disposal area from the sheet that draws it. On a real packet those are different
+    pages: one carries the soil borings and the words, the other carries the tank and
+    the trenches and is the only one a setback can be taken off. Detection can tell
+    them apart, so detection decides, and the candidates are read at the same time so
+    asking about two costs what asking about one did.
+
+    Falls back to measuring the first candidate when none of them detect anything, so
+    the caller still gets a sheet and a reason rather than an exception.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    from . import styleguide
+    from .locate import SymbolLocator
+    from .sheet import render_page
+
+    if not pages:
+        raise ValueError("no candidate pages to measure")
+
+    guide = styleguide.load()
+
+    def detect(page: int):
+        image, _dpi = render_page(pdf, page, render_scale)
+        locator = SymbolLocator(guide=guide)
+        try:
+            return page, locator.locate(image, page=page, refine=True, use_cache=True)
+        except Exception:  # noqa: BLE001
+            # One candidate failing is not the sheet failing. The others still
+            # answer, and if none do the fallback below reports it.
+            return page, None
+
+    with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:
+        results = list(pool.map(detect, pages[:max(1, concurrency)]))
+
+    scored = [(_sheet_score(r), p) for p, r in results if r is not None]
+    best = max(scored)[1] if scored else pages[0]
+
+    out = measure_pdf(
+        pdf, best, rules=rules, offline=False,
+        render_scale=render_scale, annotate=annotate,
+    )
+    # Say which pages were considered, because the page a distance came off is part
+    # of reading it, and a reviewer looking at page 8 should not have to wonder why
+    # the ranking said page 7.
+    considered = ", ".join(str(p) for p, _ in results)
+    if len(results) > 1:
+        out.warnings.append(
+            f"pages {considered} were read and page {best} was measured, "
+            f"having the most of the tank and disposal area drawn on it"
         )
     return out
 
 
 __all__ = [
     "Measurement", "SitePlanFacts", "measure", "measure_pdf",
+    "measure_best_sheet", "ANCHOR_LABELS",
     "MEASURABLE", "UNMEASURABLE", "uncertainty_feet",
     "MEAN_ERROR_FRACTION_OF_DIAGONAL", "PAIR_ERROR_MULTIPLIER",
 ]

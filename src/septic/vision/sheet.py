@@ -323,7 +323,24 @@ def render_page(pdf, page: int, scale: float = 3.0, out_dir=None):
     return target, scale * 72.0
 
 
+def drawn_candidates(document: Document, limit: int = 2) -> list[int]:
+    """The pages worth reading with the detector, best first.
+
+    find_site_plan commits to one page on text alone. That is the right shape for a
+    caller that can only afford one look, but it is a guess between the sheet that
+    names a feature and the sheet that draws it, and on a real packet those differ.
+    This returns the shortlist instead and lets the caller settle it by detecting on
+    all of them, which is affordable because they can be read at the same time.
+
+    Only pages that look drawn are offered. A page of prose naming every component
+    outscores a real drawing on text alone, and there is nothing on it to measure.
+    """
+    ranked = [p for p in rank_pages(document) if p.looks_drawn]
+    ranked.sort(key=lambda p: p.score, reverse=True)
+    return [p.page for p in ranked[:limit]]
+
+
 __all__ = [
     "SheetPick", "find_site_plan", "rank_pages", "score_page", "render_page",
-    "MIN_SCORE",
+    "drawn_candidates", "MIN_SCORE",
 ]
