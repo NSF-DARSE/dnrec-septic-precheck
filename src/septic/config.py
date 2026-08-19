@@ -44,6 +44,12 @@ BEDROCK_TEXT_MODEL = os.environ.get(
 BEDROCK_EMBED_MODEL = os.environ.get(
     "SEPTIC_BEDROCK_EMBED_MODEL", "amazon.titan-embed-text-v2:0"
 )
+# Vision model for reading site plan sheets: scale bars, and the objects a
+# setback is measured between. Confirmed callable on the workshop role, unlike
+# the anthropic.claude-sonnet-4-5 ids, which return AccessDenied there.
+BEDROCK_VISION_MODEL = os.environ.get(
+    "SEPTIC_BEDROCK_VISION_MODEL", "us.anthropic.claude-opus-4-6-v1"
+)
 
 # Mentor scope: 2014 onward falls under the current regulation.
 YEAR_MIN = int(os.environ.get("SEPTIC_YEAR_MIN", "2014"))
