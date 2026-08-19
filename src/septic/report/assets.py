@@ -155,16 +155,19 @@ TOKENS: dict[str, dict] = {
     # the same reason the colours do: app.py is not allowed to carry a value of
     # its own, and .streamlit/config.toml is generated from this table.
     #
-    # header_height is measured, not assumed. Streamlit 1.61 draws a fixed
-    # toolbar across the top of the main column, 60 pixels tall in Chrome at
-    # 1400x900, and it overlays the content rather than pushing it down. The
-    # block container's padding-top was 12 pixels, so the product identity band
-    # sat underneath the toolbar and the tool name was cut off above the viewport
-    # edge. top_clearance carries the content past the toolbar and then leaves a
-    # space.lg gap, so nothing sits under the top edge at any window size.
+    # Streamlit 1.61 draws a fixed toolbar across the top of the main column,
+    # 60 pixels tall in Chrome at 1400x900, and it overlays the content rather
+    # than pushing it down. Clearing it cost 76 pixels of padding, which read as
+    # a band of empty grey above the product identity, and what sat in that band
+    # was a Deploy button and a Streamlit menu. Neither belongs on a console
+    # handed to a permitting reviewer, so the toolbar is hidden in app.py and
+    # the clearance is now just the gap the band needs from the top edge.
+    # header_height stays at zero as the measured height of what is drawn there,
+    # which is nothing, and the test pairs the two numbers so restoring the
+    # toolbar restores the padding that clears it.
     "chrome": {
-        "header_height": 60,
-        "top_clearance": 76,
+        "header_height": 0,
+        "top_clearance": 20,
     },
     # The sponsor strip. FSAII is a horizontal wordmark at roughly 1.95 to 1 and
     # the other three are circular. They share one height band with width left

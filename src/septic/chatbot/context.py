@@ -92,7 +92,7 @@ def _filter_facts(facts: list[dict]) -> list[dict]:
             cleaned["value"] = _strip_pii_from_value(cleaned["value"])
         # The 'raw' field often contains the original OCR text which may
         # include owner names, addresses, and contact information. Remove it
-        # entirely — the chatbot only needs the extracted parameter and value.
+        # entirely. The chatbot only needs the extracted parameter and value.
         cleaned.pop("raw", None)
         # Strip PII from 'where' field description if present
         if "where" in cleaned:
@@ -234,7 +234,7 @@ def build_context(payload: dict) -> dict:
     satisfied = [_compact_finding(f) for f in (payload.get("satisfied") or [])]
     not_applicable = [_compact_finding(f) for f in (payload.get("not_applicable") or [])]
 
-    # Collect rule IDs that are not_applicable — their blocked info is not
+    # Collect rule IDs that are not_applicable, whose blocked info is not
     # "missing" in the sense a reviewer needs to chase it.
     not_applicable_rule_ids = {
         f.get("rule_id") for f in (payload.get("not_applicable") or [])
@@ -255,7 +255,7 @@ def build_context(payload: dict) -> dict:
                 cleaned["field"] = cleaned.pop("named")
             missing.append(cleaned)
 
-    # Facts read — filter PII
+    # Facts read, filtered for PII
     facts_read = _filter_facts(payload.get("facts_read") or [])
 
     # Build a clear verdict summary that separates coverage from outcome
@@ -299,7 +299,7 @@ def build_context_message(payload: dict) -> str:
 
     context = build_context(payload)
     return (
-        "GROUNDED CONTEXT — use ONLY this data to answer questions. "
+        "GROUNDED CONTEXT. Use ONLY this data to answer questions. "
         "Do not invent citations or facts not present here.\n\n"
         + json.dumps(context, indent=2, default=str)
     )

@@ -2,11 +2,18 @@
 
     streamlit run app.py
 
-This is the interface a permitting reviewer would be handed. It is deliberately
-not a chatbot. There is no message thread, no assistant persona, and nothing that
-implies a model produced the answer, because the product claim is that rules
-decide and a model does not, and a conversational interface would contradict that
-claim before anyone read a word.
+This is the interface a permitting reviewer would be handed. The review itself is
+deliberately not a conversation. The verdict, the findings and the citations are
+rendered as a document, with no message thread and nothing that implies a model
+produced them, because the product claim is that rules decide and a model does
+not, and a chat window in that position would contradict the claim before anyone
+read a word.
+
+The reviewer assistant is a separate section below the report, and it stays
+separate. It is handed the composed payload after the rules have finished, it
+cannot reach the engine, and no answer it gives can add, remove or alter a
+finding. It is also optional: with no Google Cloud project configured the section
+does not render and nothing else about the page changes.
 
 The report body is rendered natively from the composed payload. The printable HTML
 report produced by render_html is offered as a download and never embedded on
@@ -88,7 +95,10 @@ STYLE_TEMPLATE = """
 
 html, body { font-family:$f_sans; background:$c_surface_sunken; }
 [data-testid="stApp"], [data-testid="stMain"] { background:$c_surface_sunken; }
-[data-testid="stHeader"] { background:transparent; }
+/* The Streamlit toolbar carries a Deploy button and a Streamlit menu,
+   neither of which is part of this tool. Hiding it removes the band of
+   empty space the content had to be pushed past to clear it. */
+[data-testid="stHeader"], [data-testid="stToolbar"] { display:none; }
 
 /* Brand band */
 .brand-band {
@@ -1207,15 +1217,22 @@ def _viewer_html(page_uris: list[str], start_page: int = 1) -> str:
     )
 
 
-def render_pdf_viewer(pdf_bytes: bytes, doc_hash: str, payload: dict) -> None:
-    """Render the packet as one continuously scrollable column of pages."""
+def render_pdf_viewer(
+    pdf_bytes: bytes, doc_hash: str, payload: dict, height: int = 780,
+) -> None:
+    """Render the packet as one continuously scrollable column of pages.
+
+    height is given by the caller because what sits under the viewer decides how
+    much room it can have. The packet scrolls inside its own frame either way, so
+    a shorter frame costs nothing but the number of pages visible at once.
+    """
     page_uris = _rasterise_pages(pdf_bytes, doc_hash)
     if not page_uris:
         return
     page_key = f"viewer_page_{doc_hash[:16]}"
     start_page = st.session_state.get(page_key, 1)
     components.html(
-        _viewer_html(page_uris, start_page), height=780, scrolling=True
+        _viewer_html(page_uris, start_page), height=height, scrolling=True
     )
 
 
@@ -1248,20 +1265,19 @@ brand_slot.markdown(brand_band(), unsafe_allow_html=True)
 
 
 def drop_zone():
-    """The empty state and the uploader as one control."""
-    legend = " ".join(
-        f"<b style='color:{BANNER_COLOR[name][0]}'>{name}</b>{rest}"
-        for name, rest in (
-            ("DEFICIENCIES FOUND", ", each item cited."),
-            ("NO DEFICIENCIES FOUND", ", which is not an approval."),
-            ("CANNOT VERIFY", ", when nothing could be checked."),
-        )
-    )
+    """The empty state and the uploader as one control.
+
+    This used to spell out the three possible outcomes before a packet had been
+    opened. A reviewer meets the outcome when it arrives, in colour, at the top
+    of the page, so naming all three in advance taught nothing and pushed the
+    uploader down the screen.
+    """
     with st.container(key="dropzone"):
         st.markdown(
             "<div class='empty'>"
             "<div class='empty-title'>Drop an application packet here.</div>"
-            f"<p>Three answers are possible. {legend}</p>"
+            "<p>Every finding comes back with the section and page "
+            "it was checked against.</p>"
             "</div>",
             unsafe_allow_html=True,
         )
@@ -1278,6 +1294,26 @@ def drop_zone():
 # understand the deterministic results. Does not approve or deny anything.
 # ---------------------------------------------------------------------------
 
+# How tall the packet frame is, in pixels. The pane is one viewport high, so the
+# packet gives up room when the assistant is under it and takes the pane when it
+# is not. Measured against a 900 pixel window: at 520 the assistant's first
+# question sits above the fold, and at 780 the packet fills the pane with no gap
+# under it.
+VIEWER_WITH_ASSISTANT = 520
+VIEWER_ALONE = 780
+
+
+def chatbot_available() -> bool:
+    """Whether the reviewer assistant will render anything.
+
+    The layout has to know before it draws the packet, because the packet's
+    height depends on whether anything follows it.
+    """
+    from septic.chatbot.config import is_available
+
+    return is_available()
+
+
 def _chatbot_section(payload: dict) -> None:
     """Render the reviewer chatbot section below the report.
 
@@ -1285,8 +1321,6 @@ def _chatbot_section(payload: dict) -> None:
     configuration is unavailable. The existing review continues working
     regardless of chatbot availability.
     """
-    from septic.chatbot.config import is_available as chatbot_available
-
     if not chatbot_available():
         return
 
@@ -1294,7 +1328,7 @@ def _chatbot_section(payload: dict) -> None:
     st.markdown("### Reviewer assistant")
     st.caption(
         "⚠️ This assistant helps you understand the review results. "
-        "It does not make the final decision — the reviewer decides. "
+        "It does not make the final decision and it cannot change a finding. "
         "AI-generated explanations are labelled and separated from "
         "deterministic rule results."
     )
@@ -1488,19 +1522,20 @@ if uploaded is not None:
                             )
 
             with viewer_col:
+                # The pane held two tabs, Packet and Location, and the Location
+                # tab drew the same map that is already under the findings on
+                # the left. One of the two was always redundant, and the one
+                # worth keeping is the one beside the findings, because that is
+                # where the screening is read. The pane is the packet now, with
+                # the assistant under it: a question about a finding is asked
+                # with the page it came from still on screen.
                 with st.container(key="viewer_pane"):
-                    packet_tab, location_tab = st.tabs(["Packet", "Location"])
-                    with packet_tab:
-                        render_pdf_viewer(data, doc_hash, payload)
-                    with location_tab:
-                        map_html_right = map_figure_card(payload)
-                        if map_html_right:
-                            st.markdown(map_html_right, unsafe_allow_html=True)
-                        else:
-                            st.caption("No coordinates available for this packet.")
-
-            # Reviewer chatbot — appears below the report
-            _chatbot_section(payload)
+                    render_pdf_viewer(
+                        data, doc_hash, payload,
+                        height=VIEWER_WITH_ASSISTANT if chatbot_available()
+                        else VIEWER_ALONE,
+                    )
+                    _chatbot_section(payload)
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"

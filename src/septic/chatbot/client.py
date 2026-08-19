@@ -35,7 +35,7 @@ BLOCKED_TOPIC_RESPONSE = (
 
 # Keywords that indicate a question about forbidden topics. When any of these
 # appear in the user's message, the response is returned locally without
-# calling Gemini. This is a deterministic guardrail — it cannot be bypassed
+# calling Gemini. This is a deterministic guardrail, and it cannot be bypassed
 # by prompt injection.
 _BLOCKED_KEYWORDS = (
     "approv",       # approval, approved, approve
@@ -64,7 +64,7 @@ _BLOCKED_KEYWORDS = (
 def _is_blocked_question(message: str) -> bool:
     """Return True if the question asks about a forbidden topic.
 
-    This is intentionally broad — it is better to refuse a borderline
+    This is intentionally broad, because it is better to refuse a borderline
     question than to let Gemini invent regulatory advice.
     """
     lower = message.lower()
@@ -154,7 +154,7 @@ class ReviewerChatbot:
         types = self._types
 
         # Build chat context: grounded review data + current question only.
-        # Prior assistant responses are NOT included — this prevents the model
+        # Prior assistant responses are NOT included, because this prevents the model
         # from treating its own prior outputs as authoritative evidence.
         history_contents = [
             types.Content(

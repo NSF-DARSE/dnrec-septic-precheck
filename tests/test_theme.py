@@ -182,8 +182,18 @@ class TestTheConsoleDoesNotBreakTheShell:
         content down, so a padding smaller than its height put the product title
         underneath it and cut the tool name off. Both numbers are tokens because
         the clearance is meaningless without the height it has to clear.
+
+        The toolbar is hidden now, so the height it has to clear is zero and the
+        padding is only the gap the band wants. These are checked together: a
+        clearance smaller than a visible toolbar is the defect, and restoring
+        the toolbar without restoring the padding would reintroduce it.
         """
         chrome = TOKENS["chrome"]
+        hidden = 'data-testid="stHeader"], [data-testid="stToolbar"] { display:none; }'
+        if hidden not in app_css:
+            assert chrome["header_height"] > 0, (
+                "the toolbar is drawn, so its height cannot be recorded as zero"
+            )
         assert chrome["top_clearance"] > chrome["header_height"], (
             "the block container would start underneath the Streamlit toolbar"
         )
@@ -418,7 +428,7 @@ class TestTheEmptyStateIsShort:
 
         return AppTest.from_file(str(APP), default_timeout=120)
 
-    def test_it_is_one_instruction_and_three_outcomes(self, app_test):
+    def test_it_is_one_instruction(self, app_test):
         app_test.run()
         assert not app_test.exception, [str(e.value) for e in app_test.exception]
         empty = next(
@@ -428,18 +438,23 @@ class TestTheEmptyStateIsShort:
         words = len(re.sub(r"<[^>]+>", " ", empty).split())
         assert words <= 45, f"the empty state is back to {words} words"
         assert "Drop an application packet" in empty
-        for verdict in ("DEFICIENCIES FOUND", "NO DEFICIENCIES FOUND",
-                        "CANNOT VERIFY"):
-            assert verdict in empty
 
-    def test_the_verdict_names_carry_the_verdict_colours(self, app_test):
-        """So the legend and the real banner cannot disagree about a colour."""
-        from septic.report.render import VERDICT_COLOR
+    def test_it_does_not_name_the_outcomes_before_there_is_one(self, app_test):
+        """The empty state used to spell out all three possible verdicts.
 
+        A reviewer meets the outcome when it arrives, at the top of the page, in
+        the colour it carries everywhere else. Listing the three in advance
+        taught nothing that the answer does not teach better, and it pushed the
+        uploader, which is the only thing there is to do on this screen, further
+        down it.
+        """
         app_test.run()
         empty = next(
             m.value for m in app_test.markdown
             if m.value and "class='empty'" in m.value
         )
-        for verdict, (foreground, _) in VERDICT_COLOR.items():
-            assert f"color:{foreground}" in empty, f"{verdict} is not in colour"
+        for verdict in ("DEFICIENCIES FOUND", "NO DEFICIENCIES FOUND",
+                        "CANNOT VERIFY"):
+            assert verdict not in empty, (
+                f"the empty state names {verdict} before a packet was read"
+            )
