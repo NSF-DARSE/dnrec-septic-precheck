@@ -12,7 +12,7 @@ numpy==1.23.5
 # it, and the resolver leaves numpy alone.
 boto3==1.43.73
 botocore==1.43.73
-requests==2.28.2
+requests==2.34.2
 pandas==1.5.3
 
 # PDF text extraction. pypdfium2 is the text backend: this regulation uses
@@ -44,3 +44,9 @@ pyproj==3.6.1
 
 PyYAML==6.0.2
 pytest==9.1.1
+
+# Reviewer chatbot. Uses the google-genai SDK with Vertex AI (Application
+# Default Credentials, no API key). Requires requests>=2.30.0 via the
+# google-auth[requests] transitive dependency. Python 3.11 compatible.
+# Version 2.18.1 confirmed working with Vertex AI chat sessions.
+google-genai==2.18.1
