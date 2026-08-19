@@ -673,7 +673,13 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
             reason_html = ""
         else:
             req_text = html_lib.escape(_requirement_sentence(f))
-            reason = reason_sentence(f)
+            # The reason only earns a line when it says something the other two
+            # columns do not. Where a value was compared against a threshold,
+            # the requirement sentence already gives the threshold and the value
+            # cell already gives both, so the reason states the same two numbers
+            # a third time in the same row.
+            compared = f.get("observed") is not None and f.get("threshold") is not None
+            reason = "" if compared else reason_sentence(f)
             reason_html = (
                 f"<div class='ft-reason'>{html_lib.escape(reason)}</div>"
                 if reason else ""
