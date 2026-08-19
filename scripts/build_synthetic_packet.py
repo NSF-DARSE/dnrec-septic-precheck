@@ -36,6 +36,8 @@ PACKETS = {
         "applicant": "Robert Marsh",
         "address": "456 Cedar Creek Road, Milford, DE 19963",
         "parcel": "00-000.00-001",
+        "latitude": 38.9108,
+        "longitude": -75.4277,
         # Coordinates near Milford, Delaware (Kent County)
         "lat": 38.9126,
         "lon": -75.4279,
@@ -74,6 +76,8 @@ PACKETS = {
         "applicant": "Sarah Whitfield",
         "address": "221 Magnolia Lane, Georgetown, DE 19947",
         "parcel": "00-000.00-002",
+        "latitude": 38.6903,
+        "longitude": -75.3877,
         # Coordinates near Georgetown, Delaware (Sussex County)
         "lat": 38.6904,
         "lon": -75.3857,
@@ -108,6 +112,8 @@ PACKETS = {
         "applicant": "Name illegible",
         "address": "Address not readable",
         "parcel": "00-000.00-003",
+        "latitude": 39.1582,
+        "longitude": -75.5244,
         # Coordinates near Dover, Delaware
         "lat": 39.1582,
         "lon": -75.5244,
@@ -145,6 +151,8 @@ def build_pdf(spec: dict) -> bytes:
         f"Applicant:               {spec['applicant']}",
         f"Property:                {spec['address']}",
         f"Parcel:                  {spec['parcel']}",
+        f"Latitude:                {spec['latitude']}",
+        f"Longitude:               {spec['longitude']}",
     ]
 
     facts = spec["facts"]
@@ -414,6 +422,11 @@ def build_textract_blocks(spec: dict) -> list[dict]:
         spec["title"],
         "single family dwelling",
         "residential use",
+        # The location screening reads a stated coordinate pair off the packet
+        # when the permit is not in the CSV, which is every uploaded packet and
+        # every clean checkout. Without these the location card never renders.
+        f"Latitude: {spec['lat']}",
+        f"Longitude: {spec['lon']}",
     ]
     if facts.get("wells_within_150_feet_shown"):
         line_texts.append("wells within 150 feet shown on plan")

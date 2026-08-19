@@ -16,6 +16,8 @@ unavailable.
 """
 from __future__ import annotations
 
+import re
+
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -177,6 +179,39 @@ def permit_row(permit: str) -> dict | None:
     return subset.iloc[0].to_dict()
 
 
+# A packet can state its own coordinates. Screening otherwise depends entirely on
+# finding the permit in a 45 MB CSV that is gitignored, so on any clean checkout
+# there is no map at all, and an uploaded packet that is not in the CSV never gets
+# one either. Reading a stated coordinate pair off the document costs nothing and
+# makes the location card work for any packet that carries one.
+_COORD_PATTERN = re.compile(
+    r"(latitude|longitude)\s*:?\s*(-?\d{1,3}[.,]\d{3,})",
+    re.IGNORECASE,
+)
+
+
+def coordinates_in_document(document) -> tuple[float, float] | None:
+    """Latitude and longitude stated on the packet, or None.
+
+    Accepts the comma decimal separator the permit CSV uses, because a packet
+    transcribed from that data carries the same form.
+    """
+    try:
+        text = document.text()
+    except Exception:  # noqa: BLE001 - screening is advisory, never fatal
+        return None
+
+    found: dict[str, float] = {}
+    for label, value in _COORD_PATTERN.findall(text or ""):
+        try:
+            found[label.lower()] = float(value.replace(",", "."))
+        except ValueError:
+            continue
+    if "latitude" in found and "longitude" in found:
+        return found["latitude"], found["longitude"]
+    return None
+
+
 def screen_location(permit: str | None):
     """Geospatial screening for a permit, or None.
 
@@ -271,6 +306,14 @@ def review(
             parts = Path(pdf).stem.split("_")
             candidate = parts[1] if len(parts) > 1 else None
         screening = screen_location(candidate)
+        if screening is None or screening.point is None:
+            stated = coordinates_in_document(document)
+            if stated is not None:
+                try:
+                    from . import geo
+                    screening = geo.screen_point(stated[0], stated[1])
+                except Exception:  # noqa: BLE001 - screening is advisory
+                    screening = screening
         if screening is not None:
             extraction.facts.update(screening.facts())
             if with_map and screening.point is not None:
