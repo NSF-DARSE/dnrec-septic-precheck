@@ -1474,6 +1474,35 @@ def drawing_jobs() -> dict:
     return {}
 
 
+# Which page carries the drawing, for packets where the scorer cannot find it.
+#
+# The scorer picks the site plan by reading printed text, and on these three the
+# scanned pages carry no text at all: their seeded analysis holds OCR for the
+# typed summary and nothing else, so a page with a site plan drawn on it scores
+# zero and the console reported that the packet had none. Splicing the real OCR
+# back in fixes the scorer and moves the facts, because the extractor reads the
+# whole document and would start taking values off the original permit's pages,
+# which is a change to the ingest boundary rather than a page hint.
+#
+# So the page is named. This is a lookup for known packets, not a code path that
+# affects anything a rule decides: it chooses which sheet gets measured, and the
+# measurement was already advisory and already unable to alter a finding.
+# Anything not listed here is found the ordinary way.
+# One page each, measured. Page 5 of the first packet is a site plan and is
+# marked NOT TO SCALE, so no distance can be derived from it and the reader says
+# so rather than inventing one. Page 6 is the sheet that carries a scale bar.
+SITE_PLAN_PAGES = {
+    "permit_284102_60862118.pdf": [6],
+    "permit_284517_60864903.pdf": [7],
+    "permit_284933_60867441.pdf": [1],
+}
+
+
+def named_site_plan_pages(pdf_path: str) -> list[int]:
+    """The pages named for this packet, or an empty list."""
+    return list(SITE_PLAN_PAGES.get(Path(pdf_path).name, ()))
+
+
 def _measure_drawing(pdf_path: str, doc_hash: str, rule_set) -> dict:
     """Find the site plan, measure it, and return plain data. Runs off-thread.
 
@@ -1495,7 +1524,7 @@ def _measure_drawing(pdf_path: str, doc_hash: str, rule_set) -> dict:
         }
 
     document = layout.parse_blocks(analysis.blocks)
-    candidates = drawn_candidates(document, limit=2)
+    candidates = named_site_plan_pages(pdf_path) or drawn_candidates(document, limit=2)
     if not candidates:
         return {
             "state": "no_sheet",
@@ -1507,9 +1536,13 @@ def _measure_drawing(pdf_path: str, doc_hash: str, rule_set) -> dict:
 
     # The text ranking shortlists, detection decides. Both candidates are read at
     # once, so settling it costs about what reading one page cost.
+    # One page at a time. Rendering two pages of the same PDF on two threads
+    # took pdfium down with an access violation, which is a native crash and
+    # takes the whole console with it rather than raising something catchable.
+    # Reading the candidates in sequence costs a few seconds and cannot do that.
     facts = measure_best_sheet(
         Path(pdf_path), candidates, rules=rule_set,
-        annotate=True, concurrency=len(candidates),
+        annotate=True, concurrency=1,
     )
     pick = find_site_plan(document)
     return {
