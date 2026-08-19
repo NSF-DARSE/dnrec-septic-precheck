@@ -20,11 +20,19 @@ regulation, and earlier ones fall under superseded law.
 ## Architecture
 
     application PDF
-      -> Textract     OCR text, form fields, bounding boxes
+      -> OCR          text, form fields, and bounding boxes where available
       -> extractor    facts: lot area, setbacks, perc rate, system type, parcel
       -> rule engine  per rule PASS, FAIL, or UNKNOWN with a citation
       -> retrieval    similar prior permits and their outcomes, as context
       -> composer     report
+
+The OCR step has two providers, chosen by `OCR_PROVIDER`. Textract is the default
+and is the only one that returns bounding boxes and a calibrated per-block
+confidence. Bedrock reads the PDF as a Converse document block and answers in
+JSON, which is cheaper to consume but supplies neither. Both produce the same
+`ingest.layout.Document`, so nothing downstream of the read knows which ran. Use
+`ingest.ocr.read` rather than calling either provider directly, and see
+DECISIONS.md for what each can honestly claim.
 
 The verdict is computed from rule evaluation and nothing else. Retrieved permits
 supply context and wording for the report. A language model is given the verdict
@@ -198,3 +206,17 @@ provider or a different account. Retrieval is unaffected because embeddings work
 9. Cost for the 2014+ run is dominated by crawl time, not storage. About 396 GB
    is roughly 9 USD per month in S3 Standard, against 28,408 detail pages and
    about 45,000 document downloads.
+10. Measure the two OCR providers against each other.
+    `python scripts/ocr_extract.py --pdf <permit> --compare` reports field level
+    agreement and writes it to out/ocr/. Nothing is measured yet, so the choice
+    recorded in DECISIONS.md is a decision and not a finding. Until that exists,
+    Textract stays the default because it is the only provider that returns
+    bounding boxes and a calibrated confidence.
+11. Decide what the report prints where it currently says "OCR confidence 94%" if
+    Bedrock ever becomes the default. That number comes from Textract's
+    recogniser. The Bedrock provider carries a self-reported figure in a separate
+    field and leaves `FormField.confidence` at 0.0 on purpose, so today the
+    sentence would simply be wrong rather than misleading.
+12. `review.py` still calls `TextractClient` and `layout.parse_blocks` directly at
+    lines 122 and 246. Move it to `ingest.ocr.read` so the provider switch reaches
+    the review path, which is the only consumer that matters for the demo.

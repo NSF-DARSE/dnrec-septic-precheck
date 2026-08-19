@@ -1,11 +1,19 @@
-"""Turning Textract blocks into text, form fields, and page coordinates.
+"""The document model every OCR provider produces, and Textract's adapter into it.
 
-Textract returns a flat block list with parent and child relationships. This
-module resolves those into three views the extractor needs: reading order text
-per page, key/value pairs from FORMS, and tables. Bounding boxes are kept on
-every item because a reviewer has to be able to point at where on the page a
-value came from, and because a site plan measurement is only meaningful with its
-position.
+`Document`, `FormField`, `TextItem`, `Table` and `Box` are provider neutral. They
+are what the extractor, the rule engine and the site plan symbol mapping all read,
+so swapping the OCR provider does not reach past this module. `parse_blocks` is
+Textract's adapter; see ingest/bedrock_ocr.py for the other one and ingest/ocr.py
+for the switch between them.
+
+Textract returns a flat block list with parent and child relationships, resolved
+here into the three views the extractor needs: reading order text per page,
+key/value pairs from FORMS, and tables. Bounding boxes are kept wherever the
+provider supplies them, because a reviewer has to be able to point at where on
+the page a value came from, and because a site plan measurement is only
+meaningful with its position. Where a provider has no geometry the box is None
+rather than zero, so an absent measurement cannot be mistaken for one taken at
+the origin.
 
 Coordinates stay in Textract's normalised 0 to 1 space relative to the page.
 Converting to inches or feet needs a scale bar, which is a separate problem.
@@ -50,17 +58,36 @@ class Box:
 
 @dataclass
 class TextItem:
+    """One line or word of read text.
+
+    `box` is optional because not every OCR provider returns geometry. Textract
+    gives a bounding box for every block; a language model reading the same PDF
+    returns the text but cannot be trusted for per-line coordinates. The honest
+    representation of that is None, not a zeroed box, because a zeroed box would
+    claim the line sits in the top left corner and would be indistinguishable
+    from a real measurement downstream.
+
+    `page` is carried separately for the same reason. When a box is present the
+    page is taken from it, so existing four argument construction is unchanged.
+    """
+
     text: str
-    box: Box
+    box: Box | None
     confidence: float
     block_type: str
+    page: int = 0
+
+    def __post_init__(self) -> None:
+        if not self.page and self.box is not None:
+            self.page = self.box.page
 
     def to_json(self) -> dict:
         return {
             "text": self.text,
             "confidence": round(self.confidence, 2),
             "block_type": self.block_type,
-            "box": self.box.to_json(),
+            "page": self.page,
+            "box": self.box.to_json() if self.box else None,
         }
 
 
@@ -106,10 +133,24 @@ class Document:
     tables: list[Table] = field(default_factory=list)
 
     def text(self, page: int | None = None) -> str:
-        """Reading order text, optionally for a single page."""
-        items = [l for l in self.lines if page is None or l.box.page == page]
-        items.sort(key=lambda l: (l.box.page, round(l.box.top, 3), l.box.left))
-        return "\n".join(i.text for i in items)
+        """Reading order text, optionally for a single page.
+
+        Lines with geometry are ordered by position. Lines without it keep the
+        order the provider emitted them in, which for a model reading a page top
+        to bottom is already reading order. The insertion index is the final tie
+        break so the result is stable either way.
+        """
+        items = [
+            (i, l) for i, l in enumerate(self.lines)
+            if page is None or l.page == page
+        ]
+        items.sort(key=lambda pair: (
+            pair[1].page,
+            round(pair[1].box.top, 3) if pair[1].box else 0.0,
+            pair[1].box.left if pair[1].box else 0.0,
+            pair[0],
+        ))
+        return "\n".join(l.text for _, l in items)
 
     def field_map(self) -> dict[str, str]:
         """Form fields as a lowercase keyed dict.

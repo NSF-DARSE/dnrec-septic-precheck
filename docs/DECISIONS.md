@@ -112,3 +112,78 @@ and they remain the gap described in the README status section: 10 of the 15 rul
 need a measurement that lives on a scanned drawing, and no document service reads
 them. The path to those values runs through computer vision (line detection, scale
 calibration, feature identification), not through a better document extractor.
+---
+
+# Decision: OCR provider
+
+Date: 2026-08-18
+Outcome: Bedrock is available as a second OCR provider beside Textract, selected
+by `OCR_PROVIDER`. Both return the same `ingest.layout.Document`. Textract remains
+the default.
+
+Status: implemented as a choice, not yet measured. No field level comparison has
+been run on real permits, so unlike the graph backend entry above this does not
+rest on numbers taken on this machine. `scripts/ocr_extract.py --compare` exists
+to produce them.
+
+## What the entry above already settles
+
+The Bedrock Data Automation probe recorded immediately above tested a different
+mechanism, `bedrock-data-automation-runtime` against a site plan page, and this
+entry is about Converse with a document block against a permit form. Its finding
+still bounds what this one may claim, and it bounds it usefully.
+
+It establishes that on that page BDA and Textract returned equivalent content, and
+that neither returned any of the seven spatial parameters the rules need, because
+those are distances dimensioned between drawn features rather than printed text.
+So the reason to want Bedrock at the OCR step is not that it recovers a setback a
+setback rule needs. It does not, and no document extractor does. The reason is the
+shape of the answer: JSON in the form the extractor already wants, instead of a
+block graph reassembled in `ingest/layout.py`.
+
+Both entries reach the same conclusion about the default for the same reason, which
+is worth stating once rather than twice: Textract stays, because it is the only
+provider that returns geometry and a calibrated confidence.
+
+## Why a second provider rather than a replacement
+
+The vision work established that the Bedrock model reads these sheets well, and
+asking for JSON in the shape the extractor wants removes the block reassembly in
+`ingest/layout.py`. Both are good reasons to want it.
+
+What stopped it being a straight swap is that Textract supplies two things the
+pipeline already consumes and a language model cannot.
+
+Geometry. `ingest/layout.py` keeps a bounding box on every item so a reviewer can
+point at where on a page a value came from. A model asked for coordinates will
+return plausible numbers that nothing measured. Rather than accept those, the
+Bedrock provider returns `box=None`, and `TextItem.box` is now optional so that
+absence is representable. A zeroed box was the alternative and it is worse: it
+claims the line sits in the top left corner and is indistinguishable downstream
+from a real measurement.
+
+Calibrated confidence. Textract reports a per-block score from its recogniser. In
+`docs/evidence/textract_sample.txt` the Site Evaluation Number came back at 54
+percent while its neighbours were at 94 and 95, and that gap is how a bad read
+announces itself. A model can be asked how sure it is, but that is a self-report.
+It is carried as `self_reported_confidence`, keyed by page and field, and
+deliberately not written into `FormField.confidence`, which stays 0.0. The report
+prints that field as "OCR confidence 94%", and letting a self-report through it
+would silently change what that sentence claims.
+
+Keeping both selectable is also the only way to get the comparison that would let
+this entry be rewritten as measured.
+
+## What this does not affect
+
+The site plan symbol mapping. It imports one name from this package,
+`layout.Box`, and works in the normalised 0 to 1 page space Box already uses. It
+never reads a Textract block, so symbol positions can be compared against words
+read by either provider. Box is unchanged by this work.
+
+## Next step
+
+Run `scripts/ocr_extract.py --compare` over a set of real permits and record the
+field level agreement rate here, along with the cases where they differ. Then
+decide whether Bedrock becomes the default, and if it does, decide explicitly what
+the report claims where it currently prints an OCR confidence.

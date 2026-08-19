@@ -44,6 +44,22 @@ BEDROCK_TEXT_MODEL = os.environ.get(
 BEDROCK_EMBED_MODEL = os.environ.get(
     "SEPTIC_BEDROCK_EMBED_MODEL", "amazon.titan-embed-text-v2:0"
 )
+# Which OCR provider reads a permit PDF. Both produce the same
+# ingest.layout.Document, so everything downstream of the read, including the
+# site plan symbol mapping, is unaffected by this choice.
+#
+#   textract  StartDocumentAnalysis with FORMS and TABLES. Gives a calibrated
+#             per-block confidence and a bounding box for every value.
+#   bedrock   Converse with the PDF as a document block, answering in JSON.
+#             Gives text, form fields and tables, but no geometry, and a
+#             confidence the model reports about itself. See ingest/bedrock_ocr.py.
+OCR_PROVIDER = os.environ.get("SEPTIC_OCR_PROVIDER", "textract")
+
+# Model used when OCR_PROVIDER is bedrock. It has to accept a document block, so
+# it is a separate setting from BEDROCK_TEXT_MODEL rather than a reuse of it.
+BEDROCK_OCR_MODEL = os.environ.get(
+    "SEPTIC_BEDROCK_OCR_MODEL", "us.anthropic.claude-opus-4-6-v1"
+)
 
 # Mentor scope: 2014 onward falls under the current regulation.
 YEAR_MIN = int(os.environ.get("SEPTIC_YEAR_MIN", "2014"))
