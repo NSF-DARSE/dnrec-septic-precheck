@@ -513,12 +513,23 @@ class TestOfflineReviewPath:
         pdfs = cached_examples()
         if not pdfs:
             pytest.skip("no cached examples present")
+        # Use a packet that has unresolved checks. The real permits always do,
+        # and the demonstration packet C is all-unknown. Skip fully-resolved
+        # demo packets that have no unknowns.
         client = TextractClient()
-        analysis = client.cached_by_hash(document_hash(pdfs[0].read_bytes()))
-        extraction = extract_facts(layout.parse_blocks(analysis.blocks))
-        composed = compose_mod.compose(
-            engine.evaluate(extraction.facts), extraction=extraction
-        )
+        candidate = None
+        for pdf in pdfs:
+            analysis = client.cached_by_hash(document_hash(pdf.read_bytes()))
+            extraction = extract_facts(layout.parse_blocks(analysis.blocks))
+            composed = compose_mod.compose(
+                engine.evaluate(extraction.facts), extraction=extraction
+            )
+            if composed.counts["unknown"] > 0:
+                candidate = composed
+                break
+        if candidate is None:
+            pytest.skip("no cached example with unresolved checks")
+        composed = candidate
         counts = composed.counts
         assert counts["unknown"] > 0, "expected some checks to be unevaluable"
         assert len(composed.unresolved) == counts["unknown"]
@@ -636,7 +647,11 @@ class TestAppRuns:
             if m.value and "class='empty'" in m.value
         ]
         assert not empty, "the empty dropzone is still taking the column"
-        assert len(app_test.get("expander")) == 1, "the uploader was not folded away"
+        # One expander for the collapsed uploader, plus possibly one for the
+        # correction letter if the packet has deficiencies.
+        expanders = app_test.get("expander")
+        assert len(expanders) >= 1, "the uploader was not folded away"
+        assert len(expanders) <= 2, "unexpected extra expanders"
         assert len(app_test.get("file_uploader")) == 1, "the way in disappeared"
         text = " ".join(m.value or "" for m in app_test.markdown)
         assert "verdict-card-headline" in text, "no verdict rendered for a loaded packet"
