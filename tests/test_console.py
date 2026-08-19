@@ -864,7 +864,7 @@ class TestNoOperatorsOnAnySurface:
         from septic.report.render import render_html
         from septic.report.letter import render_letter
 
-        packets = sorted(Path("out/examples").glob("application_packet_*.pdf"))
+        packets = sorted(Path("out/examples").glob("permit_2849*.pdf"))
         if not packets:
             pytest.skip("no demonstration packets staged")
 

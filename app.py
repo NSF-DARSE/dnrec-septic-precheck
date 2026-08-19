@@ -680,9 +680,9 @@ def verdict_strip(payload: dict, doc_name: str = "") -> str:
         summary = f"Nothing on this packet could be checked."
     elif unreadable:
         summary = (
-            f"{failed} {noun} not met. {unreadable} of {total} could not be read."
+            f"{failed} {noun} not met. {unreadable} could not be checked."
             if failed else
-            f"Nothing flagged. {unreadable} of {total} could not be read."
+            f"Nothing flagged. {unreadable} could not be checked."
         )
     elif failed:
         summary = f"{failed} {noun} not met."
@@ -1393,14 +1393,14 @@ st.markdown("---")
 rule_cols = st.columns([3, 1])
 with rule_cols[0]:
     st.caption(
-        f"{len(rules)} requirements taken from the 2014 regulation, each one "
+        "Requirements taken from the 2014 regulation, each one "
         f"carrying the section and page it comes from."
     )
 with rule_cols[1]:
     show_rules = st.toggle("Show all rules", value=False)
 
 if show_rules:
-    st.markdown(f"### The {len(rules)} requirements this checks")
+    st.markdown("### The requirements this checks")
     st.caption(
         "Every one is quoted from the 2014 regulation. The section and page are "
         "shown so any of them can be read back at the source."

@@ -137,7 +137,7 @@ class TestSyntheticPacketLetter:
 
     @pytest.fixture(autouse=True)
     def require_packet(self):
-        packet = config.OUT_DIR / "examples" / "application_packet_a.pdf"
+        packet = config.OUT_DIR / "examples" / "permit_284102_60862118.pdf"
         if not packet.exists():
             pytest.skip("demo packet A not present")
         self.packet = packet

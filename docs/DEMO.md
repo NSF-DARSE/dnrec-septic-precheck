@@ -58,7 +58,7 @@ Each packet shows one of the three outcomes. All three are built by
 
 ### 1. Packet A (DEFICIENCIES FOUND)
 
-File: `out/examples/application_packet_a.pdf`
+File: `out/examples/permit_284102_60862118.pdf`
 
 The outcome everyone comes to see. Every check runs, so the verdict rests on the
 whole rule set rather than on a fraction of it.
@@ -85,7 +85,7 @@ What it shows:
 
 ### 2. Packet B (NO DEFICIENCIES FOUND)
 
-File: `out/examples/application_packet_b.pdf`
+File: `out/examples/permit_284517_60864903.pdf`
 
 What a clean packet looks like when the tool could actually check it.
 
@@ -101,7 +101,7 @@ among the checks that ran, and the reviewer decides.
 
 ### 3. Packet C (CANNOT VERIFY)
 
-File: `out/examples/application_packet_c.pdf`
+File: `out/examples/permit_284933_60867441.pdf`
 
 The interlock. This is the packet the tool refuses to answer on.
 

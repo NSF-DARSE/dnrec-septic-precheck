@@ -186,9 +186,9 @@ the rule set while these exercise all fifteen:
 
 ```bash
 python scripts/build_synthetic_packet.py
-python -m septic review --pdf out/examples/application_packet_a.pdf --offline  # deficiencies, 15 of 15
-python -m septic review --pdf out/examples/application_packet_b.pdf --offline  # no deficiencies, 15 of 15
-python -m septic review --pdf out/examples/application_packet_c.pdf --offline  # cannot verify, 0 of 15
+python -m septic review --pdf out/examples/permit_284102_60862118.pdf --offline  # deficiencies, 15 of 15
+python -m septic review --pdf out/examples/permit_284517_60864903.pdf --offline  # no deficiencies, 15 of 15
+python -m septic review --pdf out/examples/permit_284933_60867441.pdf --offline  # cannot verify, 0 of 15
 ```
 
 The reviewer console, which is what a reviewer would actually be handed:

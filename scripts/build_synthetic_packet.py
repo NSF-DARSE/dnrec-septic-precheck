@@ -3,11 +3,11 @@
 Produces three PDFs and seeds the Textract cache for each. Every packet
 carries coordinates inside Delaware so the location card renders.
 
-1. application_packet_a.pdf -- DEFICIENCIES FOUND. All fifteen checks run.
+1. permit_284102_60862118.pdf -- DEFICIENCIES FOUND. All fifteen checks run.
    Three fail against different sections, the rest pass.
-2. application_packet_b.pdf -- NO DEFICIENCIES FOUND. All fifteen checks run,
+2. permit_284517_60864903.pdf -- NO DEFICIENCIES FOUND. All fifteen checks run,
    none fail.
-3. application_packet_c.pdf -- CANNOT VERIFY. Nothing readable. Every check
+3. permit_284933_60867441.pdf -- CANNOT VERIFY. Nothing readable. Every check
    returns UNKNOWN.
 
 Requirements:
@@ -30,7 +30,7 @@ from septic.ingest.textract import document_hash
 
 PACKETS = {
     "a": {
-        "filename": "application_packet_a.pdf",
+        "filename": "permit_284102_60862118.pdf",
         "title": "ON-SITE WASTEWATER SYSTEM APPLICATION",
         "subtitle": "New Castle County, Delaware",
         "applicant": "Robert Marsh",
@@ -71,7 +71,7 @@ PACKETS = {
         },
     },
     "b": {
-        "filename": "application_packet_b.pdf",
+        "filename": "permit_284517_60864903.pdf",
         "title": "ON-SITE WASTEWATER SYSTEM APPLICATION",
         "subtitle": "Sussex County, Delaware",
         "applicant": "Sarah Whitfield",
@@ -108,7 +108,7 @@ PACKETS = {
         },
     },
     "c": {
-        "filename": "application_packet_c.pdf",
+        "filename": "permit_284933_60867441.pdf",
         "title": "ON-SITE WASTEWATER SYSTEM APPLICATION",
         "subtitle": "Kent County, Delaware",
         "applicant": "Name illegible",
@@ -510,7 +510,7 @@ def merge_with_real_packet(spec: dict, summary_bytes: bytes) -> tuple[bytes, int
     import pypdfium2 as pdfium
 
     base_name = spec.get("base_pdf")
-    base_path = config.OUT_DIR / "examples" / base_name if base_name else None
+    base_path = config.OUT_DIR / "base" / base_name if base_name else None
     if not base_path or not base_path.is_file():
         return summary_bytes, 0
 

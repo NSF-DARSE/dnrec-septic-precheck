@@ -151,7 +151,7 @@ class TestNoRawExpressionsOnScreen:
 
     def test_real_packet_has_no_raw_expressions(self):
         """The shipped rules on a real cached packet produce no raw expressions."""
-        pdf = config.OUT_DIR / "examples" / "permit_282133_60843649.pdf"
+        pdf = config.OUT_DIR / "base" / "permit_282133_60843649.pdf"
         if not pdf.exists():
             pytest.skip("no cached example")
         client = TextractClient()
