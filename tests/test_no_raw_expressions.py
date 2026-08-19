@@ -171,3 +171,33 @@ class TestNoRawExpressionsOnScreen:
                 f"{name} report for permit 282133 contains raw expressions: "
                 f"{matches}"
             )
+
+class TestTheAnnotatedPdfSurface:
+    """The annotated PDF is addressed to an applicant, not even a reviewer.
+
+    It arrived reading "dist_disposal_to_well >= 100 feet" beside the citation,
+    because it took finding["requirement"] rather than calling the shared
+    wording. That is the same defect this file already covers on four other
+    surfaces, and it was not caught because no test read this one. Now one does.
+    """
+
+    def test_the_section_does_not_read_the_raw_requirement_field(self):
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        start = source.find("def _annotated_pdf_section(")
+        assert start != -1, "the annotated PDF section is gone, update this test"
+        # The function runs to the next top level def.
+        end = source.find(chr(10) + "def ", start + 1)
+        body = source[start:end if end != -1 else len(source)]
+
+        for banned in ('finding.get("requirement"', "finding.get('requirement'",
+                       'finding.get("reason"', "finding.get('reason'"):
+            assert banned not in body, (
+                f"the annotated PDF section reads {banned} directly instead of "
+                f"routing through the shared wording"
+            )
+        assert "_requirement_sentence(finding)" in body, (
+            "the annotated PDF section does not use the shared requirement wording"
+        )
+        assert "reason_sentence(finding)" in body, (
+            "the annotated PDF section does not use the shared reason wording"
+        )

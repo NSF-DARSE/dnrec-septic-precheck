@@ -1484,7 +1484,7 @@ def _annotated_pdf_section(payload: dict, pdf_bytes: bytes, subject: dict) -> No
     with st.expander("Annotated correction PDF", expanded=False):
         st.caption(
             "⚠️ The reviewer must approve these annotations before sending "
-            "to the applicant. This generates a separate annotated copy — "
+            "to the applicant. This generates a separate annotated copy and "
             "the original document is not modified."
         )
         # Page classification (cached per session)
@@ -1524,16 +1524,27 @@ def _annotated_pdf_section(payload: dict, pdf_bytes: bytes, subject: dict) -> No
         for i, (outcome, finding) in enumerate(all_findings):
             rule_id = finding.get("rule_id", f"finding-{i}")
             prefix = "🔴 Confirmed deficiency" if outcome == "FAIL" else "🟡 Information needed"
-            requirement = finding.get("requirement", "")
+            # requirement is the engine's own expression, "dist_disposal_to_well
+            # >= 100 feet". It is not for a reviewer and it is certainly not for
+            # an applicant, who is who the annotated PDF is addressed to. Every
+            # other surface routes through requirement_sentence and this one has
+            # to as well.
+            requirement = _requirement_sentence(finding)
             citation = finding.get("citation", "")
             c1, c2 = st.columns([1, 8])
             with c1:
                 checked = st.checkbox("Sel", key=f"ann_sel_{rule_id}", label_visibility="collapsed")
             with c2:
-                st.markdown(f"**{prefix}** — {rule_id}  \n{requirement} · *{citation}*")
+                st.markdown(f"**{prefix}.** {rule_id}  \n{requirement} · *{citation}*")
 
             if checked:
-                default_text = finding.get("reason", requirement) if outcome == "FAIL" else f"Could not be verified: {finding.get('reason', requirement)}"
+                # reason carries the same operators, so it goes through the
+                # shared wording too. The reviewer can edit whatever lands here,
+                # but what lands here should already be a sentence.
+                stated = reason_sentence(finding) or requirement
+                default_text = stated if outcome == "FAIL" else (
+                    "Could not be verified: " + stated
+                )
                 text = st.text_area("Request text", value=default_text, key=f"ann_txt_{rule_id}", height=68)
 
                 from septic.report.annotated_pdf import suggest_page
@@ -1543,7 +1554,7 @@ def _annotated_pdf_section(payload: dict, pdf_bytes: bytes, subject: dict) -> No
                 if suggestion and suggestion.page_num is not None and suggestion.confidence in ("high", "medium"):
                     idx = suggestion.page_num - 1
                     if 0 <= idx < page_count:
-                        st.caption(f"📍 Suggested: **{suggestion.display}** — {suggestion.reason}")
+                        st.caption(f"📍 Suggested: **{suggestion.display}**. {suggestion.reason}")
                         page = st.selectbox("Confirm page", list(range(1, page_count + 1)), index=idx,
                                            format_func=lambda p, s=suggestion: f"Page {p}" + (" ← suggested" if s and p == s.page_num else ""),
                                            key=f"ann_pg_{rule_id}")
@@ -1579,7 +1590,7 @@ def _annotated_pdf_section(payload: dict, pdf_bytes: bytes, subject: dict) -> No
             unconfirmed = [s for s in selected if s[3] is None]
             has_fail = any(o == "FAIL" for o, _, _, _, _ in selected)
             title = "Annotated Correction Copy" if has_fail else "Annotated Information Request"
-            st.markdown(f"**{len(selected)} selected** — {title}")
+            st.markdown(f"**{len(selected)} selected**. {title}")
             if unconfirmed:
                 st.warning(f"{len(unconfirmed)} need page selection.")
             if st.button("Generate annotated PDF", key="gen_ann", disabled=len(unconfirmed) > 0):

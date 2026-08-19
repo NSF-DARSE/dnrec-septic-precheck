@@ -8,7 +8,7 @@ Callout design:
     - FAIL: red border, light-red background, "CONFIRMED DEFICIENCY" heading
     - UNKNOWN: amber border, light-yellow background, "INFORMATION NEEDED" heading
     - Each callout shows: heading, plain-language request, rule ID, citation
-    - Visible without clicking comment icons — readable when printed/flattened
+    - Visible without clicking comment icons, readable when printed/flattened
 
 Automatic page selection:
     - Uses OCR page/bounding box from the review payload when available
@@ -104,8 +104,8 @@ class PageSuggestion:
     @property
     def display(self) -> str:
         if self.page_num is None:
-            return "No page identified — reviewer must select"
-        return f"Page {self.page_num} — {self.label}"
+            return "No page identified, reviewer must select"
+        return f"Page {self.page_num}, {self.label}"
 
 
 @dataclass
@@ -261,7 +261,7 @@ def suggest_page(
     """Suggest the best page for a finding based on deterministic evidence.
 
     Uses keyword frequency, dimensional evidence, and spatial relationship
-    indicators — not just keyword presence. Returns ranked alternatives when
+    indicators, not just keyword presence. Returns ranked alternatives when
     confidence is not high.
 
     Priority:
@@ -291,7 +291,7 @@ def suggest_page(
 
             # Check if the best page has strong negative signals despite scoring
             # A notes/spec page can score highly from keyword mentions in narrative.
-            # Require MULTIPLE notes indicators — a single "contractor shall" on a
+            # Require MULTIPLE notes indicators. A single "contractor shall" on a
             # site plan drawing is normal and should not disqualify it.
             page_blocks_best = [
                 b for b in blocks
@@ -302,7 +302,7 @@ def suggest_page(
                 "general notes", "notes to contractor",
                 "installer shall", "responsibility of the contractor",
             ) if k in best_text)
-            # Also check "contractor shall" frequency — on a notes page it appears
+            # Also check "contractor shall" frequency. On a notes page it appears
             # many times; on a site plan it might appear once or twice in a note box.
             contractor_shall_count = best_text.count("contractor shall")
             best_is_notes = notes_indicators >= 2 or contractor_shall_count >= 4
@@ -316,13 +316,13 @@ def suggest_page(
                         confidence="low",
                         reason=(
                             f"Pages {best_cls.page_num} and {second[1].page_num} "
-                            f"are similarly likely — reviewer confirmation required"
+                            f"are similarly likely, reviewer confirmation required"
                         ),
                         label=best_cls.label,
                         requires_reviewer_confirmation=True,
                     )
 
-            # If best page is a notes page, do not recommend it — return None
+            # If best page is a notes page, do not recommend it, return None
             # with candidates for reviewer selection
             if best_is_notes:
                 candidates = [
@@ -352,7 +352,7 @@ def suggest_page(
                 return PageSuggestion(
                     page_num=best_cls.page_num,
                     confidence="low",
-                    reason="Possible site plan page — reviewer confirmation required",
+                    reason="Possible site plan page, reviewer confirmation required",
                     label=best_cls.label,
                     requires_reviewer_confirmation=True,
                 )
@@ -418,7 +418,7 @@ def suggest_page(
     return PageSuggestion(
         page_num=1,
         confidence="low",
-        reason="No site plan identified — reviewer must select page",
+        reason="No site plan identified, reviewer must select page",
         label=classifications[0].label if classifications else "Page 1",
         requires_reviewer_confirmation=True,
     )
@@ -516,7 +516,7 @@ def _score_pages_for_finding(
         elif text_len > 500:
             score += 1
         # Note: sparse graphical pages with strong co-occurrence and spatial
-        # evidence can still score highly — density is a minor tiebreaker.
+        # evidence can still score highly. Density is a minor tiebreaker.
 
         # --- Negative signals ---
         is_form_page = any(k in all_text for k in form_kws)
