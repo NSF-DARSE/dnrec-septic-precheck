@@ -23,6 +23,7 @@ Downloaded: 2026-08-17
 | `surface_water_lakes_ponds.geojson.gz` | `Hydrology/DE_Water/FeatureServer` | 2 Lakes and Ponds | 14,711 | 1.3 MB |
 | `public_ponds.geojson.gz` | `Hydrology/DE_Public_Ponds/FeatureServer` | 0 | 51 | 0.0 MB |
 | `tax_ditches.geojson.gz` | `Hydrology/DE_TaxDitch/FeatureServer` | 0 | 21,449 | 0.4 MB |
+| `roads_centerline.geojson.gz` | `Transportation/DE_Roadways_Main/FeatureServer` | 1 CENTER LINE | 78,444 | 2.3 MB |
 
 The `DE_Water` service describes itself as "This water is derived from the NHD
 Dataset. August 2014", so the surface water geometry is the National Hydrography
@@ -103,3 +104,31 @@ feet. Distances are never computed in degrees. A degree of longitude at Delaware
 latitude is about 87 km while a degree of latitude is about 111 km, so treating
 degrees as a distance would be wrong by about 25 percent in a direction that
 depends on the bearing.
+
+
+## The roads layer is a basemap and nothing else
+
+`roads_centerline` was added on 2026-08-18, from DelDOT data published through
+FirstMap. It exists so a reviewer can see where a parcel sits. It is drawn behind
+everything on the screening figure and it is never measured against.
+
+That separation is enforced in code rather than by convention. `WATER_LAYERS` and
+`BASEMAP_LAYERS` in `src/septic/geo.py` are different tuples, and the nearest
+feature search runs over `available_layers()`, which only ever returns the water
+layers. A road is not a feature any provision of the regulation measures to, and
+a basemap layer that could reach `screen_point()` would be a way for one to.
+
+It is also generalised harder in the opposite direction from the water layers, and
+for the opposite reason. The water layers are simplified to keep them committable,
+and the tolerance is a cost paid against measurement accuracy. Roads carry no
+measurement, but they are looked at closely: the figure covers roughly 900 feet,
+about 274 metres, so the 55 metre tolerance first used here turned every road into
+a few straight segments. They are now at 0.0001 degrees, about 11 metres, which is
+finer than any water layer.
+
+The first download of this layer also stopped at 40,000 features of 78,444, the
+default `--max-features`, which left half the state with no roads on the map. A
+truncated water layer is a false all clear, as described above. A truncated road
+layer is a blank basemap, which looks broken rather than dangerous, but it is
+still wrong. The committed file holds all 78,444 segments the service reports
+inside the bounding box.

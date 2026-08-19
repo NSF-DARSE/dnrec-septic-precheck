@@ -1,6 +1,6 @@
 {
   "source": "https://enterprise.firstmap.delaware.gov/arcgis/rest/services",
-  "downloaded": "2026-08-17",
+  "downloaded": "2026-08-18",
   "bbox_wgs84": [
     -75.8,
     38.44,
@@ -59,6 +59,19 @@
       "size_mb": 0.0,
       "uncompressed_mb": 0.01,
       "service_total": 51
+    },
+    {
+      "name": "roads_centerline",
+      "service": "Transportation/DE_Roadways_Main/FeatureServer",
+      "layer": 1,
+      "simplify": 0.0001,
+      "description": "CENTER LINE, polyline, DelDOT road centrelines",
+      "status": "ok",
+      "features": 78444,
+      "file": "roads_centerline.geojson.gz",
+      "size_mb": 2.27,
+      "uncompressed_mb": 18.23,
+      "service_total": 78444
     },
     {
       "name": "tax_ditches",

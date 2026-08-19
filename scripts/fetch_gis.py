@@ -68,6 +68,13 @@ LAYERS = [
         "description": "DE_Public_Ponds, public pond features",
     },
     {
+        "name": "roads_centerline",
+        "service": "Transportation/DE_Roadways_Main/FeatureServer",
+        "layer": 1,
+        "simplify": 0.0001,
+        "description": "CENTER LINE, polyline, DelDOT road centrelines",
+    },
+    {
         "name": "tax_ditches",
         "service": "Hydrology/DE_TaxDitch/FeatureServer",
         "layer": 0,
@@ -186,6 +193,7 @@ def fetch_layer(service: str, layer: int, max_features: int,
                 if key.upper() in (
                     "GNIS_NAME", "NAME", "FTYPE", "FCODE", "TAXDITCH",
                     "POND_NAME", "OBJECTID",
+                    "STREET_NAME", "STREET_TYPE", "MAINT_RD",
                 )
             }
             feature["properties"] = kept
@@ -263,7 +271,26 @@ def main(argv: list[str] | None = None) -> int:
             "service_total": service_total(entry["service"], entry["layer"]),
         })
 
-    (GIS_DIR / "manifest.json").write_text(
+    # A --only run fetches one layer, so keep the entries for the layers it did
+    # not touch. Overwriting the manifest with just this run's layer would
+    # silently drop the provenance of everything already committed here.
+    manifest_path = GIS_DIR / "manifest.json"
+    if manifest_path.exists():
+        try:
+            previous = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            previous = {}
+        fetched = {item["name"] for item in manifest}
+        kept = [
+            item for item in previous.get("layers", [])
+            if item.get("name") not in fetched
+        ]
+        order = {entry["name"]: i for i, entry in enumerate(LAYERS)}
+        manifest = sorted(
+            kept + manifest, key=lambda item: order.get(item.get("name"), 999)
+        )
+
+    manifest_path.write_text(
         json.dumps({
             "source": BASE,
             "downloaded": date.today().isoformat(),

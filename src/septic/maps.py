@@ -30,6 +30,7 @@ from . import config, geo  # noqa: E402
 
 # Paul Tol bright. Distinguishable under the common colour vision deficiencies.
 INK = "#111111"
+ROAD = "#B0B7C0"      # basemap only, drawn behind everything
 WATER = "#33638D"
 WATER_FILL = "#BBD3E8"
 WATER_LABEL = "#1B3D5C"
@@ -228,6 +229,19 @@ def permit_map(
     drawn = 0
     labelled: set[str] = set()
 
+    # Roads first, so everything that matters draws on top of them. These are
+    # orientation only. They are never compared against, never labelled on the
+    # figure, and never enter the nearest feature search below, which is why
+    # they come from available_basemap_layers rather than available_layers.
+    roads_drawn = 0
+    for name in geo.available_basemap_layers():
+        basemap = geo.load_layer(name)
+        for geometry in basemap.geometries:
+            if not geometry.intersects(window):
+                continue
+            _draw_geometry(ax, geometry, ROAD, ROAD, 1.9, zorder=1)
+            roads_drawn += 1
+
     for name in layers:
         layer = geo.load_layer(name)
         is_polygon = "lakes" in name or "ponds" in name
@@ -350,6 +364,10 @@ def permit_map(
     if drawn:
         handles.append(
             Line2D([], [], color=WATER, linewidth=3, label="Mapped surface water")
+        )
+    if roads_drawn:
+        handles.append(
+            Line2D([], [], color=ROAD, linewidth=2.4, label="Road")
         )
     if nearest_point is not None:
         handles.append(

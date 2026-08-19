@@ -78,6 +78,27 @@ WATER_LAYERS = (
     "tax_ditches",
 )
 
+# Layers drawn on the screening figure for orientation only. These are
+# deliberately not in WATER_LAYERS, because available_layers() drives the
+# distance search and nothing here is a feature the regulation measures to. A
+# road is context for a reviewer looking at where a parcel sits, never a
+# setback. Keeping the two tuples separate is what stops a basemap layer from
+# ever reaching screen_point().
+BASEMAP_LAYERS = (
+    "roads_centerline",
+)
+
+
+def available_basemap_layers() -> list[str]:
+    """Basemap layers present on disk. Never used for any measurement."""
+    if not GIS_DIR.exists():
+        return []
+    return [
+        name for name in BASEMAP_LAYERS
+        if (GIS_DIR / f"{name}.geojson.gz").exists()
+        or (GIS_DIR / f"{name}.geojson").exists()
+    ]
+
 # The screening threshold. Set from the largest surface water isolation distance
 # in the Exhibit C small systems table, 100 feet for the disposal area, with a
 # margin because the measurement origin is an address point rather than the
