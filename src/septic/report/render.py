@@ -20,7 +20,7 @@ import html
 from string import Template
 
 from .assets import TOKENS
-from .wording import UNREAD_HEADING, UNREAD_INTRO, unread_note
+from .wording import UNREAD_HEADING, UNREAD_INTRO, requirement_sentence, unread_note
 
 RULE = "=" * 78
 THIN = "-" * 78
@@ -136,7 +136,7 @@ def render_text(composed) -> str:
         add(RULE)
         for i, f in enumerate(deficiencies, 1):
             add("")
-            add(f"{i}. {f['requirement']}")
+            add(f"{i}. {requirement_sentence(f)}")
             add(f"   rule {f['rule_id']}  severity {f['severity']}")
             for line in _wrap(f["reason"], indent="   "):
                 add(line)
@@ -258,7 +258,7 @@ def render_text(composed) -> str:
             add(line)
         add("")
         for f in not_applicable:
-            add(f"  {f['rule_id']}: {f['requirement']}")
+            add(f"  {f['rule_id']}: {requirement_sentence(f)}")
             add(f"    {f['reason']}")
             excluded = f.get("excluded_by") or {}
             if excluded.get("parameter"):
@@ -639,7 +639,7 @@ def render_html(composed, embedded: bool = False) -> str:
                 if severity == "return"
                 else "<span class='chip advisory'>Advisory</span>"
             )
-            add(f"<p class='req'>{i}. {_esc(f['requirement'])}{chip}</p>")
+            add(f"<p class='req'>{i}. {_esc(requirement_sentence(f))}{chip}</p>")
             add(f"<div class='rule-id'>{_esc(f['rule_id'])}</div>")
             add(f"<p class='reason'>{_esc(f['reason'])}</p>")
             if f.get("observed") is not None:
@@ -688,7 +688,7 @@ def render_html(composed, embedded: bool = False) -> str:
                     "<th>citation</th></tr>")
                 for f in findings:
                     add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
-                        f"<td>{_esc(f['requirement'])}</td>"
+                        f"<td>{_esc(requirement_sentence(f))}</td>"
                         f"<td>{_esc(f['citation'])}</td></tr>")
                 add("</table></div>")
         else:
@@ -756,7 +756,7 @@ def render_html(composed, embedded: bool = False) -> str:
                 if excluded.get("where"):
                     where += f", from {excluded['where']}"
             add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
-                f"<td>{_esc(f['requirement'])}</td>"
+                f"<td>{_esc(requirement_sentence(f))}</td>"
                 f"<td>{_esc(f['reason'])}</td>"
                 f"<td>{_esc(where)}</td>"
                 f"<td>{_esc(f['citation'])}</td></tr>")

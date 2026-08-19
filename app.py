@@ -589,26 +589,8 @@ def _short_rule_id(rule_id: str) -> str:
 
 def _requirement_sentence(finding: dict) -> str:
     """Turn the machine expression into a reviewer-readable sentence."""
-    parameter = finding.get("parameter", "")
-    threshold = finding.get("threshold")
-    units = finding.get("units") or ""
-    from septic.report.wording import parameter_name
-    name = parameter_name(parameter)
-    if threshold is None:
-        return f"{name} must be provided"
-    # Build a readable operator
-    req_str = finding.get("requirement", "")
-    if ">=" in req_str:
-        return f"{name} must be at least {threshold} {units}".strip()
-    elif "<=" in req_str:
-        return f"{name} must be at most {threshold} {units}".strip()
-    elif ">" in req_str:
-        return f"{name} must be greater than {threshold} {units}".strip()
-    elif "<" in req_str:
-        return f"{name} must be less than {threshold} {units}".strip()
-    elif "==" in req_str or "=" in req_str:
-        return f"{name} must equal {threshold} {units}".strip()
-    return f"{name} {threshold} {units}".strip()
+    from septic.report.wording import requirement_sentence
+    return requirement_sentence(finding)
 
 
 def _status_pill(finding: dict) -> str:
@@ -890,8 +872,8 @@ def _grouped_unresolved_html(groups: list[dict]) -> str:
         # List the blocked rules with their citations
         parts.append("<table class='findings-table' style='margin:0'>"
                      "<colgroup>"
-                     "<col style='width:18%'>"
-                     "<col style='width:50%'>"
+                     "<col style='width:14%'>"
+                     "<col style='width:54%'>"
                      "<col style='width:32%'>"
                      "</colgroup>"
                      "<tr><th>RULE</th><th>REQUIREMENT</th><th>CITATION</th></tr>")
@@ -900,7 +882,7 @@ def _grouped_unresolved_html(groups: list[dict]) -> str:
             short_id = _short_rule_id(rule_id)
             section = html_lib.escape(f.get("section", ""))
             page = f.get("page")
-            requirement = html_lib.escape(f.get("requirement", ""))
+            requirement = html_lib.escape(_requirement_sentence(f))
             citation_parts = []
             if section:
                 citation_parts.append(section)

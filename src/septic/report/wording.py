@@ -178,6 +178,32 @@ def parameter_location(parameter: str) -> str | None:
     return entry[1] if entry else None
 
 
+def requirement_sentence(finding: dict) -> str:
+    """Turn a machine expression into a reviewer-readable sentence.
+
+    Both the console and the printable report call this so neither can drift
+    into showing raw parameter names and operators to a reviewer.
+    """
+    parameter = finding.get("parameter", "")
+    threshold = finding.get("threshold")
+    units = finding.get("units") or ""
+    name = parameter_name(parameter)
+    if threshold is None:
+        return f"{name} must be provided"
+    req_str = finding.get("requirement", "")
+    if ">=" in req_str:
+        return f"{name} must be at least {threshold} {units}".strip()
+    elif "<=" in req_str:
+        return f"{name} must be at most {threshold} {units}".strip()
+    elif ">" in req_str:
+        return f"{name} must be greater than {threshold} {units}".strip()
+    elif "<" in req_str:
+        return f"{name} must be less than {threshold} {units}".strip()
+    elif "==" in req_str or "=" in req_str:
+        return f"{name} must equal {threshold} {units}".strip()
+    return f"{name} {threshold} {units}".strip()
+
+
 def unread_note(finding: dict) -> str:
     """One sentence group for a check that did not run.
 
