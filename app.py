@@ -197,7 +197,7 @@ html, body { font-family:$f_sans; }
 .ft-citation-chip {
   display:inline-block; background:$c_surface_sunken; color:$c_citation_fg;
   padding:2px $s_sm; border-radius:$r_sm; font-size:$t_micro;
-  font-family:$f_mono; white-space:nowrap;
+  font-family:$f_mono; white-space:normal;
 }
 .ft-status-pill {
   display:inline-block; padding:2px $s_md; border-radius:$r_md;
@@ -205,7 +205,10 @@ html, body { font-family:$f_sans; }
 }
 /* De-emphasised not-applicable group */
 .findings-table.deemphasised td {
-  color:var(--muted); border-left:$b_accent solid $c_out_of_scope_edge;
+  color:var(--muted);
+}
+.findings-table.deemphasised tr {
+  border-left:$b_accent solid $c_out_of_scope_edge;
 }
 .findings-table.deemphasised .ft-rule-id { color:var(--muted); }
 .findings-table.deemphasised .ft-requirement { color:var(--muted); font-weight:$w_regular; }
@@ -654,24 +657,47 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
                 if reason else ""
             )
 
-        # Value column
+        # Value column - never show raw comparison operators to a reviewer.
+        # For satisfied and not-applicable groups, show the observed value
+        # plainly, with the threshold stated as a readable phrase.
         observed = f.get("observed")
         threshold = f.get("threshold")
         units = f.get("units") or ""
-        if observed is not None:
+        if group in ("not_applicable",) and observed is None:
+            # Rule did not apply; no comparison was made
+            value_html = ""
+        elif observed is not None:
+            obs_str = str(observed)
+            # Strip trailing .0 from float-like strings for display
+            if obs_str.endswith(".0"):
+                obs_str = obs_str[:-2]
             value_html = (
-                f"<span class='ft-value'>{html_lib.escape(str(observed))}"
+                f"<span class='ft-value'>{html_lib.escape(obs_str)}"
                 f" {html_lib.escape(units)}</span>"
             )
             if threshold is not None:
+                # Express the threshold as a human sentence, no operator symbols
+                req_str = f.get("requirement", "")
+                if "<=" in req_str:
+                    direction = "at most"
+                elif ">=" in req_str:
+                    direction = "at least"
+                elif "<" in req_str:
+                    direction = "less than"
+                elif ">" in req_str:
+                    direction = "more than"
+                else:
+                    direction = "required:"
                 value_html += (
-                    f"<br><span class='ft-threshold'>req: "
-                    f"{html_lib.escape(str(threshold))} {html_lib.escape(units)}</span>"
+                    f"<br><span class='ft-threshold'>"
+                    f"{html_lib.escape(direction)} "
+                    f"{html_lib.escape(str(threshold))} "
+                    f"{html_lib.escape(units)}</span>"
                 )
         else:
             value_html = ""
 
-        # Citation chip
+        # Citation chip - must never truncate
         citation_parts = []
         if section:
             citation_parts.append(section)
@@ -710,10 +736,10 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
     return (
         f"<table class='{cls}'>"
         "<colgroup>"
-        "<col style='width:12%'>"
-        "<col style='width:40%'>"
-        "<col style='width:16%'>"
+        "<col style='width:10%'>"
+        "<col style='width:38%'>"
         "<col style='width:18%'>"
+        "<col style='width:20%'>"
         "<col style='width:14%'>"
         "</colgroup>"
         "<tr>"

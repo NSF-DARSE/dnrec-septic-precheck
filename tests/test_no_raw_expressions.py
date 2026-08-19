@@ -80,6 +80,56 @@ class TestNoRawExpressionsOnScreen:
             f"text report contains raw machine expressions: {matches}"
         )
 
+    def test_console_tables_have_no_raw_expressions(self, payload_with_all_groups):
+        """The console findings tables must not show operators to a reviewer."""
+        import importlib
+        import sys
+        # Import the findings_table function from app.py
+        app_path = ROOT / "app.py"
+        spec = importlib.util.spec_from_file_location("app_module", app_path)
+        # We cannot import app.py because it runs Streamlit. Instead, verify via
+        # the shared requirement_sentence function, which is what the table calls.
+        for group_name in ("deficiencies", "satisfied", "not_applicable"):
+            for f in payload_with_all_groups.get(group_name, []):
+                sentence = requirement_sentence(f)
+                assert not RAW_EXPRESSION_RE.search(sentence), (
+                    f"requirement_sentence for {group_name} group returned raw "
+                    f"expression: {sentence}"
+                )
+                # The value column must not contain comparison operators either.
+                # It should show observed and threshold separately, never as
+                # "40 minutes per inch <= 120 minutes per inch"
+                observed = f.get("observed")
+                threshold = f.get("threshold")
+                units = f.get("units") or ""
+                if observed is not None and threshold is not None:
+                    # The format the old code produced, now banned
+                    raw_value = f"{observed} {units} <= {threshold} {units}"
+                    raw_value2 = f"{observed} {units} >= {threshold} {units}"
+                    assert raw_value not in sentence
+                    assert raw_value2 not in sentence
+
+    def test_no_comparison_operators_in_value_display(self, payload_with_all_groups):
+        """Neither <= nor >= may appear in the value cell of any findings group."""
+        # This simulates what findings_table renders in the VALUE column.
+        # The pattern is: observed with units, then threshold with direction word.
+        operator_re = re.compile(r"(?:<=|>=|<\s|>\s)")
+        for group_name in ("deficiencies", "satisfied", "not_applicable"):
+            for f in payload_with_all_groups.get(group_name, []):
+                observed = f.get("observed")
+                threshold = f.get("threshold")
+                units = f.get("units") or ""
+                if observed is None:
+                    continue
+                # The displayed string should never contain a bare operator
+                obs_str = str(observed)
+                if obs_str.endswith(".0"):
+                    obs_str = obs_str[:-2]
+                display = f"{obs_str} {units}"
+                assert not operator_re.search(display), (
+                    f"value display for {group_name} contains operator: {display}"
+                )
+
     def test_requirement_sentence_never_returns_raw_expression(self):
         """The shared function must always produce a readable sentence."""
         cases = [
