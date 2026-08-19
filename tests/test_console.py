@@ -846,3 +846,36 @@ class TestPDFViewer:
         source = (ROOT / "app.py").read_text(encoding="utf-8")
         for pattern in ("http://", "https://", "fonts.googleapis", "cdn."):
             assert pattern not in source, f"found {pattern!r} in app.py"
+
+
+class TestNoOperatorsOnAnySurface:
+    """Comparison operators and parameter names are engine vocabulary.
+
+    This has now been missed on three separate surfaces: the highlight colour
+    map, the console tables, and the printable report. The report is the one a
+    reviewer forwards, so it matters most and it was the one still leaking.
+    """
+
+    def test_no_comparison_operators_reach_a_reviewer(self):
+        import html as html_lib
+        import re
+        from pathlib import Path
+        from septic.review import review
+        from septic.report.render import render_html
+        from septic.report.letter import render_letter
+
+        packets = sorted(Path("out/examples").glob("application_packet_*.pdf"))
+        if not packets:
+            pytest.skip("no demonstration packets staged")
+
+        operator = re.compile(r"(?:>=|<=|==)")
+        for pdf in packets:
+            result = review(pdf=pdf, allow_network=False, with_map=False)
+            payload = result.composed.to_json()
+            for surface in (render_html(payload), render_letter(payload)):
+                text = html_lib.unescape(re.sub(r"<[^>]+>", " ", surface))
+                found = operator.findall(text)
+                assert not found, (
+                    f"{pdf.name} renders a comparison operator to a reviewer: "
+                    f"{found[:3]}"
+                )

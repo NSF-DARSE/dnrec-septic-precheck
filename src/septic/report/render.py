@@ -20,7 +20,8 @@ import html
 from string import Template
 
 from .assets import TOKENS
-from .wording import UNREAD_HEADING, UNREAD_INTRO, requirement_sentence, unread_note
+from .wording import (UNREAD_HEADING, UNREAD_INTRO, reason_sentence,
+                      requirement_sentence, unread_note)
 
 RULE = "=" * 78
 THIN = "-" * 78
@@ -138,7 +139,7 @@ def render_text(composed) -> str:
             add("")
             add(f"{i}. {requirement_sentence(f)}")
             add(f"   rule {f['rule_id']}  severity {f['severity']}")
-            for line in _wrap(f["reason"], indent="   "):
+            for line in _wrap(reason_sentence(f), indent="   "):
                 add(line)
             if f.get("observed") is not None:
                 add(f"   read from the packet: {f['observed']}")
@@ -238,7 +239,7 @@ def render_text(composed) -> str:
         for d in discarded:
             page = f" page {d['page']}" if d.get("page") else ""
             add(f"  {d['parameter']}{page}")
-            for line in _wrap(d["reason"], indent="    "):
+            for line in _wrap(reason_sentence(d), indent="    "):
                 add(line)
         add("")
 
@@ -259,7 +260,7 @@ def render_text(composed) -> str:
         add("")
         for f in not_applicable:
             add(f"  {f['rule_id']}: {requirement_sentence(f)}")
-            add(f"    {f['reason']}")
+            add(f"    {reason_sentence(f)}")
             excluded = f.get("excluded_by") or {}
             if excluded.get("parameter"):
                 add(f"    {excluded['parameter']} read as "
@@ -275,7 +276,7 @@ def render_text(composed) -> str:
         add(f"REQUIREMENTS MET ({len(satisfied)})")
         add(RULE)
         for f in satisfied:
-            add(f"  {f['rule_id']}: {f['reason']}  [{f['citation']}]")
+            add(f"  {f['rule_id']}: {reason_sentence(f)}  [{f['citation']}]")
         add("")
 
     facts = c.get("facts_read") or []
@@ -641,7 +642,7 @@ def render_html(composed, embedded: bool = False) -> str:
             )
             add(f"<p class='req'>{i}. {_esc(requirement_sentence(f))}{chip}</p>")
             add(f"<div class='rule-id'>{_esc(f['rule_id'])}</div>")
-            add(f"<p class='reason'>{_esc(f['reason'])}</p>")
+            add(f"<p class='reason'>{_esc(reason_sentence(f))}</p>")
             if f.get("observed") is not None:
                 add(f"<p class='observed'>Read from the packet: "
                     f"<b>{_esc(f['observed'])}</b></p>")
@@ -732,7 +733,7 @@ def render_html(composed, embedded: bool = False) -> str:
         for d in discarded:
             add(f"<tr><td><code>{_esc(d['parameter'])}</code></td>"
                 f"<td>{_esc(d.get('page') or '')}</td>"
-                f"<td>{_esc(d['reason'])}</td></tr>")
+                f"<td>{_esc(reason_sentence(d))}</td></tr>")
         add("</table>")
 
     not_applicable = c.get("not_applicable") or []
@@ -757,7 +758,7 @@ def render_html(composed, embedded: bool = False) -> str:
                     where += f", from {excluded['where']}"
             add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
                 f"<td>{_esc(requirement_sentence(f))}</td>"
-                f"<td>{_esc(f['reason'])}</td>"
+                f"<td>{_esc(reason_sentence(f))}</td>"
                 f"<td>{_esc(where)}</td>"
                 f"<td>{_esc(f['citation'])}</td></tr>")
         add("</table>")
@@ -771,7 +772,7 @@ def render_html(composed, embedded: bool = False) -> str:
             "<th>citation</th></tr>")
         for f in satisfied:
             add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
-                f"<td>{_esc(f['reason'])}</td><td>{_esc(f['citation'])}</td></tr>")
+                f"<td>{_esc(reason_sentence(f))}</td><td>{_esc(f['citation'])}</td></tr>")
         add("</table>")
 
     facts = c.get("facts_read") or []
