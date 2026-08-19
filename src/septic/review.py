@@ -157,6 +157,22 @@ def analyze(
     raise ValueError("pass either a pdf path or a permit number")
 
 
+# The permit CSV is 45 MB and 117,802 rows. It was read and parsed on every call,
+# and a single review calls this twice, which is 1.9 seconds of a review for a
+# file that does not change while the console is running.
+_PERMIT_FRAME = None
+
+
+def _permit_frame(pd):
+    """The permit CSV as a frame, parsed once per process."""
+    global _PERMIT_FRAME
+    if _PERMIT_FRAME is None:
+        _PERMIT_FRAME = pd.read_csv(
+            config.PERMIT_CSV, dtype=str, low_memory=False
+        )
+    return _PERMIT_FRAME
+
+
 def permit_row(permit: str) -> dict | None:
     """Find a permit's CSV row, for coordinates. Returns None without the CSV.
 
@@ -170,8 +186,10 @@ def permit_row(permit: str) -> dict | None:
     if not config.PERMIT_CSV.exists():
         return None
     try:
-        frame = pd.read_csv(config.PERMIT_CSV, dtype=str, low_memory=False)
+        frame = _permit_frame(pd)
     except Exception:  # noqa: BLE001
+        return None
+    if frame is None:
         return None
     subset = frame[frame["permitNumber"].astype(str) == str(permit)]
     if subset.empty:

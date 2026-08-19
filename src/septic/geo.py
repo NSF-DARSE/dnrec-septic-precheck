@@ -402,6 +402,31 @@ def load_layer(name: str) -> Layer:
     return layer
 
 
+# One spatial index per layer, built on first use. Drawing a figure previously
+# tested every geometry in every layer against the window, which is about 180,000
+# intersects calls for a single map and 3.5 seconds of a review an audience is
+# watching. The index answers the same question by bounding box first.
+_TREE_CACHE: dict[str, tuple] = {}
+
+
+def layer_index(name: str):
+    """An STRtree over one layer's geometries, and the geometries themselves.
+
+    Returns (tree, geometries, labels). The tree indexes positions in the
+    geometry list, so a caller can recover the label for a hit.
+    """
+    cached = _TREE_CACHE.get(name)
+    if cached is not None:
+        return cached
+    from shapely import STRtree
+
+    layer = load_layer(name)
+    tree = STRtree(layer.geometries)
+    result = (tree, layer.geometries, layer.labels)
+    _TREE_CACHE[name] = result
+    return result
+
+
 def available_layers() -> list[str]:
     if not GIS_DIR.exists():
         return []

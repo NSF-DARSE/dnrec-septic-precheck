@@ -144,16 +144,33 @@ def save_index(index: PermitIndex, path: Path | None = None) -> Path:
     return path
 
 
+# The index is a 16 MB JSON file holding every permit vector, and parsing it took
+# 5.7 seconds of every review because it was read from disk again on each call.
+# The console reviews one packet after another in one process, so an audience was
+# watching that cost repeat. Keyed by path and modification time, so rebuilding
+# the index still takes effect without a restart.
+_INDEX_CACHE: dict[tuple[str, float], "PermitIndex"] = {}
+
+
 def load_index(path: Path | None = None) -> PermitIndex:
     path = Path(path or DEFAULT_INDEX_PATH)
     if not path.exists():
         raise FileNotFoundError(f"permit index not found: {path}")
+
+    key = (str(path.resolve()), path.stat().st_mtime)
+    cached = _INDEX_CACHE.get(key)
+    if cached is not None:
+        return cached
+
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return PermitIndex(
+    index = PermitIndex(
         entries=[IndexEntry.from_json(e) for e in payload.get("entries", [])],
         backend=payload.get("backend", "unknown"),
         dimensions=payload.get("dimensions", 0),
     )
+    _INDEX_CACHE.clear()
+    _INDEX_CACHE[key] = index
+    return index
 
 
 def load_manifest(path: Path) -> list[dict]:

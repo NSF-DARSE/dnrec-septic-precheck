@@ -6,9 +6,11 @@ from Paul Tol's bright qualitative set, which stays distinguishable under
 deuteranopia, protanopia and tritanopia, and also survives a projector with poor
 colour balance.
 
-No basemap tiles, no contextily, no web requests. Everything is drawn from the
-GeoJSON layers under data/gis. A figure that needs a network call to render is
-wrong here, because the venue wifi is expected to fail.
+No contextily and no web requests at render time. Everything is drawn from the
+GeoJSON layers under data/gis, and the aerial imagery is read from tiles already
+cached under data/gis/imagery by scripts/fetch_imagery.py. A tile that is not
+cached is simply not drawn. A figure that needs a network call to render is wrong
+here, because the venue wifi is expected to fail.
 """
 from __future__ import annotations
 
@@ -276,17 +278,19 @@ def permit_map(
     # they come from available_basemap_layers rather than available_layers.
     roads_drawn = 0
     for name in geo.available_basemap_layers():
-        basemap = geo.load_layer(name)
-        for geometry in basemap.geometries:
+        tree, geometries, _labels = geo.layer_index(name)
+        for position in tree.query(window):
+            geometry = geometries[position]
             if not geometry.intersects(window):
                 continue
             _draw_geometry(ax, geometry, ROAD, ROAD, 1.9, zorder=1)
             roads_drawn += 1
 
     for name in layers:
-        layer = geo.load_layer(name)
+        tree, geometries, labels = geo.layer_index(name)
         is_polygon = "lakes" in name or "ponds" in name
-        for geometry, label in zip(layer.geometries, layer.labels):
+        for position in tree.query(window):
+            geometry, label = geometries[position], labels[position]
             if not geometry.intersects(window):
                 continue
             _draw_geometry(
