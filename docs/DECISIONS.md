@@ -47,3 +47,68 @@ recorded lineage later, Semantica's ProvenanceManager does that part well and
 could be adopted without taking its graph store. The public functions in
 src/septic/rules/graph.py were given backend independent signatures and return
 shapes so that swap stays cheap.
+
+
+---
+
+# Decision: Bedrock Data Automation for site plan extraction
+
+Date: 2026-08-18
+Outcome: negative. Textract stays the default. BDA returns the same content
+Textract does and none of the seven parameters the rules need from a site plan.
+
+## What was tested
+
+Page 6 of permit 281364, which is the scanned site plan that carries the
+isolation distances six rules need. The question was whether Bedrock Data
+Automation could read spatial relationships off a raster drawing that Textract
+cannot measure.
+
+The BDA response was diffed line by line against the Textract cache for the same
+page. Both outputs are 117 lines. The differences are OCR noise only: minor
+character substitutions, whitespace, and confidence scores. Neither output returns
+any of the seven parameters the rules need:
+
+    dist_disposal_to_well
+    dist_disposal_to_watercourse
+    dist_disposal_to_property_line
+    dist_disposal_to_escarpment
+    dist_tank_to_well
+    dist_tank_to_watercourse
+    disposal_slope
+
+Both services read the text that is printed on the drawing (the title block, the
+legend, the scale notation). Neither reads the distances that are dimensioned
+between drawn features, because those distances are spatial relationships between
+line segments relative to a scale bar, not printed text. No document extractor of
+any kind reads them. Reading them requires geometric measurement of the drawing:
+detecting the line features, computing pixel distances, and dividing by the scale
+factor.
+
+## What BDA did not do
+
+BDA fabricated nothing. It did not hallucinate distances, invent parameters, or
+return values the drawing does not state in text. That is the right failure mode
+for a tool that shows findings to a state regulator.
+
+## What the probe left behind
+
+Nothing. The BDA call was a one-shot API probe. No pipeline was built, no
+configuration was saved, and no BDA output is cached anywhere in this repository.
+The Textract cache for permit 281364 is unchanged.
+
+## Infrastructure note
+
+The probe required upgrading boto3 from 1.35.x to 1.38.x for the
+bedrock-data-automation-runtime client name. The earlier boto3 did not know that
+service endpoint existed. The upgrade is in requirements.txt.
+
+## Why Textract stays
+
+BDA was evaluated because it advertises document understanding beyond OCR. On this
+document, its output is equivalent to Textract's. The parameters the rules need
+are not text extraction problems. They are measurement problems on a raster image,
+and they remain the gap described in the README status section: 10 of the 15 rules
+need a measurement that lives on a scanned drawing, and no document service reads
+them. The path to those values runs through computer vision (line detection, scale
+calibration, feature identification), not through a better document extractor.
