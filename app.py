@@ -533,7 +533,7 @@ def load_graph_once():
 
 
 @st.cache_data(show_spinner=False)
-def review_from_cache(pdf_path: str) -> dict | None:
+def review_from_cache(pdf_path: str, doc_hash: str = "") -> dict | None:
     """Run the whole chain from the on-disk cache. No network, no credentials.
 
     Delegates to septic.review rather than repeating the chain here.
@@ -1306,7 +1306,7 @@ if uploaded is not None:
         # shows the layout filling in rather than nothing happening.
         skeleton = st.empty()
         skeleton.markdown(loading_skeleton(uploaded.name), unsafe_allow_html=True)
-        payload = review_from_cache(str(target))
+        payload = review_from_cache(str(target), doc_hash)
         skeleton.empty()
         elapsed = time.perf_counter() - started
         if payload:
