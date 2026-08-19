@@ -905,74 +905,82 @@ def render_findings(payload: dict) -> None:
 _PAGE_CACHE: dict[str, dict[int, str]] = {}
 
 
-def _rasterise_page(pdf_bytes: bytes, page_num: int, doc_hash: str) -> str:
-    """Render one page of the PDF as a base64 PNG data URI, cached by hash."""
-    if doc_hash in _PAGE_CACHE and page_num in _PAGE_CACHE[doc_hash]:
-        return _PAGE_CACHE[doc_hash][page_num]
+def _rasterise_pages(pdf_bytes: bytes, doc_hash: str) -> list[str]:
+    """Render every page as a base64 JPEG data URI, cached by document hash.
+
+    JPEG rather than PNG, and scale 1.5 rather than 2, because a scanned
+    nineteen page packet has to travel into the iframe as one payload and a
+    lossless render of every page is several times larger than the browser
+    needs to display it at this width.
+    """
+    cached = _PAGE_CACHE.get(doc_hash)
+    if cached is not None:
+        return cached
+    import io
     import pypdfium2 as pdfium
     doc = pdfium.PdfDocument(pdf_bytes)
-    if page_num < 1 or page_num > len(doc):
-        return ""
-    page = doc[page_num - 1]
-    bitmap = page.render(scale=2)
-    img = bitmap.to_pil()
-    import io
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    encoded = base64.b64encode(buf.getvalue()).decode("ascii")
-    uri = f"data:image/png;base64,{encoded}"
-    _PAGE_CACHE.setdefault(doc_hash, {})[page_num] = uri
-    return uri
+    uris = []
+    for page in doc:
+        img = page.render(scale=1.5).to_pil().convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=80, optimize=True)
+        encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+        uris.append(f"data:image/jpeg;base64,{encoded}")
+    _PAGE_CACHE[doc_hash] = uris
+    return uris
 
 
-def _viewer_html(page_uri: str, page_num: int, total_pages: int) -> str:
-    """Build the self-contained HTML for the PDF viewer."""
+def _viewer_html(page_uris: list[str], start_page: int = 1) -> str:
+    """A scrolling stack of every page, one after another.
+
+    Each page carries an anchor so a finding can scroll its own page into
+    view, and a small label so the reviewer always knows where they are.
+    """
+    blocks = []
+    for i, uri in enumerate(page_uris, start=1):
+        blocks.append(
+            f"<div class='pg' id='page-{i}'>"
+            f"<div class='pg-label'>page {i} of {len(page_uris)}</div>"
+            f"<img src='{uri}' loading='lazy' alt='page {i}'>"
+            f"</div>"
+        )
+    scroll_to = ""
+    if start_page > 1:
+        scroll_to = (
+            "<script>document.getElementById('page-%d')"
+            ".scrollIntoView();</script>" % start_page
+        )
     return (
-        f"<div style='position:relative;width:100%;'>"
-        f"<img src='{page_uri}' style='width:100%;display:block;'>"
-        f"</div>"
+        "<style>"
+        "body{margin:0;background:%s;}"
+        ".pg{margin:0 0 %dpx;}"
+        ".pg-label{font:%dpx %s;color:%s;padding:%dpx 0;}"
+        ".pg img{width:100%%;display:block;border:1px solid %s;}"
+        "</style>"
+        "<div class='pgs'>%s</div>%s"
+    ) % (
+        TOKENS["colour"]["surface_sunken"],
+        TOKENS["space"]["lg"],
+        TOKENS["type_scale"]["micro"],
+        TOKENS["font"]["sans"],
+        TOKENS["colour"]["muted"],
+        TOKENS["space"]["xs"],
+        TOKENS["colour"]["line"],
+        "".join(blocks),
+        scroll_to,
     )
 
 
 def render_pdf_viewer(pdf_bytes: bytes, doc_hash: str, payload: dict) -> None:
-    """Render the PDF viewer pane with page controls."""
-    import pypdfium2 as pdfium
-    doc = pdfium.PdfDocument(pdf_bytes)
-    total_pages = len(doc)
-
-    # Page state
+    """Render the packet as one continuously scrollable column of pages."""
+    page_uris = _rasterise_pages(pdf_bytes, doc_hash)
+    if not page_uris:
+        return
     page_key = f"viewer_page_{doc_hash[:16]}"
-    if page_key not in st.session_state:
-        st.session_state[page_key] = 1
-
-    current_page = st.session_state[page_key]
-
-    # Rasterise and render the page image first
-    page_uri = _rasterise_page(pdf_bytes, current_page, doc_hash)
-    viewer_html = _viewer_html(page_uri, current_page, total_pages)
-
-    components.html(viewer_html, height=860, scrolling=True)
-
-    # Page navigation directly beneath the rendered page
-    nav_cols = st.columns([1, 3, 1])
-    with nav_cols[0]:
-        if st.button("Prev", key=f"prev_{doc_hash[:16]}",
-                     disabled=(st.session_state[page_key] <= 1)):
-            st.session_state[page_key] -= 1
-            st.rerun()
-    with nav_cols[1]:
-        st.markdown(
-            f"<div style='text-align:center;font-size:"
-            f"{TOKENS['type_scale']['caption']}px;color:"
-            f"{TOKENS['colour']['muted']}'>page {st.session_state[page_key]}"
-            f" of {total_pages}</div>",
-            unsafe_allow_html=True,
-        )
-    with nav_cols[2]:
-        if st.button("Next", key=f"next_{doc_hash[:16]}",
-                     disabled=(st.session_state[page_key] >= total_pages)):
-            st.session_state[page_key] += 1
-            st.rerun()
+    start_page = st.session_state.get(page_key, 1)
+    components.html(
+        _viewer_html(page_uris, start_page), height=900, scrolling=True
+    )
 
 
 def jump_to_page(doc_hash: str, page: int) -> None:
