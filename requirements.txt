@@ -50,3 +50,7 @@ pytest==9.1.1
 # google-auth[requests] transitive dependency. Python 3.11 compatible.
 # Version 2.18.1 confirmed working with Vertex AI chat sessions.
 google-genai==2.18.1
+
+# Annotated correction PDF. Uses pypdf (BSD-3-Clause) for PDF annotation
+# without modifying the original document content.
+pypdf==6.16.1

@@ -1467,6 +1467,139 @@ def chatbot_available() -> bool:
     return is_available()
 
 
+# ---------------------------------------------------------------------------
+# Annotated correction PDF. Reviewer-selected findings placed on the PDF.
+# ---------------------------------------------------------------------------
+
+def _annotated_pdf_section(payload: dict, pdf_bytes: bytes, subject: dict) -> None:
+    """Render annotated correction PDF controls. Annotation-only feature."""
+    deficiencies = payload.get("deficiencies") or []
+    unresolved = [
+        f for f in (payload.get("unresolved") or [])
+        if f.get("applicability") != "not_applicable"
+    ]
+    if not deficiencies and not unresolved:
+        return
+
+    with st.expander("Annotated correction PDF", expanded=False):
+        st.caption(
+            "⚠️ The reviewer must approve these annotations before sending "
+            "to the applicant. This generates a separate annotated copy — "
+            "the original document is not modified."
+        )
+        # Page classification (cached per session)
+        current_doc = subject.get("document", "")
+        if st.session_state.get("_ann_document") != current_doc:
+            st.session_state["_page_classifications"] = None
+            st.session_state["_page_blocks"] = None
+            st.session_state["_ann_document"] = current_doc
+
+        page_classifications = st.session_state.get("_page_classifications")
+        _cached_blocks = st.session_state.get("_page_blocks")
+        if page_classifications is None:
+            try:
+                from septic.report.annotated_pdf import classify_pages
+                import pypdf
+                from io import BytesIO as _BytesIO
+                _reader = pypdf.PdfReader(_BytesIO(pdf_bytes))
+                _client = TextractClient()
+                _analysis = _client.cached_by_hash(document_hash(pdf_bytes))
+                if _analysis and _analysis.blocks:
+                    page_classifications = classify_pages(
+                        _analysis.blocks, len(_reader.pages), _reader)
+                    _cached_blocks = _analysis.blocks
+                else:
+                    page_classifications = []
+                    _cached_blocks = None
+                st.session_state["_page_classifications"] = page_classifications
+                st.session_state["_page_blocks"] = _cached_blocks
+            except Exception:  # noqa: BLE001
+                page_classifications = []
+                _cached_blocks = None
+
+        all_findings = [("FAIL", f) for f in deficiencies] + [("UNKNOWN", f) for f in unresolved]
+        page_count = payload.get("subject", {}).get("pages", 13)
+        selected: list = []
+
+        for i, (outcome, finding) in enumerate(all_findings):
+            rule_id = finding.get("rule_id", f"finding-{i}")
+            prefix = "🔴 Confirmed deficiency" if outcome == "FAIL" else "🟡 Information needed"
+            requirement = finding.get("requirement", "")
+            citation = finding.get("citation", "")
+            c1, c2 = st.columns([1, 8])
+            with c1:
+                checked = st.checkbox("Sel", key=f"ann_sel_{rule_id}", label_visibility="collapsed")
+            with c2:
+                st.markdown(f"**{prefix}** — {rule_id}  \n{requirement} · *{citation}*")
+
+            if checked:
+                default_text = finding.get("reason", requirement) if outcome == "FAIL" else f"Could not be verified: {finding.get('reason', requirement)}"
+                text = st.text_area("Request text", value=default_text, key=f"ann_txt_{rule_id}", height=68)
+
+                from septic.report.annotated_pdf import suggest_page
+                suggestion = suggest_page(finding, page_classifications, _cached_blocks) if page_classifications else None
+
+                page = None
+                if suggestion and suggestion.page_num is not None and suggestion.confidence in ("high", "medium"):
+                    idx = suggestion.page_num - 1
+                    if 0 <= idx < page_count:
+                        st.caption(f"📍 Suggested: **{suggestion.display}** — {suggestion.reason}")
+                        page = st.selectbox("Confirm page", list(range(1, page_count + 1)), index=idx,
+                                           format_func=lambda p, s=suggestion: f"Page {p}" + (" ← suggested" if s and p == s.page_num else ""),
+                                           key=f"ann_pg_{rule_id}")
+                    else:
+                        st.warning("Suggested page out of range.")
+                        page = st.selectbox("Select page", list(range(1, page_count + 1)), index=None,
+                                           placeholder="Select a page", key=f"ann_pg_{rule_id}")
+                elif suggestion and suggestion.page_num is None:
+                    st.warning("⚠️ Page could not be identified. Please select.")
+                    if suggestion.candidates:
+                        st.caption("Candidates: " + ", ".join(f"Page {p}" for p, _, _ in suggestion.candidates[:4]))
+                    page = st.selectbox("Select page", list(range(1, page_count + 1)), index=None,
+                                       placeholder="Select a page", key=f"ann_pg_{rule_id}")
+                elif suggestion and suggestion.confidence == "low":
+                    st.warning(f"⚠️ {suggestion.reason}")
+                    low_idx = (suggestion.page_num or 1) - 1
+                    page = st.selectbox("Select page", list(range(1, page_count + 1)),
+                                       index=low_idx if 0 <= low_idx < page_count else None,
+                                       placeholder="Select a page" if not (0 <= low_idx < page_count) else None,
+                                       key=f"ann_pg_{rule_id}")
+                else:
+                    page = st.selectbox("Select page", list(range(1, page_count + 1)), index=None,
+                                       placeholder="Select a page", key=f"ann_pg_{rule_id}")
+
+                has_box = finding.get("fact_box") is not None
+                use_precise = st.checkbox("Precise highlight", value=True, key=f"ann_pr_{rule_id}") if has_box else False
+                if not has_box:
+                    st.caption("📌 Page-level callout")
+                selected.append((outcome, finding, text, page, use_precise))
+                st.markdown("---")
+
+        if selected:
+            unconfirmed = [s for s in selected if s[3] is None]
+            has_fail = any(o == "FAIL" for o, _, _, _, _ in selected)
+            title = "Annotated Correction Copy" if has_fail else "Annotated Information Request"
+            st.markdown(f"**{len(selected)} selected** — {title}")
+            if unconfirmed:
+                st.warning(f"{len(unconfirmed)} need page selection.")
+            if st.button("Generate annotated PDF", key="gen_ann", disabled=len(unconfirmed) > 0):
+                from septic.report.annotated_pdf import AnnotationRequest, generate_annotated_pdf, safe_filename
+                reqs = [AnnotationRequest(finding_id=f.get("rule_id",""), outcome=o, text=t,
+                        citation=f.get("citation",""), page=p,
+                        box=f.get("fact_box") if u else None, use_precise=u)
+                        for o, f, t, p, u in selected if p is not None]
+                try:
+                    result = generate_annotated_pdf(pdf_bytes, reqs)
+                    fn = safe_filename(subject.get("permit_number", subject.get("document", "permit")), has_fail)
+                    st.success(f"Generated {result.annotation_count} annotation(s).")
+                    st.download_button(f"⬇️ Download {title}", data=result.pdf_bytes,
+                                      file_name=fn, mime="application/pdf", key="dl_ann")
+                except Exception as exc:  # noqa: BLE001
+                    st.error(f"Error: {exc}")
+        else:
+            st.info("Select at least one finding to annotate.")
+
+
 def _chatbot_section(payload: dict) -> None:
     """Render the reviewer chatbot section below the report.
 
@@ -1695,6 +1828,9 @@ if uploaded is not None:
                                 mime="text/plain",
                                 key="draft_letter",
                             )
+
+                # Annotated correction PDF
+                _annotated_pdf_section(payload, data, subject)
 
             with viewer_col:
                 # The pane held two tabs, Packet and Location, and the Location
