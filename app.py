@@ -85,19 +85,20 @@ STYLE_TEMPLATE = """
   padding-left:$s_xl; padding-right:$s_xl;
 }
 
-html, body { font-family:$f_sans; }
+html, body { font-family:$f_sans; background:$c_surface_sunken; }
 
 /* Brand band */
 .brand-band {
-  background:$c_band; color:$c_on_band; padding:$s_lg $s_xl;
-  border-radius:$r_lg; margin-bottom:$s_lg;
+  background:$c_band; color:$c_on_band; padding:$s_md $s_xl;
+  border-radius:$r_lg; margin-bottom:$s_md; min-height:56px;
+  display:flex; align-items:center; gap:$s_xl;
 }
 .brand-band-title {
-  font-size:$t_section; font-weight:$w_bold; line-height:$lh_tight;
+  font-size:$t_subhead; font-weight:$w_bold; line-height:$lh_tight;
   letter-spacing:-0.015em;
 }
 .brand-band-sub {
-  font-size:$t_caption; color:$c_on_band_muted; margin-top:$s_xs;
+  font-size:$t_caption; color:$c_on_band_muted; display:none;
 }
 
 /* Verdict strip - pinned under the brand band */
@@ -142,7 +143,7 @@ html, body { font-family:$f_sans; }
 
 /* Findings section headers */
 .findings-section {
-  font-size:$t_section; font-weight:$w_bold; margin:$s_xl 0 $s_md;
+  font-size:$t_subhead; font-weight:$w_bold; margin:$s_xxl 0 $s_md;
   letter-spacing:-0.01em; color:var(--ink);
 }
 .findings-section-count {
@@ -158,7 +159,7 @@ html, body { font-family:$f_sans; }
 }
 .findings-table th.right { text-align:right; }
 .findings-table td {
-  padding:$s_md; border-bottom:$b_hairline solid var(--line); vertical-align:top;
+  padding:$s_sm $s_md; border-bottom:$b_hairline solid var(--line); vertical-align:top;
 }
 .findings-table td.right { text-align:right; }
 .findings-table tr:last-child td { border-bottom:none; }
@@ -220,7 +221,7 @@ html, body { font-family:$f_sans; }
 /* Map figure card */
 .map-card {
   border:$b_hairline solid var(--line); border-radius:$r_md;
-  padding:$s_lg $s_xl; background:$c_surface; margin:$s_xl 0;
+  padding:$s_xl; background:$c_surface; margin:$s_md 0 $s_xl;
 }
 .map-card-caption {
   font-size:$t_caption; color:var(--muted); margin-bottom:$s_md;
