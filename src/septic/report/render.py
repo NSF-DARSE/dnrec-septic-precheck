@@ -27,6 +27,11 @@ RULE = "=" * 78
 THIN = "-" * 78
 
 
+# Wide enough to read every label on the figure, small enough that the report
+# stays a document rather than a download.
+_EMBED_MAX_PIXELS = 1200
+
+
 def _data_uri(path) -> str | None:
     """Read an image off disk and return it as a data URI.
 
@@ -47,8 +52,34 @@ def _data_uri(path) -> str | None:
         p = (Path(__file__).resolve().parents[3] / "out" / p).resolve()
     if not p.is_file():
         return None
-    kind = "svg+xml" if p.suffix.lower() == ".svg" else p.suffix.lower().lstrip(".")
-    return f"data:image/{kind};base64,{base64.b64encode(p.read_bytes()).decode('ascii')}"
+    if p.suffix.lower() == ".svg":
+        return f"data:image/svg+xml;base64,{base64.b64encode(p.read_bytes()).decode('ascii')}"
+
+    # The figure is rendered at 1700 px square for print. Embedded as PNG that is
+    # 2.4 MB, which base64 inflates to 3.2 MB, and it was 99 percent of a report
+    # meant to be printed and emailed. At that weight a browser takes tens of
+    # seconds to paint it. Downscale and encode as JPEG for the embedded copy
+    # only: the figure on disk is untouched and stays the print master.
+    try:
+        import io
+
+        from PIL import Image
+
+        with Image.open(p) as img:
+            img = img.convert("RGB")
+            if max(img.size) > _EMBED_MAX_PIXELS:
+                scale = _EMBED_MAX_PIXELS / max(img.size)
+                img = img.resize(
+                    (round(img.width * scale), round(img.height * scale)),
+                    Image.LANCZOS,
+                )
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=86, optimize=True)
+        encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+        return f"data:image/jpeg;base64,{encoded}"
+    except Exception:  # noqa: BLE001 - a report without a map still renders
+        kind = p.suffix.lower().lstrip(".")
+        return f"data:image/{kind};base64,{base64.b64encode(p.read_bytes()).decode('ascii')}"
 
 # Foreground and background per verdict. The meanings are load bearing and a
 # reviewer reads the page by them: one colour for a deficiency found, one for
