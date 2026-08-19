@@ -1498,6 +1498,9 @@ if uploaded is not None:
                             st.markdown(map_html_right, unsafe_allow_html=True)
                         else:
                             st.caption("No coordinates available for this packet.")
+
+            # Reviewer chatbot — appears below the report
+            _chatbot_section(payload)
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"
