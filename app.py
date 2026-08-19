@@ -92,6 +92,16 @@ st.set_page_config(
 STREET_MAP_HEIGHT = 420
 LOCATION_PAIR_HEIGHT = STREET_MAP_HEIGHT + 150
 
+# How tall the assistant's thread may grow before it scrolls rather than pushing
+# the input off the screen.
+ASSISTANT_LOG_HEIGHT = 340
+
+# Streamlit draws its default chat avatars as Material Symbol ligatures, and the
+# font that resolves them is a Google Fonts request this console does not make.
+# Unresolved, they render as their own names: the words "face" and "smart_toy"
+# sat where the icons should have been. These need no font.
+CHAT_AVATARS = {"user": "👤", "assistant": "💬"}
+
 STYLE_TEMPLATE = """
 :root { --ink:$c_ink; --muted:$c_muted; --line:$c_line; }
 
@@ -414,6 +424,14 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
 .st-key-assistant_box .assistant-note {
   font-size:$t_caption; color:var(--muted); line-height:$lh_normal;
 }
+/* The thread scrolls inside a fixed height so the input stays put and the box
+   keeps the size it had when it was empty. The height itself comes from
+   st.container(height=...), which brings its own scroller. */
+.st-key-assistant_log {
+  border-top:$b_hairline solid var(--line); border-radius:0;
+  padding:$s_md $s_sm 0; margin-top:$s_xs;
+}
+.st-key-assistant_log [data-testid="stChatMessage"] { background:transparent; }
 
 /* Empty state and drop zone */
 .empty {
@@ -1482,6 +1500,7 @@ def _chatbot_section(payload: dict) -> None:
     if st.session_state.get("chatbot_payload_id") != payload_id:
         st.session_state["chatbot_messages"] = []
         st.session_state["chatbot_instance"] = None
+        st.session_state["chatbot_error"] = ""
         st.session_state["chatbot_payload_id"] = payload_id
 
     # Suggested questions
@@ -1499,6 +1518,7 @@ def _chatbot_section(payload: dict) -> None:
         if st.button("Clear chat", key="clear_chat"):
             st.session_state["chatbot_messages"] = []
             st.session_state["chatbot_instance"] = None
+            st.session_state["chatbot_error"] = ""
             st.rerun()
 
     # Show suggested questions as clickable buttons
@@ -1510,10 +1530,23 @@ def _chatbot_section(payload: dict) -> None:
             if st.button(question, key=f"suggest_{i}", use_container_width=True):
                 clicked_suggestion = question
 
-    # Display conversation history
-    for msg in st.session_state["chatbot_messages"]:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    # Display conversation history. Inside its own scroller: the thread grows
+    # without limit, and in a pane that is already one viewport tall an
+    # unbounded thread pushes the input off the bottom of the screen and takes
+    # the packet above it with it. The log scrolls, the box does not move.
+    if st.session_state["chatbot_messages"]:
+        with st.container(height=ASSISTANT_LOG_HEIGHT, key="assistant_log"):
+            for msg in st.session_state["chatbot_messages"]:
+                with st.chat_message(
+                    msg["role"], avatar=CHAT_AVATARS.get(msg["role"])
+                ):
+                    st.markdown(msg["content"])
+
+    # A failed question is reported under the thread rather than inside it, so
+    # nothing the model did not say is ever drawn as if it had.
+    error_msg = st.session_state.get("chatbot_error")
+    if error_msg:
+        st.warning(error_msg)
 
     # Chat input
     user_input = st.chat_input(
@@ -1523,58 +1556,45 @@ def _chatbot_section(payload: dict) -> None:
     # Use clicked suggestion if no direct input
     query = user_input or clicked_suggestion
     if query:
-        # Display user message
-        with st.chat_message("user"):
-            st.markdown(query)
+        # Nothing is drawn here. The exchange is stored and the script reruns,
+        # so the thread has exactly one rendering path: the scrolling log above.
+        # Drawing the new messages inline as well put them outside that log,
+        # below the input, where they grew the box without limit.
         st.session_state["chatbot_messages"].append(
             {"role": "user", "content": query}
         )
 
-        # Get or create chatbot instance
         with st.spinner("Thinking…"):
             try:
-                from septic.chatbot.client import (
-                    ChatbotError,
-                    ReviewerChatbot,
-                    create_chatbot,
-                )
+                from septic.chatbot.client import ChatbotError, create_chatbot
 
                 bot = st.session_state.get("chatbot_instance")
                 if bot is None:
                     bot = create_chatbot(payload)
                     if bot is None:
                         raise ChatbotError(
-                            "The AI assistant is not configured. "
+                            "The assistant is not configured. "
                             "Check that GOOGLE_CLOUD_PROJECT and "
-                            "GOOGLE_GENAI_USE_VERTEXAI environment variables "
-                            "are set."
+                            "GOOGLE_GENAI_USE_VERTEXAI are set."
                         )
-                    # Replay history into the bot
-                    for msg in st.session_state["chatbot_messages"][:-1]:
-                        if msg["role"] == "user":
-                            # Find the corresponding model response
-                            pass
                     st.session_state["chatbot_instance"] = bot
 
                 response = bot.send_message(query)
-
-                # Display assistant response
-                with st.chat_message("assistant"):
-                    st.markdown(response)
                 st.session_state["chatbot_messages"].append(
                     {"role": "assistant", "content": response}
                 )
+                st.session_state["chatbot_error"] = ""
 
             except Exception as exc:  # noqa: BLE001
-                error_msg = str(exc) if str(exc) else (
-                    "The AI assistant encountered an error. "
+                st.session_state["chatbot_error"] = str(exc) or (
+                    "The assistant could not answer. "
                     "The review results above are unaffected."
                 )
-                with st.chat_message("assistant"):
-                    st.warning(error_msg)
-                # Remove the user message that failed
+                # The question that failed does not stay in the thread.
                 if st.session_state["chatbot_messages"]:
                     st.session_state["chatbot_messages"].pop()
+
+        st.rerun()
 
 
 if st.session_state.get(PACKET) is None:
