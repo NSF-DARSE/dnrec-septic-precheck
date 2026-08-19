@@ -670,21 +670,24 @@ def verdict_strip(payload: dict, doc_name: str = "") -> str:
     # The headline needs one plain sentence under it saying what the numbers
     # add up to, because 15 of 15 beside DEFICIENCIES FOUND is not self
     # explanatory: it says everything was checked, not that everything is fine.
+    # The coverage figure earns its place only when something could not be read.
+    # On a packet where every requirement was checked, saying so is noise: the
+    # bar already shows it and the reviewer cares about what was found. Where
+    # checks did not run, the count is the whole point and stays.
     checked = failed + passed + not_applicable
+    noun = "requirement" if failed == 1 else "requirements"
     if unreadable and not checked:
-        summary = f"Nothing could be checked. {unreadable} of {total} unreadable."
-    elif failed:
-        summary = (
-            f"{failed} of {total} requirements not met. "
-            f"{checked} of {total} checked."
-        )
+        summary = f"Nothing on this packet could be checked."
     elif unreadable:
         summary = (
-            f"Nothing flagged among the {checked} checked. "
-            f"{unreadable} of {total} could not be read."
+            f"{failed} {noun} not met. {unreadable} of {total} could not be read."
+            if failed else
+            f"Nothing flagged. {unreadable} of {total} could not be read."
         )
+    elif failed:
+        summary = f"{failed} {noun} not met."
     else:
-        summary = f"Nothing flagged. All {total} requirements checked."
+        summary = "Nothing flagged against any requirement."
 
     subject = payload.get("subject") or {}
     pages = subject.get("pages", 0)
