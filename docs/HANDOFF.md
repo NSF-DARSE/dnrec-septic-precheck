@@ -178,6 +178,109 @@ Anthropic model, on either the foundation model path or the inference profile
 path, across all 16 candidates tried. Report composition needs a different
 provider or a different account. Retrieval is unaffected because embeddings work.
 
+## Reading the site plan as a drawing
+
+On branch `image-extraction`, commit fb5812b. Textract reads the words on a sheet
+but not where the tank is, and a setback is a distance between two drawn objects,
+so the sheet has to be read as a drawing as well as as text.
+
+Measured on `testdata/dnrec_53.png`, 885 by 1259 px, against the hand-verified
+centres in `testdata/truth/dnrec_53.json`.
+
+### The scale is sound
+
+0.9662 feet per pixel, from a graphic bar measured at 207 px for 200 ft. The bar
+is measured by projecting ink rather than trusting the model's box, and the
+written `1" = 100'` is deliberately unused because converting it needs a DPI a
+PNG does not carry.
+
+Confirmed three independent ways, so this number does not need re-deriving:
+
+- the checkered bar runs x 618 to 828 with zero at x 722, and the 50 ft tick
+  falls 51.5 px from zero, giving about 1.03 px per foot
+- the 100 ft well protection circle around the existing well has a radius of
+  about 106 px, about 102 ft
+- 0.9662 ft/px against the written ratio implies about 103.5 DPI, a plausible
+  export resolution
+
+### Symbol accuracy
+
+| symbol | truth | found | error |
+| --- | --- | --- | --- |
+| well, existing | (475, 961) | (454, 945) | 26.4 px, 25.5 ft |
+| septic_tank | (219, 678) | (218, 661) | 17.0 px, 16.5 ft |
+| distribution_box | (222, 663) | (222, 673) | 10.0 px, 9.7 ft |
+| well, proposed | (211, 755) | (208, 756) | 3.2 px, 3.1 ft |
+
+Mean 14.1 px, max 26.4 px, 0.92 percent of the diagonal, mean 13.7 ft. The
+earlier prompt generation scored a mean of 26.5 px on the same truth, so the
+re-crop refinement roughly halved the error, but it made the existing well worse,
+15.6 px to 26.4 px.
+
+Two defects behind those numbers, both still open.
+
+The existing well is found on the words of its label rather than on the small
+circle after "Site Eval." that is the symbol. Its box is correctly sized at 3 px,
+so a size check will not catch it; only the position is wrong. This is the whole
+of the residual up-and-left bias. With that symbol excluded the remaining
+residuals are (+3,-5), (-4,-2) and (-3,+1) px, which is at the limit of what can
+be read off a scan this size. An earlier generation did have a genuine global
+bias, mean (-11.25, -23.0) px with all four symbols leaning the same way.
+
+The septic tank and the dosing chamber come back carrying each other's names.
+Each detection is nearer the other's truth: 27.0 px as labelled against 10.3 px
+swapped. The tank's box is also about three times oversized, 19 by 35 px, which
+`real_world` reports as an 18 by 34 ft tank for a 1000 gallon vessel. Ground
+truth for the two objects is about 6 by 10 px for the tank and 6 by 6 px for the
+chamber, read off the leader lines at 22x: the upper leader comes from "5 X 5
+Dosing Chamber" and the lower from "1000 Gallon Septic Tank".
+
+### Distances are triage, not measurements
+
+`vision_measure --distances` reports pairwise separations and the rule engine is
+not fed from them. They inherit the coordinate error above: tank to proposed well
+reads 92.3 ft against a true 74.8 ft, a 17.5 ft error, about 23 percent of the
+value.
+
+### Changes made in this pass
+
+Two fixes, both on `image-extraction`.
+
+`scale.py` reported a bar box that was correct in x and wrong in y.
+`measure_bar_extent` grew a band to take its measurement and then returned only
+the horizontal extent, so the call site filled the vertical in from the model's
+estimate. On this sheet the ink is at y 354 to 380 while the model said 393 to
+405, so the rectangle drawn for a human to check the scale against was framing
+the tick labels and the words "GRAPHIC SCALE". The measured length was always
+right, which is the worst way for a measurement to be wrong: correct number,
+picture saying otherwise. The function now returns the band it measured. No scale
+value changes. Note that cached scale results persist the old geometry, so a
+sheet has to be re-read for the corrected box to appear.
+
+`vision_truth.py` could not see the label swap by construction. Matching is
+nearest neighbour within a label class, so a tank found on a chamber and a box
+found on the tank each match their own class and score as two ordinary errors.
+`--eval` now cross checks the assignment between classes and reports any pair
+that looks interchanged, requiring both detections to be individually nearer the
+other's truth plus a 2 px margin. Verified to stay quiet on correct detections,
+on a shared directional bias, and on two same-label wells that trade places,
+since nearest neighbour already matches those correctly and ids are positional.
+
+### One correction to Service access above
+
+The section above records that the role cannot call `InvokeModel` on any
+Anthropic model. That is no longer true for the inference profile
+`us.anthropic.claude-opus-4-6-v1`, which is what produced every cached result
+under `out/cache/vision-*`. The `anthropic.claude-sonnet-4-5` ids still return
+AccessDenied. This was not re-verified live in this pass; the evidence is the
+cached responses and it narrows open item 6 rather than closing it.
+
+### Standing caveat
+
+All of the above rests on one verified sheet. `vision_truth.py` exists because
+tuning against a single sample fits the sheet instead of fixing the method, so
+the well fix should wait for a second truth file. Everything here is n=1.
+
 ## Open items
 
 1. Parse the Permit Events grid. This is the actual return signal and it is not
@@ -198,3 +301,13 @@ provider or a different account. Retrieval is unaffected because embeddings work
 9. Cost for the 2014+ run is dominated by crawl time, not storage. About 396 GB
    is roughly 9 USD per month in S3 Standard, against 28,408 detail pages and
    about 45,000 document downloads.
+10. Verify a second sheet with `vision_truth.py --grid` and `--init`. Every
+    accuracy number in the drawing section is from one sheet, and no detector
+    change can be told apart from fitting that sheet until there is a second.
+11. The existing well is located on its label text rather than its symbol, 26.4
+    px. Likely fixable by snapping to the nearest small circular blob after
+    refinement, in the same spirit as the scale bar's ink projection, but not
+    worth attempting before item 10.
+12. The septic tank and dosing chamber come back with each other's labels, and
+    the tank's box is about three times oversized. `--eval` now reports the swap;
+    nothing corrects it yet.
