@@ -87,53 +87,136 @@ STYLE_TEMPLATE = """
 }
 
 html, body { font-family:$f_sans; background:$c_surface_sunken; }
+[data-testid="stApp"], [data-testid="stMain"] { background:$c_surface_sunken; }
+[data-testid="stHeader"] { background:transparent; }
 
 /* Brand band */
 .brand-band {
   background:$c_band; color:$c_on_band; padding:$s_md $s_xl;
-  border-radius:$r_lg; margin-bottom:$s_md; min-height:56px;
-  display:flex; align-items:center; gap:$s_xl;
+  border-radius:$r_lg; margin-bottom:$s_md; min-height:60px;
+  display:flex; align-items:center; gap:$s_lg;
 }
+/* A small mark so the band is an identity rather than a dark rectangle. Three
+   bars standing for the three outcomes, in the colours they carry everywhere
+   else, which is the one visual idea this product actually has. */
+.brand-mark {
+  display:flex; align-items:flex-end; gap:3px; height:26px; flex:none;
+}
+.brand-mark i {
+  display:block; width:5px; border-radius:2px;
+}
+.brand-mark i:nth-child(1) { height:16px; background:$c_deficiency_edge; }
+.brand-mark i:nth-child(2) { height:26px; background:$c_clear_edge; }
+.brand-mark i:nth-child(3) { height:10px; background:$c_unverified_edge; }
+.brand-band-text { display:flex; flex-direction:column; gap:1px; }
 .brand-band-title {
   font-size:$t_subhead; font-weight:$w_bold; line-height:$lh_tight;
-  letter-spacing:-0.015em;
+  letter-spacing:-0.02em;
 }
 .brand-band-sub {
-  font-size:$t_caption; color:$c_on_band_muted; display:none;
+  font-size:$t_micro; color:$c_on_band_muted; letter-spacing:0.08em;
+  text-transform:uppercase; font-weight:$w_medium;
 }
 
-/* Verdict strip - pinned under the brand band */
+/* Verdict strip, pinned under the brand band */
 .verdict-strip {
-  display:flex; align-items:center; gap:$s_xl; padding:$s_lg $s_xl;
-  background:$c_surface; border-bottom:$b_hairline solid var(--line);
+  display:flex; align-items:center; gap:$s_xxl; padding:$s_lg $s_xl;
+  background:$c_surface; border:$b_hairline solid var(--line);
+  border-radius:$r_lg; margin-bottom:$s_lg;
   position:sticky; top:0; z-index:100; flex-wrap:wrap;
 }
+.verdict-strip-main { display:flex; flex-direction:column; gap:2px; min-width:0; }
 .verdict-strip-headline {
-  font-size:clamp(22px, 2.5vw, $t_verdict); font-weight:$w_bold;
-  line-height:$lh_tight; letter-spacing:-0.02em; white-space:nowrap;
+  font-size:clamp(24px, 2.6vw, $t_verdict); font-weight:$w_bold;
+  line-height:1.05; letter-spacing:-0.03em; white-space:nowrap;
 }
-.verdict-strip-bar {
-  flex:0 0 200px; display:flex; flex-direction:column; gap:$s_xs;
+.verdict-strip-summary {
+  font-size:$t_body; color:var(--ink); line-height:$lh_normal;
+}
+.verdict-strip-metrics {
+  flex:1 1 260px; display:flex; flex-direction:column; gap:$s_sm;
+  min-width:220px;
 }
 .verdict-strip-counts {
-  font-size:$t_caption; color:var(--muted); white-space:nowrap;
+  display:flex; flex-wrap:wrap; gap:$s_md;
+  font-size:$t_caption; color:var(--muted);
 }
+.verdict-strip-counts .count { white-space:nowrap; }
 .verdict-strip-counts .dot {
   display:inline-block; width:8px; height:8px; border-radius:50%;
-  margin-right:3px; vertical-align:middle;
+  margin-right:5px; vertical-align:middle;
 }
 .verdict-strip-meta {
   font-size:$t_caption; color:var(--muted); white-space:nowrap;
+  margin-left:auto; align-self:flex-start;
 }
 .verdict-strip-actions {
   margin-left:auto; display:flex; gap:$s_md; align-items:center;
 }
-/* Segmented bar inside strip */
+/* Outcome bar inside the strip */
 .seg-bar {
-  width:100%; height:${s_md}; border-radius:$r_sm; overflow:hidden;
+  width:100%; height:10px; border-radius:$r_sm; overflow:hidden;
   display:flex; background:var(--line);
 }
 .seg-bar-segment { height:100%; }
+
+/* Loading skeleton */
+.skeleton { padding:$s_lg 0; }
+.sk-strip {
+  border:$b_hairline solid var(--line); border-radius:$r_lg;
+  padding:$s_lg $s_xl; background:$c_surface; margin-bottom:$s_lg;
+}
+.sk-note {
+  font-size:$t_caption; color:var(--muted); margin-bottom:$s_lg;
+}
+.sk-row { margin-bottom:$s_md; }
+.sk-bar {
+  height:12px; border-radius:$r_sm;
+  background:linear-gradient(90deg, $c_surface_sunken 25%, var(--line) 37%,
+    $c_surface_sunken 63%);
+  background-size:400% 100%;
+  animation:sk-shimmer 1.4s ease-in-out infinite;
+}
+.sk-headline { height:30px; width:44%; margin-bottom:$s_md; }
+.sk-summary { height:14px; width:66%; }
+@keyframes sk-shimmer {
+  0% { background-position:100% 50%; }
+  100% { background-position:0 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk-bar { animation:none; }
+}
+
+
+/* Section identity. Each group of findings carries the colour it means. */
+.findings-section { margin-bottom:$s_xxl; }
+.findings-section h2, .findings-section h3 { display:flex; align-items:center; gap:$s_sm; }
+.section-head {
+  display:flex; align-items:baseline; gap:$s_sm;
+  padding:$s_sm $s_md; border-radius:$r_md $r_md 0 0;
+  border-left:4px solid var(--line); background:$c_surface_sunken;
+  margin-bottom:0;
+}
+.section-head.fail { border-left-color:$c_deficiency_edge; background:$c_deficiency_bg; }
+.section-head.pass { border-left-color:$c_clear_edge; background:$c_clear_bg; }
+.section-head.unread { border-left-color:$c_unverified_edge; background:$c_unverified_bg; }
+.section-head.na { border-left-color:$c_out_of_scope_edge; }
+
+/* Cards read as cards against the tinted ground. */
+.findings-table {
+  background:$c_surface; border:$b_hairline solid var(--line);
+  border-radius:$r_md; overflow:hidden;
+}
+.findings-table thead th {
+  background:$c_surface_sunken; border-bottom:$b_hairline solid var(--line);
+}
+.verdict-strip { box-shadow:0 1px 2px rgba(17,24,39,0.04); }
+
+/* The verdict strip takes a tint from the verdict itself, so the top of the
+   screen is not the same neutral card whatever the answer is. */
+.verdict-strip.v-fail { border-left:5px solid $c_deficiency_edge; }
+.verdict-strip.v-pass { border-left:5px solid $c_clear_edge; }
+.verdict-strip.v-unknown { border-left:5px solid $c_unverified_edge; }
 
 /* Provenance line */
 .provenance {
@@ -158,6 +241,7 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
   border-bottom:$b_hairline solid var(--line); white-space:nowrap;
 }
 .findings-table th.right { text-align:right; }
+.findings-table td.value { text-align:left; vertical-align:top; }
 .findings-table td {
   padding:$s_sm $s_md; border-bottom:$b_hairline solid var(--line); vertical-align:top;
 }
@@ -179,11 +263,12 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
 }
 .ft-value {
   font-family:$f_mono; font-size:$t_body; font-weight:$w_bold;
-  font-variant-numeric:tabular-nums;
-  overflow-wrap:anywhere; hyphens:none;
+  font-variant-numeric:tabular-nums; display:block;
+  overflow-wrap:anywhere; hyphens:none; text-align:left;
 }
 .ft-threshold {
-  font-family:$f_mono; font-size:$t_caption; color:var(--muted);
+  font-family:$f_sans; font-size:$t_caption; color:var(--muted);
+  display:block; margin-top:1px; text-align:left;
   overflow-wrap:anywhere;
 }
 .ft-citation-chip {
@@ -505,82 +590,121 @@ def brand_band() -> str:
     """The product identity band at the top of the page."""
     return (
         "<div class='brand-band'>"
+        "<div class='brand-mark'><i></i><i></i><i></i></div>"
+        "<div class='brand-band-text'>"
         "<div class='brand-band-title'>Septic permit application review</div>"
-        "<div class='brand-band-sub'>A first pass over an application packet. "
-        "Flags deficiencies and puts the regulation citation next to each one. "
-        "The reviewer decides.</div>"
+        "<div class='brand-band-sub'>Delaware on-site wastewater regulations, 2014</div>"
+        "</div>"
+        "</div>"
+    )
+
+
+def loading_skeleton(doc_name: str = "") -> str:
+    """The shape of the result, shown while the review runs."""
+    rows = "".join(
+        f"<div class='sk-row'><div class='sk-bar' style='width:{w}%'></div></div>"
+        for w in (86, 72, 90, 64)
+    )
+    return (
+        "<div class='skeleton'>"
+        "<div class='sk-strip'>"
+        "<div class='sk-bar sk-headline'></div>"
+        "<div class='sk-bar sk-summary'></div>"
+        "</div>"
+        f"<div class='sk-note'>Reading {html_lib.escape(doc_name)} and applying "
+        "the 15 requirements</div>"
+        f"<div class='sk-rows'>{rows}</div>"
         "</div>"
     )
 
 
 def verdict_strip(payload: dict, doc_name: str = "") -> str:
-    """A compact horizontal strip: verdict, bar, counts, actions."""
+    """Verdict, an outcome bar, and the counts that explain it.
+
+    The bar used to colour by coverage alone, so a packet with three failures
+    showed a full green bar beside the word DEFICIENCIES. Green read as "all
+    good" while the table below said otherwise. It now segments by outcome, so
+    failures are visible in the bar itself and the colours mean the same thing
+    they mean on every row: red failed, green passed, grey did not apply, amber
+    could not be read.
+    """
     coverage = payload.get("coverage") or {}
     headline = payload.get("headline", "")
-    evaluated = coverage.get("evaluated", 0)
     not_applicable = coverage.get("not_applicable", 0)
     unreadable = coverage.get("unreadable", 0)
     total = coverage.get("total", 0)
 
-    fg, bg = BANNER_COLOR.get(
+    failed = len(payload.get("deficiencies") or [])
+    passed = len(payload.get("satisfied") or [])
+
+    fg, _bg = BANNER_COLOR.get(
         headline, (TOKENS["colour"]["ink"], TOKENS["colour"]["surface_sunken"])
     )
 
-    # Segmented bar
+    segments = [
+        (failed, TOKENS["colour"]["deficiency_edge"], "failed"),
+        (passed, TOKENS["colour"]["clear_edge"], "passed"),
+        (not_applicable, TOKENS["colour"]["out_of_scope_edge"], "not applicable"),
+        (unreadable, TOKENS["colour"]["unverified_edge"], "could not be read"),
+    ]
+
     seg_parts = []
-    if total > 0:
-        if evaluated:
-            pct = evaluated / total * 100
+    count_parts = []
+    for count, colour, label in segments:
+        if not count:
+            continue
+        if total > 0:
             seg_parts.append(
-                f"<div class='seg-bar-segment' style='width:{pct:.1f}%;"
-                f"background:{TOKENS['colour']['clear_edge']}'></div>"
+                f"<div class='seg-bar-segment' title='{count} {label}' "
+                f"style='width:{count / total * 100:.1f}%;"
+                f"background:{colour}'></div>"
             )
-        if not_applicable:
-            pct = not_applicable / total * 100
-            seg_parts.append(
-                f"<div class='seg-bar-segment' style='width:{pct:.1f}%;"
-                f"background:{TOKENS['colour']['out_of_scope_edge']}'></div>"
-            )
-        if unreadable:
-            pct = unreadable / total * 100
-            seg_parts.append(
-                f"<div class='seg-bar-segment' style='width:{pct:.1f}%;"
-                f"background:{TOKENS['colour']['unverified_edge']}'></div>"
-            )
+        count_parts.append(
+            f"<span class='count'><span class='dot' style='background:{colour}'>"
+            f"</span><b>{count}</b> {label}</span>"
+        )
 
     seg_bar = f"<div class='seg-bar'>{''.join(seg_parts)}</div>"
+    counts_html = "".join(count_parts)
 
-    # Counts as inline text with coloured dots
-    count_parts = []
-    count_parts.append(
-        f"<span><span class='dot' style='background:"
-        f"{TOKENS['colour']['clear_edge']}' title='Ran'></span>"
-        f"{evaluated} ran</span>"
-    )
-    if not_applicable:
-        count_parts.append(
-            f"<span><span class='dot' style='background:"
-            f"{TOKENS['colour']['out_of_scope_edge']}' title='Not applicable'>"
-            f"</span>{not_applicable} n/a</span>"
+    # The headline needs one plain sentence under it saying what the numbers
+    # add up to, because 15 of 15 beside DEFICIENCIES FOUND is not self
+    # explanatory: it says everything was checked, not that everything is fine.
+    checked = failed + passed + not_applicable
+    if unreadable and not checked:
+        summary = f"Nothing could be checked. {unreadable} of {total} unreadable."
+    elif failed:
+        summary = (
+            f"{failed} of {total} requirements not met. "
+            f"{checked} of {total} checked."
         )
-    if unreadable:
-        count_parts.append(
-            f"<span><span class='dot' style='background:"
-            f"{TOKENS['colour']['unverified_edge']}' title='Could not be read'>"
-            f"</span>{unreadable} unread</span>"
+    elif unreadable:
+        summary = (
+            f"Nothing flagged among the {checked} checked. "
+            f"{unreadable} of {total} could not be read."
         )
-
-    counts_html = " &middot; ".join(count_parts)
+    else:
+        summary = f"Nothing flagged. All {total} requirements checked."
 
     subject = payload.get("subject") or {}
     pages = subject.get("pages", 0)
     meta = f"{html_lib.escape(doc_name)} &middot; {pages} pages" if doc_name else ""
 
+    tint = {
+        "DEFICIENCIES FOUND": "v-fail",
+        "NO DEFICIENCIES FOUND": "v-pass",
+    }.get(headline, "v-unknown")
+
     return (
-        "<div class='verdict-strip'>"
+        f"<div class='verdict-strip {tint}'>"
+        "<div class='verdict-strip-main'>"
         f"<div class='verdict-strip-headline' style='color:{fg}'>{headline}</div>"
-        f"<div class='verdict-strip-bar'>{seg_bar}</div>"
+        f"<div class='verdict-strip-summary'>{html_lib.escape(summary)}</div>"
+        "</div>"
+        "<div class='verdict-strip-metrics'>"
+        f"{seg_bar}"
         f"<div class='verdict-strip-counts'>{counts_html}</div>"
+        "</div>"
         f"<div class='verdict-strip-meta'>{meta}</div>"
         "</div>"
     )
@@ -755,7 +879,7 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
             f"<div class='ft-section'>{section}</div></td>"
             f"<td><div class='ft-requirement'>{req_text}</div>"
             f"{reason_html}{quote_html}</td>"
-            f"<td class='right'>{value_html}</td>"
+            f"<td class='value'>{value_html}</td>"
             f"<td>{citation_html}</td>"
             f"<td>{_status_pill(f)}</td>"
             f"</tr>"
@@ -771,7 +895,7 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
         "<col style='width:14%'>"
         "</colgroup>"
         "<tr>"
-        "<th>RULE</th><th>REQUIREMENT</th><th class='right'>VALUE</th>"
+        "<th>RULE</th><th>REQUIREMENT</th><th>VALUE</th>"
         "<th>CITATION</th><th>STATUS</th></tr>"
         + "".join(rows)
         + "</table>"
@@ -983,7 +1107,7 @@ def render_findings(payload: dict) -> None:
 
     if deficiencies:
         st.markdown(
-            f"<div class='findings-section'>Deficiencies found "
+            f"<div class='findings-section section-head fail'>Deficiencies found "
             f"<span class='findings-section-count'>({len(deficiencies)})</span></div>",
             unsafe_allow_html=True,
         )
@@ -991,7 +1115,7 @@ def render_findings(payload: dict) -> None:
 
     if unresolved:
         st.markdown(
-            f"<div class='findings-section'>Could not be evaluated "
+            f"<div class='findings-section section-head unread'>Could not be evaluated "
             f"<span class='findings-section-count'>({len(unresolved)})</span></div>",
             unsafe_allow_html=True,
         )
@@ -1003,7 +1127,7 @@ def render_findings(payload: dict) -> None:
 
     if satisfied:
         st.markdown(
-            f"<div class='findings-section'>Checks that passed "
+            f"<div class='findings-section section-head pass'>Checks that passed "
             f"<span class='findings-section-count'>({len(satisfied)})</span></div>",
             unsafe_allow_html=True,
         )
@@ -1011,7 +1135,7 @@ def render_findings(payload: dict) -> None:
 
     if not_applicable:
         st.markdown(
-            f"<div class='findings-section'>Does not apply to this system "
+            f"<div class='findings-section section-head na'>Does not apply to this system "
             f"<span class='findings-section-count'>({len(not_applicable)})</span></div>",
             unsafe_allow_html=True,
         )
@@ -1176,21 +1300,17 @@ if uploaded is not None:
         target = uploads / uploaded.name
         target.write_bytes(data)
         started = time.perf_counter()
-        with st.spinner("Reading the packet and applying the rules"):
-            payload = review_from_cache(str(target))
+        # A review takes about five seconds on a real packet and the default
+        # spinner is a small mark in a large empty page, which reads as frozen
+        # on a projector. Hold the shape of the result instead, so the screen
+        # shows the layout filling in rather than nothing happening.
+        skeleton = st.empty()
+        skeleton.markdown(loading_skeleton(uploaded.name), unsafe_allow_html=True)
+        payload = review_from_cache(str(target))
+        skeleton.empty()
         elapsed = time.perf_counter() - started
         if payload:
             subject = payload.get("subject") or {}
-            # Provenance line - whole seconds, or drop it
-            elapsed_str = f"{int(elapsed)} s" if elapsed >= 1.0 else None
-            time_part = f" &nbsp;|&nbsp; reviewed in {elapsed_str}" if elapsed_str else ""
-            st.markdown(
-                f"<div class='provenance'><b>{subject.get('document', '')}</b>"
-                f" &nbsp;|&nbsp; {subject.get('pages', 0)} pages"
-                f"{time_part}</div>",
-                unsafe_allow_html=True,
-            )
-
             # Verdict strip with segmented bar
             st.markdown(
                 verdict_strip(payload, subject.get("document", "")),

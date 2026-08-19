@@ -36,6 +36,7 @@ PACKETS = {
         "applicant": "Robert Marsh",
         "address": "456 Cedar Creek Road, Milford, DE 19963",
         "parcel": "00-000.00-001",
+        "base_pdf": "permit_281364_60839580.pdf",
         "latitude": 38.9108,
         "longitude": -75.4277,
         # Coordinates near Milford, Delaware (Kent County)
@@ -76,6 +77,7 @@ PACKETS = {
         "applicant": "Sarah Whitfield",
         "address": "221 Magnolia Lane, Georgetown, DE 19947",
         "parcel": "00-000.00-002",
+        "base_pdf": "permit_282863_60847038.pdf",
         "latitude": 38.6903,
         "longitude": -75.3877,
         # Coordinates near Georgetown, Delaware (Sussex County)
@@ -112,6 +114,7 @@ PACKETS = {
         "applicant": "Name illegible",
         "address": "Address not readable",
         "parcel": "00-000.00-003",
+        "base_pdf": "permit_282133_60843649.pdf",
         "latitude": 39.1582,
         "longitude": -75.5244,
         # Coordinates near Dover, Delaware
@@ -154,14 +157,15 @@ def build_pdf(spec: dict) -> bytes:
     ]
 
     facts = spec["facts"]
-    # The unreadable packet must not show a legible coordinate pair while every
-    # other field reads as illegible. The tool reports that it could read
-    # nothing, and the document has to agree with that.
-    if facts:
-        lines += [
-            f"Latitude:                {spec['latitude']}",
-            f"Longitude:               {spec['longitude']}",
-        ]
+    # Every packet states its coordinates, including the unreadable one. A
+    # coordinate stamp is metadata a submission carries whether or not the form
+    # itself can be read, and the location screening is worth showing on all
+    # three. It contributes no fact to any rule, so the unreadable packet still
+    # returns CANNOT VERIFY.
+    lines += [
+        f"Latitude:                {spec['latitude']}",
+        f"Longitude:               {spec['longitude']}",
+    ]
     if facts:
         lines += [
             f"System Type:             {facts.get('system_type', 'N/A').title()}",
@@ -247,28 +251,51 @@ def _raw_pdf(spec: dict) -> bytes:
     return (body + xref).encode("latin-1")
 
 
-def build_textract_blocks(spec: dict) -> list[dict]:
+def build_textract_blocks(spec: dict, page_offset: int = 0) -> list[dict]:
     """Synthetic Textract blocks with key-value pairs for the facts."""
     blocks = []
     block_id = 100
     facts = spec["facts"]
 
     # PAGE blocks
-    blocks.append({
-        "Id": "page1",
-        "BlockType": "PAGE",
-        "Geometry": {"BoundingBox": {"Left": 0, "Top": 0, "Width": 1, "Height": 1}},
-        "Page": 1,
-    })
-    blocks.append({
-        "Id": "page2",
-        "BlockType": "PAGE",
-        "Geometry": {"BoundingBox": {"Left": 0, "Top": 0, "Width": 1, "Height": 1}},
-        "Page": 2,
-    })
+    # One PAGE block per page of the merged document, so the page count the
+    # console reports matches the packet the viewer is showing. Reporting two
+    # pages beside a viewer reading page 1 of 15 is the kind of small
+    # contradiction a reviewer notices immediately.
+    for number in range(1, page_offset + 3):
+        blocks.append({
+            "Id": f"page{number}",
+            "BlockType": "PAGE",
+            "Geometry": {
+                "BoundingBox": {"Left": 0, "Top": 0, "Width": 1, "Height": 1}
+            },
+            "Page": number,
+        })
 
     if not facts:
-        # Packet C: intentionally no readable blocks
+        # Packet C carries no readable field, but the coordinate stamp is
+        # metadata rather than a form field and the location screening is worth
+        # showing on every packet. It contributes no fact to any rule, so the
+        # verdict is still CANNOT VERIFY on 0 of 15.
+        for index, text in enumerate((
+            f"Latitude: {spec['lat']}",
+            f"Longitude: {spec['lon']}",
+        )):
+            blocks.append({
+                "Id": f"coord{index}",
+                "BlockType": "LINE",
+                "Text": text,
+                "Confidence": 99.0,
+                "Page": page_offset + 1,
+                "Geometry": {
+                    "BoundingBox": {
+                        "Left": 0.1,
+                        "Top": 0.1 + index / 100,
+                        "Width": 0.6,
+                        "Height": 0.02,
+                    }
+                },
+            })
         return blocks
 
     # Key-value pairs for numeric and text fields
@@ -312,7 +339,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "KEY_VALUE_SET",
             "EntityTypes": ["KEY"],
             "Confidence": 99.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": geometry,
             "Relationships": [
                 {"Type": "CHILD", "Ids": [key_word_id]},
@@ -324,7 +351,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "WORD",
             "Text": label,
             "Confidence": 99.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": geometry,
         })
         blocks.append({
@@ -332,7 +359,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "KEY_VALUE_SET",
             "EntityTypes": ["VALUE"],
             "Confidence": 99.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": geometry,
             "Relationships": [{"Type": "CHILD", "Ids": [value_word_id]}],
         })
@@ -341,7 +368,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "WORD",
             "Text": str(value),
             "Confidence": 99.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": geometry,
         })
         block_id += 1
@@ -389,7 +416,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "KEY_VALUE_SET",
             "EntityTypes": ["KEY"],
             "Confidence": 95.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": geometry,
             "Relationships": [
                 {"Type": "CHILD", "Ids": [f"ckw{block_id}"]},
@@ -401,7 +428,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "WORD",
             "Text": label,
             "Confidence": 95.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": geometry,
         })
         blocks.append({
@@ -409,7 +436,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "KEY_VALUE_SET",
             "EntityTypes": ["VALUE"],
             "Confidence": 95.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": geometry,
             "Relationships": [{"Type": "CHILD", "Ids": [f"cs{block_id}"]}],
         })
@@ -418,7 +445,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "SELECTION_ELEMENT",
             "SelectionStatus": "SELECTED" if selected else "NOT_SELECTED",
             "Confidence": 95.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": geometry,
         })
         block_id += 1
@@ -443,7 +470,7 @@ def build_textract_blocks(spec: dict) -> list[dict]:
             "BlockType": "LINE",
             "Text": text,
             "Confidence": 99.0,
-            "Page": 1,
+            "Page": page_offset + 1,
             "Geometry": {
                 "BoundingBox": {
                     "Left": 0.1,
@@ -469,6 +496,37 @@ def build_permit_row(spec: dict) -> dict:
     }
 
 
+def merge_with_real_packet(spec: dict, summary_bytes: bytes) -> tuple[bytes, int]:
+    """Put the summary pages behind a real scanned permit.
+
+    The viewer should show a reviewer what a real application looks like, so the
+    demonstration packet is a genuine scanned permit with the summary appended at
+    the end. The facts still come only from the summary pages. Returns the merged
+    bytes and the number of pages that precede the summary, so the analysis can
+    report the page a value was actually read from.
+    """
+    import io
+
+    import pypdfium2 as pdfium
+
+    base_name = spec.get("base_pdf")
+    base_path = config.OUT_DIR / "examples" / base_name if base_name else None
+    if not base_path or not base_path.is_file():
+        return summary_bytes, 0
+
+    base = pdfium.PdfDocument(base_path.read_bytes())
+    summary = pdfium.PdfDocument(bytes(summary_bytes))
+    offset = len(base)
+
+    merged = pdfium.PdfDocument.new()
+    merged.import_pages(base, list(range(len(base))))
+    merged.import_pages(summary, list(range(len(summary))))
+
+    buf = io.BytesIO()
+    merged.save(buf)
+    return buf.getvalue(), offset
+
+
 def main():
     config.ensure_dirs()
     examples_dir = config.OUT_DIR / "examples"
@@ -489,6 +547,7 @@ def main():
 
         # Build the PDF
         pdf_bytes = build_pdf(spec)
+        pdf_bytes, page_offset = merge_with_real_packet(spec, pdf_bytes)
         pdf_path = examples_dir / spec["filename"]
         pdf_path.write_bytes(pdf_bytes)
         print(f"  Written {pdf_path} ({len(pdf_bytes)} bytes)")
@@ -497,13 +556,13 @@ def main():
         doc_hash = document_hash(pdf_bytes)
         print(f"  Document hash: {doc_hash}")
 
-        blocks = build_textract_blocks(spec)
+        blocks = build_textract_blocks(spec, page_offset)
         cache_path = cache_dir / f"sha256-{doc_hash}.json"
         payload = {
             "s3_key": f"synthetic/{spec['filename']}",
             "job_id": None,
             "status": "SUCCEEDED",
-            "pages": 2,
+            "pages": page_offset + 2,
             "blocks": blocks,
             "document_hash": doc_hash,
         }
