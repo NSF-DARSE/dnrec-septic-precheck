@@ -53,11 +53,6 @@ def render_letter(composed) -> str:
     lines: list[str] = []
     add = lines.append
 
-    # Notices (synthetic packet label)
-    for notice in c.get("notices") or []:
-        add(notice)
-        add("")
-
     add(DRAFT_HEADER)
     add("-" * 72)
     add("")
@@ -101,7 +96,12 @@ def render_letter(composed) -> str:
         if observed is not None:
             add(f"   Value found: {observed} {units}".strip())
             if threshold is not None:
-                add(f"   Required:    {f.get('reason', '')}")
+                # The numbered heading above already states the requirement as a
+                # sentence, including its direction. Repeating the reason string
+                # here printed the comparison operator, and this letter goes to a
+                # member of the public. The bare threshold is what a reader wants
+                # beside the value found.
+                add(f"   Required:    {threshold} {units}".rstrip())
         add(f"   Citation:    {citation}")
 
         quote = f.get("quote")

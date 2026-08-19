@@ -202,7 +202,11 @@ class TestTheConsoleDoesNotBreakTheShell:
         """
         keys = re.findall(r'st\.container\(key="([^"]+)"\)', app_source)
         assert keys, "the drop target is not in a keyed container"
-        for key in keys:
+        # Only the dropzone container needs a file uploader style rule.
+        # Other keyed containers (like the viewer pane) serve layout purposes.
+        dropzone_keys = [k for k in keys if "dropzone" in k]
+        assert dropzone_keys, "no dropzone container found"
+        for key in dropzone_keys:
             assert f'.st-key-{key} [data-testid="stFileUploaderDropzone"]' in app_css
         assert "dashed" in app_css
 

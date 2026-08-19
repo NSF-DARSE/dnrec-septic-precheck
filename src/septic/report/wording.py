@@ -254,3 +254,52 @@ def unread_note(finding: dict) -> str:
         f"not run. Read it off the packet and compare it{against}."
         + (f" Recorded as: {reason}." if reason else "")
     )
+
+
+# Comparison operators as words. The reason string is built for the engine and
+# reads like one: "requires >= 100 feet, found 60 feet" and "200 feet >= 100
+# feet". Neither belongs on a reviewer's screen or in a document forwarded to an
+# applicant, and this has now been missed on three separate surfaces, so both the
+# console and the printable report route every reason through here.
+_OPERATOR_WORDS = (
+    (">=", "at least"),
+    ("<=", "at most"),
+    ("==", "equal to"),
+    (">", "more than"),
+    ("<", "less than"),
+)
+
+
+def reason_sentence(finding: dict) -> str:
+    """The engine's reason, with comparison operators written as words.
+
+    Two shapes occur. A failing or unread check reads "requires >= 100 feet,
+    found 60 feet", which becomes "requires at least 100 feet, found 60 feet"
+    and reads correctly as it stands. A passing check reads "200 feet >= 100
+    feet", where substituting alone would give "200 feet at least 100 feet", so
+    that shape is rewritten to name what was found and what was required.
+    """
+    reason = (finding or {}).get("reason") or ""
+    if not reason:
+        return ""
+
+    # A reason can also lead with the bare parameter, as in
+    # "site_evaluation_report is provided". PARAMETER_LOCATION knows what a
+    # reviewer calls each one.
+    for parameter in sorted(PARAMETER_LOCATION, key=len, reverse=True):
+        if parameter in reason:
+            reason = reason.replace(parameter, parameter_name(parameter))
+            break
+
+    for symbol, _word in _OPERATOR_WORDS:
+        if symbol not in reason:
+            continue
+        left, _, right = reason.partition(symbol)
+        left, right = left.strip(), right.strip()
+        word = dict(_OPERATOR_WORDS)[symbol]
+        if reason.startswith("requires"):
+            return f"{left} {word} {right}".replace("requires  ", "requires ")
+        # "200 feet >= 100 feet" reads as a bare comparison. Say it as a
+        # sentence instead, so a passing row explains itself.
+        return f"found {left}, requirement {word} {right}"
+    return reason

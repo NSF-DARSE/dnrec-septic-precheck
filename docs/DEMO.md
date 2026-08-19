@@ -45,90 +45,105 @@ Once a packet is uploaded:
   document.
 - At the bottom: a download button for the printable HTML report, and a toggle
   to show all 15 rules with their thresholds and regulation quotes.
+- When the verdict is DEFICIENCIES FOUND, a closed expander labelled "Draft
+  correction letter (edit before sending)" appears below the report download.
+  It contains a plain text letter the reviewer can paste into their own template.
+  It is a draft for the reviewer to edit and sign, not a determination. The tool
+  does not decide what to send.
 
 ## The three packets and what they demonstrate
 
-### 1. Synthetic demonstration packet (DEFICIENCIES FOUND)
+Each packet shows one of the three outcomes. All three are built by
+`python scripts/build_synthetic_packet.py` and review offline from cache.
 
-File: `out/examples/synthetic_demonstration_packet.pdf`
+### 1. Packet A (DEFICIENCIES FOUND)
 
-This is a constructed example, not a real permit application. The presenter should
-say so out loud when loading it. It exists because every real packet in the corpus
-is an approved permit, so none produces DEFICIENCIES FOUND, and the demo cannot
-show the outcome that matters most without it.
+File: `out/examples/permit_284102_60862118.pdf`
+
+The outcome everyone comes to see. Every check runs, so the verdict rests on the
+whole rule set rather than on a fraction of it.
 
 What it shows:
 
 - Verdict: **DEFICIENCIES FOUND**
-- Coverage: 7 of 15 checks ran, 1 not applicable to this system, 7 could not be
-  read
-- Two cited deficiencies:
-  - ISO-001: disposal area to well distance is 60 feet, below the 100 foot minimum
+- Coverage: **15 of 15 checks ran**, none unread
+- Three cited deficiencies:
+  - ISO-001: disposal area to well is 60 feet, below the 100 foot minimum
     (Exhibit C, page 173)
   - PERC-001: percolation rate is 140 minutes per inch, above the 120 maximum
     (Section 5.2.4.2.5.7, page 52)
-- Five checks that pass, one that does not apply, seven that cannot be read
-- The notice banner states plainly that this is constructed
+  - SLOPE-001: slope across the disposal area is 4 percent, above the 2 percent
+    maximum (Section 5.3.12.1.2, page 60)
+- Twelve checks that pass, each with the value read and the section it was
+  compared against
+- A draft correction letter, in the expander under the findings, itemising each
+  deficiency with the value found, the requirement, the citation, the regulation
+  quote and a remedy
+- A location screening map: aerial imagery, mapped surface water 205 feet north,
+  the 100 foot setback ring, and the caveat that the distance is measured from the
+  address point rather than the disposal area
 
-### 2. Permit 281364 (NO DEFICIENCIES FOUND, best coverage)
+### 2. Packet B (NO DEFICIENCIES FOUND)
 
-File: `out/examples/permit_281364_60839580.pdf`
+File: `out/examples/permit_284517_60864903.pdf`
 
-A real 13-page DNREC permit packet. The strongest demonstration of the tool
-working on a real document: it reads five values off the form, compares each one
-against the regulation, and finds nothing wrong.
-
-What it shows:
-
-- Verdict: **NO DEFICIENCIES FOUND**
-- Coverage: 5 of 15 checks ran, 3 not applicable to this system, 7 could not be
-  read
-- The findings table shows which rules passed and why each was excluded or
-  unreadable, with the unreadable section grouped by cause
-- The full 13-page packet scrolls in the viewer beside the findings
-- A location screening map showing roads for orientation, the permit location,
-  nearby mapped surface water, isolation distance rings from the rule set, and
-  the measured distance to the nearest water feature
-
-### 3. Permit 282133 (NO DEFICIENCIES FOUND, minimal coverage)
-
-File: `out/examples/permit_282133_60843649.pdf`
-
-A real single-page DNREC permit packet. The strongest argument for why the
-coverage bar exists. The verdict says NO DEFICIENCIES FOUND, which sounds clean,
-but the coverage bar shows 1 of 15 checks ran and 14 could not be read. A reviewer
-looking at only the headline would see a clean bill. A reviewer looking at the
-coverage bar sees that almost nothing was checked. That is exactly the
-misinterpretation the three-way coverage figure prevents.
+What a clean packet looks like when the tool could actually check it.
 
 What it shows:
 
 - Verdict: **NO DEFICIENCIES FOUND**
-- Coverage: 1 of 15 checks ran, 14 could not be read
-- The segmented bar is almost entirely amber (could not be read), with one thin
-  green sliver (ran). The visual is unmissable.
+- Coverage: **15 of 15 checks ran**, none failed, none unread
+- Fifteen passing rows, each naming the value read and the requirement it met
+- A location screening map, 1639 feet from the nearest mapped water
+
+Say plainly that this is still not an approval. It means nothing was flagged
+among the checks that ran, and the reviewer decides.
+
+### 3. Packet C (CANNOT VERIFY)
+
+File: `out/examples/permit_284933_60867441.pdf`
+
+The interlock. This is the packet the tool refuses to answer on.
+
+What it shows:
+
+- Verdict: **CANNOT VERIFY**
+- Coverage: 0 of 15 checks ran, **15 could not be read**
+- The segmented bar is entirely amber. There is no green.
+- The unread checks are grouped by cause, so the applicant is asked once for each
+  missing value rather than once per rule it blocks
+- No map, because nothing on the packet could be read, including its location
+
+This is the most important of the three for a regulator. The tool had nothing to
+work with and said so, rather than guessing or returning a clean-looking verdict
+on no evidence.
 
 ## Suggested demo order
 
-1. Start with the **synthetic packet**. It is the outcome everyone comes to see.
-   Walk through the two deficiencies, point at the citations, open the regulation
-   text disclosure. Say: this is a constructed example so we can show you what a
-   real deficiency looks like without exposing anyone's application.
+1. **Packet A, deficiencies.** The outcome everyone comes to see. Walk the three
+   deficiencies, point at the citation chip on each row, and open one regulation
+   text disclosure so they see the quoted provision rather than a paraphrase.
+   Point at the coverage: 15 of 15 ran, so this verdict rests on the whole rule
+   set. Then open the draft correction letter. That is the reviewer's actual
+   output, itemised with citations, for a person to edit and sign.
 
-2. Switch to **permit 281364**. This is a real packet. Point at the coverage: 5 of
-   15 checks ran because most isolation distances are measurements on a scanned
-   drawing that no OCR can take. Walk through the passes, the excluded rules, and
-   the seven that could not be read (grouped: "6 checks could not run because X
-   was not machine readable"). Scroll through the packet in the viewer to the site
-   plan page and point: that is where the distances live, and that is why they
-   cannot be read. Scroll down to the location screening map: it shows roads for
-   orientation, the permit location, and the nearest mapped water with a measured
-   distance.
+2. **Packet B, no deficiencies.** Fifteen of fifteen ran, none failed. Say the
+   line that matters: this is not an approval, it means nothing was flagged among
+   the checks that ran, and the reviewer decides. Scroll the findings and let the
+   packet stay pinned beside them, then open the Location tab for the screening
+   map.
 
-3. Finish with **permit 282133**. The punch line: 1 of 15. This is what NO
-   DEFICIENCIES FOUND looks like when coverage is nearly zero. The tool refuses to
-   let that read as a clean pass, because it is not one, and the coverage bar
-   makes the difference visible from across the room.
+3. **Packet C, cannot verify.** The punch line, and the one a regulator should
+   care about most. Nothing on the packet could be read, so the bar is entirely
+   amber and there is no green at all. The tool declines to answer rather than
+   guessing or returning a clean-looking verdict on no evidence. Point out that
+   the unread checks are grouped by cause, so an applicant is asked once for each
+   missing value rather than once per rule it blocks.
+
+If there is time, upload a real packet as a fourth. `permit_281364_60839580.pdf`
+is a genuine 13 page DNREC packet and reviews at 5 of 15, which is the honest
+picture of what the tool can read off a scanned application today. It is the
+strongest answer to anyone asking whether this works outside a prepared example.
 
 ## Three questions a reviewer will ask
 

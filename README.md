@@ -101,7 +101,9 @@ readable next to that number.
 not an approval, and it is not a statement about the checks that did not run.
 
 **DEFICIENCIES FOUND.** One or more requirements are not met, each itemised with
-the section and page it comes from.
+the section and page it comes from. A draft correction letter is offered for the
+reviewer to edit and sign. It is a draft, not a determination, and says so on its
+face. The tool does not decide what to send.
 
 **CANNOT VERIFY.** No check reached a decision. Either every value the rules need
 could not be read off the packet, or no rule has been confirmed by a person.
@@ -177,14 +179,16 @@ python -m septic graph build
 python -m septic review --pdf out/examples/permit_281364_60839580.pdf --offline
 ```
 
-To see the DEFICIENCIES FOUND outcome, review the synthetic demonstration packet.
-This is a constructed example with values that violate two rules, not a real permit
-application. It exists so the demo can show the outcome that matters most without
-needing a real deficient packet:
+Three constructed packets cover the three outcomes, one each. They exist because
+every real packet in the corpus is an approved permit, so none of them produces
+DEFICIENCIES FOUND, and because a real packet reaches a verdict on a fraction of
+the rule set while these exercise all fifteen:
 
 ```bash
 python scripts/build_synthetic_packet.py
-python -m septic review --pdf out/examples/synthetic_demonstration_packet.pdf --offline
+python -m septic review --pdf out/examples/permit_284102_60862118.pdf --offline  # deficiencies, 15 of 15
+python -m septic review --pdf out/examples/permit_284517_60864903.pdf --offline  # no deficiencies, 15 of 15
+python -m septic review --pdf out/examples/permit_284933_60867441.pdf --offline  # cannot verify, 0 of 15
 ```
 
 The reviewer console, which is what a reviewer would actually be handed:

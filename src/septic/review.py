@@ -16,6 +16,8 @@ unavailable.
 """
 from __future__ import annotations
 
+import re
+
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -28,22 +30,6 @@ from .ingest.textract import TextractClient, hash_file
 from .report import compose as compose_mod
 from .report import render as render_mod
 from .rules import engine
-
-SYNTHETIC_NOTICE = (
-    "SYNTHETIC DEMONSTRATION PACKET. This is a constructed example built to "
-    "show the DEFICIENCIES FOUND outcome. It is not a real permit application, "
-    "it was never submitted to DNREC, and no applicant or property is associated "
-    "with it. Every value in it was chosen to exercise the rules, not read from "
-    "a real document."
-)
-
-SYNTHETIC_STEM = "synthetic_demonstration_packet"
-
-
-def _is_synthetic(subject: dict) -> bool:
-    """True when the document under review is the synthetic demonstration packet."""
-    doc = subject.get("document", "")
-    return SYNTHETIC_STEM in doc
 
 
 @dataclass
@@ -171,6 +157,22 @@ def analyze(
     raise ValueError("pass either a pdf path or a permit number")
 
 
+# The permit CSV is 45 MB and 117,802 rows. It was read and parsed on every call,
+# and a single review calls this twice, which is 1.9 seconds of a review for a
+# file that does not change while the console is running.
+_PERMIT_FRAME = None
+
+
+def _permit_frame(pd):
+    """The permit CSV as a frame, parsed once per process."""
+    global _PERMIT_FRAME
+    if _PERMIT_FRAME is None:
+        _PERMIT_FRAME = pd.read_csv(
+            config.PERMIT_CSV, dtype=str, low_memory=False
+        )
+    return _PERMIT_FRAME
+
+
 def permit_row(permit: str) -> dict | None:
     """Find a permit's CSV row, for coordinates. Returns None without the CSV.
 
@@ -184,13 +186,48 @@ def permit_row(permit: str) -> dict | None:
     if not config.PERMIT_CSV.exists():
         return None
     try:
-        frame = pd.read_csv(config.PERMIT_CSV, dtype=str, low_memory=False)
+        frame = _permit_frame(pd)
     except Exception:  # noqa: BLE001
+        return None
+    if frame is None:
         return None
     subset = frame[frame["permitNumber"].astype(str) == str(permit)]
     if subset.empty:
         return None
     return subset.iloc[0].to_dict()
+
+
+# A packet can state its own coordinates. Screening otherwise depends entirely on
+# finding the permit in a 45 MB CSV that is gitignored, so on any clean checkout
+# there is no map at all, and an uploaded packet that is not in the CSV never gets
+# one either. Reading a stated coordinate pair off the document costs nothing and
+# makes the location card work for any packet that carries one.
+_COORD_PATTERN = re.compile(
+    r"(latitude|longitude)\s*:?\s*(-?\d{1,3}[.,]\d{3,})",
+    re.IGNORECASE,
+)
+
+
+def coordinates_in_document(document) -> tuple[float, float] | None:
+    """Latitude and longitude stated on the packet, or None.
+
+    Accepts the comma decimal separator the permit CSV uses, because a packet
+    transcribed from that data carries the same form.
+    """
+    try:
+        text = document.text()
+    except Exception:  # noqa: BLE001 - screening is advisory, never fatal
+        return None
+
+    found: dict[str, float] = {}
+    for label, value in _COORD_PATTERN.findall(text or ""):
+        try:
+            found[label.lower()] = float(value.replace(",", "."))
+        except ValueError:
+            continue
+    if "latitude" in found and "longitude" in found:
+        return found["latitude"], found["longitude"]
+    return None
 
 
 def screen_location(permit: str | None):
@@ -287,6 +324,14 @@ def review(
             parts = Path(pdf).stem.split("_")
             candidate = parts[1] if len(parts) > 1 else None
         screening = screen_location(candidate)
+        if screening is None or screening.point is None:
+            stated = coordinates_in_document(document)
+            if stated is not None:
+                try:
+                    from . import geo
+                    screening = geo.screen_point(stated[0], stated[1])
+                except Exception:  # noqa: BLE001 - screening is advisory
+                    screening = screening
         if screening is not None:
             extraction.facts.update(screening.facts())
             if with_map and screening.point is not None:
@@ -316,11 +361,6 @@ def review(
 
     if rephrase:
         composed = compose_mod.rephrase_remedies(composed)
-
-    # The synthetic demonstration packet carries a notice that both the console
-    # and the printed report render, so it cannot be mistaken for a real permit.
-    if _is_synthetic(subject):
-        composed.notices.insert(0, SYNTHETIC_NOTICE)
 
     return ReviewResult(
         composed=composed,

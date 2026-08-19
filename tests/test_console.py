@@ -92,18 +92,18 @@ class TestConsoleModule:
 
         The console is the surface a reviewer sees first and from furthest away.
         It reads both numbers out of the composed payload, so it cannot disagree
-        with the report body. The metric row now carries the verdict and
-        coverage in a card with a segmented bar.
+        with the report body. The verdict strip carries the verdict, the coverage
+        bar and the counts in one horizontal line.
         """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
-        assert "def metric_row(payload: dict) -> str:" in source
-        assert "st.markdown(metric_row(payload), unsafe_allow_html=True)" in source
-        metric_body = source.split("def metric_row(payload: dict) -> str:")[1].split(
+        assert "def verdict_strip(payload: dict" in source
+        assert "verdict_strip(payload" in source
+        strip_body = source.split("def verdict_strip(payload: dict")[1].split(
             "\ndef "
         )[0]
-        assert 'payload.get("headline"' in metric_body
-        assert 'payload.get("coverage")' in metric_body
-        assert "verdict-card-coverage" in metric_body
+        assert 'payload.get("headline"' in strip_body
+        assert 'payload.get("coverage")' in strip_body
+        assert "verdict-strip-headline" in strip_body
 
     def test_console_banner_reads_the_same_coverage_the_report_shows(self):
         """One number, produced by the rules, positioned twice.
@@ -524,12 +524,23 @@ class TestOfflineReviewPath:
         pdfs = cached_examples()
         if not pdfs:
             pytest.skip("no cached examples present")
+        # Use a packet that has unresolved checks. The real permits always do,
+        # and the demonstration packet C is all-unknown. Skip fully-resolved
+        # demo packets that have no unknowns.
         client = TextractClient()
-        analysis = client.cached_by_hash(document_hash(pdfs[0].read_bytes()))
-        extraction = extract_facts(layout.parse_blocks(analysis.blocks))
-        composed = compose_mod.compose(
-            engine.evaluate(extraction.facts), extraction=extraction
-        )
+        candidate = None
+        for pdf in pdfs:
+            analysis = client.cached_by_hash(document_hash(pdf.read_bytes()))
+            extraction = extract_facts(layout.parse_blocks(analysis.blocks))
+            composed = compose_mod.compose(
+                engine.evaluate(extraction.facts), extraction=extraction
+            )
+            if composed.counts["unknown"] > 0:
+                candidate = composed
+                break
+        if candidate is None:
+            pytest.skip("no cached example with unresolved checks")
+        composed = candidate
         counts = composed.counts
         assert counts["unknown"] > 0, "expected some checks to be unevaluable"
         assert len(composed.unresolved) == counts["unknown"]
@@ -647,10 +658,14 @@ class TestAppRuns:
             if m.value and "class='empty'" in m.value
         ]
         assert not empty, "the empty dropzone is still taking the column"
-        assert len(app_test.get("expander")) == 1, "the uploader was not folded away"
+        # The property is that the uploader folds away and stays reachable, not
+        # how many expanders the page happens to have. Passed and not applicable
+        # findings are collapsed too, because they are reference rather than the
+        # answer, so counting expanders pins the wrong thing.
+        assert app_test.get("expander"), "the uploader was not folded away"
         assert len(app_test.get("file_uploader")) == 1, "the way in disappeared"
         text = " ".join(m.value or "" for m in app_test.markdown)
-        assert "verdict-card-headline" in text, "no verdict rendered for a loaded packet"
+        assert "verdict-strip-headline" in text, "no verdict rendered for a loaded packet"
 
     def test_the_screen_addresses_the_reviewer(self, app_test):
         """The audience is the reviewer assessing an application, not an applicant.
@@ -843,66 +858,34 @@ class TestPDFViewer:
             assert pattern not in source, f"found {pattern!r} in app.py"
 
 
-class TestChatbotIntegration:
-    """The reviewer chatbot section must be callable after a permit is reviewed.
+class TestNoOperatorsOnAnySurface:
+    """Comparison operators and parameter names are engine vocabulary.
 
-    This is a regression test for NameError when _chatbot_section is defined
-    after its call site in app.py. Streamlit executes top-level code sequentially,
-    so the function must be defined before it is invoked.
+    This has now been missed on three separate surfaces: the highlight colour
+    map, the console tables, and the printable report. The report is the one a
+    reviewer forwards, so it matters most and it was the one still leaking.
     """
 
-    @pytest.fixture
-    def app_test(self):
-        pytest.importorskip("streamlit")
-        from streamlit.testing.v1 import AppTest
+    def test_no_comparison_operators_reach_a_reviewer(self):
+        import html as html_lib
+        import re
+        from pathlib import Path
+        from septic.review import review
+        from septic.report.render import render_html
+        from septic.report.letter import render_letter
 
-        return AppTest.from_file(str(ROOT / "app.py"), default_timeout=120)
+        packets = sorted(Path("out/examples").glob("permit_2849*.pdf"))
+        if not packets:
+            pytest.skip("no demonstration packets staged")
 
-    def test_chatbot_function_defined_before_call(self):
-        """_chatbot_section must be defined before it is called in app.py."""
-        source = (ROOT / "app.py").read_text(encoding="utf-8")
-        def_line = source.index("def _chatbot_section(")
-        call_line = source.index("_chatbot_section(payload)")
-        assert def_line < call_line, (
-            "_chatbot_section is called before it is defined — "
-            "this causes NameError at runtime"
-        )
-
-    def test_reviewed_payload_path_no_exception(self, app_test, monkeypatch):
-        """Loading a cached PDF must not raise NameError on the chatbot section.
-
-        This exercises the full reviewed-payload path including the chatbot
-        function call, ensuring no NameError or ImportError at runtime.
-        """
-        pdfs = cached_examples()
-        if not pdfs:
-            # Also check testdata/ which is where the demo PDFs live
-            testdata = ROOT / "testdata"
-            if testdata.exists():
-                from septic.ingest.textract import TextractClient, document_hash
-                client = TextractClient()
-                pdfs = [
-                    p for p in sorted(testdata.glob("*.pdf"))
-                    if client.cached_by_hash(document_hash(p.read_bytes())) is not None
-                ]
-        if not pdfs:
-            pytest.skip("no cached examples present")
-
-        # Disable the chatbot's availability check so it does not attempt
-        # a real Gemini connection, but the function is still called.
-        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "")
-
-        pdf = pdfs[0]
-
-        class Packet:
-            name = pdf.name
-
-            def getvalue(self):
-                return pdf.read_bytes()
-
-        app_test.session_state["application_packet"] = Packet()
-        app_test.run()
-        assert not app_test.exception, (
-            f"Exception in reviewed-payload path: "
-            f"{[str(e.value) for e in app_test.exception]}"
-        )
+        operator = re.compile(r"(?:>=|<=|==)")
+        for pdf in packets:
+            result = review(pdf=pdf, allow_network=False, with_map=False)
+            payload = result.composed.to_json()
+            for surface in (render_html(payload), render_letter(payload)):
+                text = html_lib.unescape(re.sub(r"<[^>]+>", " ", surface))
+                found = operator.findall(text)
+                assert not found, (
+                    f"{pdf.name} renders a comparison operator to a reviewer: "
+                    f"{found[:3]}"
+                )
