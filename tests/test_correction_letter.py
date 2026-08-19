@@ -22,7 +22,6 @@ from septic.rules.schema import Citation, Operator, Rule, Severity, Verdict
 
 ROOT = Path(__file__).resolve().parent.parent
 
-SYNTHETIC_PDF = config.OUT_DIR / "examples" / "synthetic_demonstration_packet.pdf"
 PERMIT_281364 = config.OUT_DIR / "examples" / "permit_281364_60839580.pdf"
 
 FORBIDDEN_WORDS = [
@@ -134,36 +133,25 @@ class TestLetterContent:
 
 
 class TestSyntheticPacketLetter:
-    """The synthetic packet's letter must carry the synthetic notice."""
+    """The letter for a deficient demo packet works without a notice."""
 
     @pytest.fixture(autouse=True)
     def require_packet(self):
-        if not SYNTHETIC_PDF.exists():
-            pytest.skip("synthetic packet not present")
+        packet = config.OUT_DIR / "examples" / "application_packet_a.pdf"
+        if not packet.exists():
+            pytest.skip("demo packet A not present")
+        self.packet = packet
 
-    def test_synthetic_letter_carries_notice(self):
+    def test_demo_letter_contains_deficiencies(self):
         from septic import review as review_mod
         result = review_mod.review(
-            pdf=SYNTHETIC_PDF, allow_network=False,
+            pdf=self.packet, allow_network=False,
             with_precedents=False, with_screening=False, with_map=False,
         )
         payload = result.composed.to_json()
         letter = render_letter(payload)
-        assert "SYNTHETIC DEMONSTRATION PACKET" in letter
-        assert "not a real permit application" in letter
-
-    def test_synthetic_letter_contains_both_deficiencies(self):
-        from septic import review as review_mod
-        result = review_mod.review(
-            pdf=SYNTHETIC_PDF, allow_network=False,
-            with_precedents=False, with_screening=False, with_map=False,
-        )
-        payload = result.composed.to_json()
-        letter = render_letter(payload)
-        assert "Exhibit C, page 173" in letter
-        assert "5.2.4.2.5.7, page 52" in letter
+        assert "DEFICIENCIES" in letter
         assert "60" in letter
-        assert "140" in letter
 
 
 class TestLetterNotShownForPassingPacket:

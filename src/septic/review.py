@@ -29,22 +29,6 @@ from .report import compose as compose_mod
 from .report import render as render_mod
 from .rules import engine
 
-SYNTHETIC_NOTICE = (
-    "SYNTHETIC DEMONSTRATION PACKET. This is a constructed example built to "
-    "show the DEFICIENCIES FOUND outcome. It is not a real permit application, "
-    "it was never submitted to DNREC, and no applicant or property is associated "
-    "with it. Every value in it was chosen to exercise the rules, not read from "
-    "a real document."
-)
-
-SYNTHETIC_STEM = "synthetic_demonstration_packet"
-
-
-def _is_synthetic(subject: dict) -> bool:
-    """True when the document under review is the synthetic demonstration packet."""
-    doc = subject.get("document", "")
-    return SYNTHETIC_STEM in doc
-
 
 @dataclass
 class ReviewResult:
@@ -316,11 +300,6 @@ def review(
 
     if rephrase:
         composed = compose_mod.rephrase_remedies(composed)
-
-    # The synthetic demonstration packet carries a notice that both the console
-    # and the printed report render, so it cannot be mistaken for a real permit.
-    if _is_synthetic(subject):
-        composed.notices.insert(0, SYNTHETIC_NOTICE)
 
     return ReviewResult(
         composed=composed,

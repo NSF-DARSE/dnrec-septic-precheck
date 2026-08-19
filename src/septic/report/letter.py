@@ -53,11 +53,6 @@ def render_letter(composed) -> str:
     lines: list[str] = []
     add = lines.append
 
-    # Notices (synthetic packet label)
-    for notice in c.get("notices") or []:
-        add(notice)
-        add("")
-
     add(DRAFT_HEADER)
     add("-" * 72)
     add("")
