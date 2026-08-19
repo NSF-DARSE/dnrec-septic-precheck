@@ -253,7 +253,6 @@ def annotate(
     # Light, and thin, on purpose. This is the only mark on the sheet that is not
     # a measurement of something drawn, and it must not read as ink the engineer
     # put there.
-    rings = []
     for m in measurements or []:
         a = getattr(m, "from_point", None)
         threshold = getattr(m, "threshold_feet", None)
@@ -265,35 +264,15 @@ def annotate(
         # small scale drawing a 100 ft setback can exceed the page.
         if radius <= 0 or radius > max(im.width, im.height) * 1.5:
             continue
-        rings.append((a[0] * k, a[1] * k, radius, threshold))
-
-    if rings:
-        # The fill goes on its own transparent layer and is composited in, because
-        # a fill drawn straight onto the sheet would hide the drawing underneath it
-        # and the drawing is the evidence. The alpha is deliberately low: enough to
-        # read the zone as an area at a glance, light enough that every line, label
-        # and dimension inside it stays legible.
-        layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
-        layer_draw = ImageDraw.Draw(layer)
-        for cx_, cy_, radius, _threshold in rings:
-            layer_draw.ellipse(
-                [cx_ - radius, cy_ - radius, cx_ + radius, cy_ + radius],
-                fill=(150, 190, 235, 46),
-            )
-        im = Image.alpha_composite(im.convert("RGBA"), layer).convert("RGB")
-        # The draw handle is bound to the old image, so it has to be rebound or
-        # everything after this point would be drawn onto a discarded copy.
-        draw = ImageDraw.Draw(im)
-
-        for cx_, cy_, radius, threshold in rings:
-            draw.ellipse(
-                [cx_ - radius, cy_ - radius, cx_ + radius, cy_ + radius],
-                outline=(120, 165, 220), width=max(1, stroke - 1),
-            )
-            _label(
-                draw, cx_ + radius * 0.7071, cy_ - radius * 0.7071,
-                f"{threshold:.0f} ft required", (110, 160, 215), small,
-            )
+        cx_, cy_ = a[0] * k, a[1] * k
+        draw.ellipse(
+            [cx_ - radius, cy_ - radius, cx_ + radius, cy_ + radius],
+            outline=(150, 190, 235), width=max(1, stroke - 1),
+        )
+        _label(
+            draw, cx_ + radius * 0.7071, cy_ - radius * 0.7071,
+            f"{threshold:.0f} ft required", (110, 160, 215), small,
+        )
 
     # -- the measured distances -------------------------------------------
     for m in measurements or []:
