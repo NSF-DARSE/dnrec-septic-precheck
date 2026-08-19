@@ -179,14 +179,16 @@ python -m septic graph build
 python -m septic review --pdf out/examples/permit_281364_60839580.pdf --offline
 ```
 
-To see the DEFICIENCIES FOUND outcome, review the synthetic demonstration packet.
-This is a constructed example with values that violate two rules, not a real permit
-application. It exists so the demo can show the outcome that matters most without
-needing a real deficient packet:
+Three constructed packets cover the three outcomes, one each. They exist because
+every real packet in the corpus is an approved permit, so none of them produces
+DEFICIENCIES FOUND, and because a real packet reaches a verdict on a fraction of
+the rule set while these exercise all fifteen:
 
 ```bash
 python scripts/build_synthetic_packet.py
-python -m septic review --pdf out/examples/synthetic_demonstration_packet.pdf --offline
+python -m septic review --pdf out/examples/application_packet_a.pdf --offline  # deficiencies, 15 of 15
+python -m septic review --pdf out/examples/application_packet_b.pdf --offline  # no deficiencies, 15 of 15
+python -m septic review --pdf out/examples/application_packet_c.pdf --offline  # cannot verify, 0 of 15
 ```
 
 The reviewer console, which is what a reviewer would actually be handed:
