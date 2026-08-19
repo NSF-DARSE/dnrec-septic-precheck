@@ -1055,6 +1055,14 @@ if uploaded is not None:
             # Metric row with segmented bar
             st.markdown(metric_row(payload), unsafe_allow_html=True)
 
+            # Notices from the payload, rendered above the findings so both the
+            # console and the printable report show them from the same source.
+            for notice in payload.get("notices") or []:
+                st.markdown(
+                    f"<div class='rule-state'>{html_lib.escape(notice)}</div>",
+                    unsafe_allow_html=True,
+                )
+
             # Split layout: findings left, PDF viewer right.
             findings_col, viewer_col = st.columns([1, 1])
 
