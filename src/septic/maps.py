@@ -190,6 +190,43 @@ def _north_arrow(ax, xmax, ymax, span_metres):
     )
 
 
+IMAGERY_DIR = config.ROOT / "data" / "gis" / "imagery"
+IMAGERY_ALPHA = 0.45
+
+
+def _imagery_path(lat: float, lon: float) -> Path | None:
+    """Find a cached imagery tile for the given coordinates, or None."""
+    lat_r = round(lat, 4)
+    lon_r = round(lon, 4)
+    key = f"usgs_{lat_r}_{lon_r}.png"
+    path = IMAGERY_DIR / key
+    return path if path.is_file() else None
+
+
+def _draw_cached_imagery(ax, lat, lon, easting, northing, radius_m):
+    """Draw cached USGS aerial imagery under the map at low opacity.
+
+    A cache miss does nothing: no error, no blank panel.
+    The imagery is decoration and orientation only. It never enters a measurement.
+    """
+    path = _imagery_path(lat, lon)
+    if path is None:
+        return
+    try:
+        img = plt.imread(str(path))
+    except Exception:  # noqa: BLE001
+        return
+    # The tile covers the bounding box of the point +/- BUFFER_DEG in WGS84,
+    # reprojected to Web Mercator by the USGS service. We place it in the UTM
+    # plot space at the window extent.
+    xmin = easting - radius_m
+    xmax = easting + radius_m
+    ymin = northing - radius_m
+    ymax = northing + radius_m
+    ax.imshow(img, extent=[xmin, xmax, ymin, ymax], aspect="auto",
+              alpha=IMAGERY_ALPHA, zorder=0, interpolation="bilinear")
+
+
 def permit_map(
     permit: str,
     lat: float,
@@ -220,6 +257,10 @@ def permit_map(
 
     fig, ax = plt.subplots(figsize=(10, 10), dpi=170)
     ax.set_facecolor("white")
+
+    # Aerial imagery as background decoration, if cached.
+    # A cache miss draws the existing roads basemap with no error.
+    _draw_cached_imagery(ax, lat, lon, easting, northing, radius_m)
 
     # Water features inside the window, with the nearest tracked for annotation.
     nearest_distance = math.inf
@@ -403,8 +444,8 @@ def permit_map(
     # the figure edge and was overflowing the right margin.
     caption_lines = [
         "Dashed rings are isolation distances read from the rule set, not chosen for this figure.",
-        "Surface water from Delaware FirstMap (NHD), generalised on download. Projection UTM zone 18N.",
-        "Distance is measured from the geocoded address point, not from the disposal area,",
+        "Surface water from Delaware FirstMap (NHD), generalised on download. Aerial imagery from USGS National Map.",
+        "Projection UTM zone 18N. Distance is measured from the geocoded address point, not from the disposal area,",
         "so this is a screening prompt for the reviewer and not a compliance determination.",
     ]
     fig.text(0.5, 0.012, "\n".join(caption_lines), ha="center", va="bottom",

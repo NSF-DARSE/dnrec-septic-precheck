@@ -132,3 +132,11 @@ truncated water layer is a false all clear, as described above. A truncated road
 layer is a blank basemap, which looks broken rather than dangerous, but it is
 still wrong. The committed file holds all 78,444 segments the service reports
 inside the bounding box.
+
+
+## Aerial Imagery
+
+USGS National Map Imagery Only service. US federal, public domain.
+Endpoint: basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/export
+Fetched 2026-08-19 by scripts/fetch_imagery.py.
+Used as decoration and orientation only. Never enters a measurement.
