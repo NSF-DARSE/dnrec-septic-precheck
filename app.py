@@ -81,7 +81,8 @@ STYLE_TEMPLATE = """
 :root { --ink:$c_ink; --muted:$c_muted; --line:$c_line; }
 
 .block-container {
-  padding-top:$k_top_clearance; padding-bottom:$s_sm; max-width:1600px;
+  padding-top:$k_top_clearance; padding-bottom:$s_sm; max-width:100%;
+  padding-left:$s_xl; padding-right:$s_xl;
 }
 
 html, body { font-family:$f_sans; }
@@ -295,6 +296,15 @@ html, body { font-family:$f_sans; }
   border-left:$b_accent solid $c_unverified_edge; background:$c_notice_bg;
   color:$c_notice_fg; padding:$s_md $s_lg; font-size:$t_caption;
   margin-top:$s_sm; border-radius:0 $r_sm $r_sm 0;
+}
+
+/* Split-pane layout: left scrolls normally, right sticks */
+[data-testid="stHorizontalBlock"]:has(.st-key-viewer_pane) {
+  position:relative; align-items:flex-start;
+}
+.st-key-viewer_pane {
+  position:sticky; top:${k_top_clearance}; height:calc(100vh - ${k_top_clearance} - ${s_lg});
+  overflow-y:auto;
 }
 
 /* PDF viewer */
@@ -1032,7 +1042,7 @@ def render_pdf_viewer(pdf_bytes: bytes, doc_hash: str, payload: dict) -> None:
     page_key = f"viewer_page_{doc_hash[:16]}"
     start_page = st.session_state.get(page_key, 1)
     components.html(
-        _viewer_html(page_uris, start_page), height=900, scrolling=True
+        _viewer_html(page_uris, start_page), height=780, scrolling=True
     )
 
 
@@ -1133,7 +1143,7 @@ if uploaded is not None:
                 )
 
             # Split layout: findings left, PDF viewer right.
-            findings_col, viewer_col = st.columns([3, 2])
+            findings_col, viewer_col = st.columns([58, 42], gap="medium")
 
             with findings_col:
                 # Findings rendered natively
@@ -1175,7 +1185,8 @@ if uploaded is not None:
                             )
 
             with viewer_col:
-                render_pdf_viewer(data, doc_hash, payload)
+                with st.container(key="viewer_pane"):
+                    render_pdf_viewer(data, doc_hash, payload)
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"
