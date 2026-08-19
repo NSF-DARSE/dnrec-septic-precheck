@@ -1154,6 +1154,26 @@ if uploaded is not None:
                     mime="text/html",
                 )
 
+                # Draft correction letter, only when deficiencies were found
+                if payload.get("headline") == "DEFICIENCIES FOUND":
+                    from septic.report.letter import render_letter
+                    letter = render_letter(payload)
+                    if letter:
+                        with st.expander("Draft correction letter (edit before sending)"):
+                            st.caption(
+                                "This is a draft for you to edit and sign. It is "
+                                "not a determination. Paste it into your own "
+                                "template and review every line before sending."
+                            )
+                            st.code(letter, language=None)
+                            st.download_button(
+                                label="Download draft letter",
+                                data=letter,
+                                file_name=f"draft_correction_{doc_name}.txt",
+                                mime="text/plain",
+                                key="draft_letter",
+                            )
+
             with viewer_col:
                 render_pdf_viewer(data, doc_hash, payload)
     else:
