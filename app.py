@@ -297,13 +297,27 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
 [data-testid="stHorizontalBlock"]:has(.st-key-viewer_pane) {
   position:relative; align-items:flex-start;
 }
+/* Sticky has to sit on the column, not on the container inside it. Streamlit
+   gives the column the height of its own content, which is exactly the height
+   of the pane, so a sticky child had no room to travel and scrolled away with
+   it. The row is the full height of the findings, so the column can travel
+   inside that. The page also scrolls section[data-testid="stMain"] rather than
+   the window, and the offset is relative to that scrollport. */
+[data-testid="stHorizontalBlock"]:has(.st-key-viewer_pane)
+  > [data-testid="stColumn"]:has(.st-key-viewer_pane) {
+  position:sticky; top:${k_top_clearance}; align-self:flex-start;
+}
 .st-key-viewer_pane {
-  position:sticky; top:${k_top_clearance}; height:calc(100vh - ${k_top_clearance} - ${s_lg});
+  height:calc(100vh - ${k_top_clearance} - ${s_lg});
   overflow-y:auto;
 }
 @media (max-width:1100px) {
+  [data-testid="stHorizontalBlock"]:has(.st-key-viewer_pane)
+    > [data-testid="stColumn"]:has(.st-key-viewer_pane) {
+    position:static;
+  }
   .st-key-viewer_pane {
-    position:static; height:auto; overflow-y:visible;
+    height:auto; overflow-y:visible;
   }
 }
 
