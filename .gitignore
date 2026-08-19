@@ -50,3 +50,6 @@ GEMINI.md
 # also lives under out/, so committing these alone would not make the demo
 # reproducible for anyone else.
 testdata/
+
+# Staged by scripts/build_image_context.py, rebuilt on demand.
+docker-context/

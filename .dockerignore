@@ -1,0 +1,16 @@
+# The build context is deliberately small. out/ alone is 1.2 GB and the permit
+# CSV is 45 MB, and none of it belongs in an image layer.
+out/
+testdata/
+docs/
+*.csv
+.venv/
+.git/
+.github/
+.pytest_cache/
+__pycache__/
+**/__pycache__/
+*.pyc
+tests/
+.claude/
+CLAUDE.md
