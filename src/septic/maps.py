@@ -217,7 +217,7 @@ def permit_map(
                  easting + radius_m, northing + radius_m)
     origin = Point(easting, northing)
 
-    fig, ax = plt.subplots(figsize=(12.5, 12.5), dpi=170)
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=170)
     ax.set_facecolor("white")
 
     # Water features inside the window, with the nearest tracked for annotation.
@@ -329,26 +329,12 @@ def permit_map(
     ax.set_ylim(ymin, ymax)
     ax.set_aspect("equal")
 
-    # The frame is drawn in UTM metres but labelled in degrees, because degrees
-    # are what a reviewer can paste into any other mapping tool. Five ticks a
-    # side, converted back through the projection one by one rather than
-    # interpolated, since latitude and longitude are not linear in easting and
-    # northing across the window.
-    xticks = [xmin + (xmax - xmin) * f for f in (0.02, 0.26, 0.5, 0.74, 0.98)]
-    yticks = [ymin + (ymax - ymin) * f for f in (0.02, 0.26, 0.5, 0.74, 0.98)]
-    ax.set_xticks(xticks)
-    ax.set_yticks(yticks)
-    ax.set_xticklabels(
-        [f"{geo.to_wgs84(x, northing)[0]:.4f}°" for x in xticks],
-        fontsize=11, color="#333333",
-    )
-    ax.set_yticklabels(
-        [f"{geo.to_wgs84(easting, y)[1]:.4f}°" for y in yticks],
-        fontsize=11, color="#333333", rotation=90, va="center",
-    )
-    ax.set_xlabel("longitude (WGS84)", fontsize=12, color="#333333", labelpad=6)
-    ax.set_ylabel("latitude (WGS84)", fontsize=12, color="#333333", labelpad=6)
-    ax.tick_params(length=5, width=1.2, color=INK)
+    # Clean frame: no axis labels or tick labels, since coordinates are stated
+    # in the data panel rendered by the console and report. Keep the frame itself
+    # for visual boundary.
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.tick_params(length=0)
     for spine in ax.spines.values():
         spine.set_edgecolor(INK)
         spine.set_linewidth(1.6)
@@ -356,86 +342,57 @@ def permit_map(
     _scale_bar(ax, xmin, ymin, radius_m * 2)
     _north_arrow(ax, xmax, ymax, radius_m * 2)
 
+    # Legend built from what was actually drawn, not from a fixed list.
     handles = [
         Line2D([], [], marker="*", color="none", markerfacecolor=PERMIT,
-               markeredgecolor=INK, markersize=22, label="Permit location"),
-        Line2D([], [], color=WATER, linewidth=3, label="Mapped surface water"),
-        Patch(facecolor=WATER_FILL, edgecolor=WATER, label="Lake or pond"),
-        Line2D([], [], color=INK, linewidth=2.4,
-               marker=">", markersize=9, markevery=[-1],
-               label="Measured distance to nearest feature"),
+               markeredgecolor=INK, markersize=18, label="Permit location"),
     ]
+    if drawn:
+        handles.append(
+            Line2D([], [], color=WATER, linewidth=3, label="Mapped surface water")
+        )
+    if nearest_point is not None:
+        handles.append(
+            Line2D([], [], color=INK, linewidth=2.4,
+                   marker=">", markersize=8, markevery=[-1],
+                   label="Measured distance")
+        )
     for index, (feet, _rule_ids, label) in enumerate(rings):
-        handles.append(Line2D(
-            [], [], color=[RING, RING_ALT, ESCARPMENT][index % 3],
-            linewidth=2.8, linestyle=(0, (7, 4)), label=label,
-        ))
-    ax.legend(handles=handles, loc="upper left", fontsize=12.5,
-              framealpha=0.95, edgecolor=INK, borderpad=0.8)
+        colour = [RING, RING_ALT, ESCARPMENT][index % 3]
+        radius_ring = feet * FEET_PER_METRE
+        # Only add to legend if the ring is large enough to be visible
+        if radius_ring >= radius_m * 0.03:
+            handles.append(Line2D(
+                [], [], color=colour, linewidth=2.8,
+                linestyle=(0, (7, 4)),
+                label=f"{feet:.0f} ft setback",
+            ))
+    ax.legend(handles=handles, loc="upper left", fontsize=11.5,
+              framealpha=0.95, edgecolor=INK, borderpad=0.6,
+              handlelength=2.2)
 
     ax.set_title(
         f"Permit {permit}: location against mapped surface water",
         fontsize=20, fontweight="bold", color=INK, pad=16,
     )
 
-    # Everything the figure knows, in one block, so the map can be read on its
-    # own without the surrounding report.
-    panel: list[str] = [f"PERMIT {permit}"]
-    if details:
-        # Raw CSV column names, which is what permit_row returns. The manifest
-        # uses camelCase for the same fields and looking them up by those names
-        # silently produced an empty panel.
-        for key, label, unit in (
-            ("TaxParcelNumbers", "parcel", ""),
-            ("County", "county", ""),
-            ("SepticSystemType", "system", ""),
-            ("ConstructionType", "work", ""),
-            ("SepticPropUseCode", "use", ""),
-            ("PerkRate", "perc rate", " mpi"),
-            ("Flow Rate", "design flow", " gpd"),
-        ):
-            value = details.get(key)
-            if value in (None, "", "nan") or str(value) == "nan":
-                continue
-            if isinstance(value, float) and value.is_integer():
-                value = int(value)
-            panel.append(f"{label:<11} {value}{unit}")
-    panel.append(f"{'latitude':<11} {lat:.6f}")
-    panel.append(f"{'longitude':<11} {lon:.6f}")
-    if nearest_feet is not None:
-        panel.append("")
-        panel.append("NEAREST MAPPED FEATURE")
-        panel.append(f"{'name':<11} {nearest_label or 'unnamed'}")
-        if nearest_layer:
-            panel.append(f"{'layer':<11} {nearest_layer.replace('_', ' ')}")
-        panel.append(f"{'distance':<11} {nearest_feet:.0f} ft")
-        panel.append(f"{'bearing':<11} {nearest_bearing}")
-    panel.append("")
-    panel.append(f"{'features':<11} {drawn} within {radius_feet:.0f} ft")
-
-    ax.text(
-        0.985, 0.015, "\n".join(panel), transform=ax.transAxes,
-        fontsize=11.5, family="monospace", color=INK, ha="right", va="bottom",
-        multialignment="left", zorder=12,
-        bbox=dict(boxstyle="round,pad=0.55", facecolor="white",
-                  edgecolor=INK, linewidth=1.4, alpha=0.96),
-    )
+    # The data panel (permit details, nearest feature, coordinates) is rendered
+    # by the console and report as a selectable definition list beside the figure,
+    # not baked into the PNG. Removed from the image so it carries only the map,
+    # scale bar, north arrow, distance annotation, and caption.
 
     # Wrapped by hand rather than relying on wrap=True, which measures against
     # the figure edge and was overflowing the right margin.
     caption_lines = [
-        "Dashed rings are isolation distances read from the rule set, not chosen "
-        "for this figure. Surface water from Delaware FirstMap (NHD),",
-        "generalised on download. Projection UTM zone 18N, axes labelled in "
-        "WGS84 degrees.",
-        "Distance is measured from the geocoded address point, not from the "
-        "disposal area, so this is a screening prompt for the reviewer",
-        "and not a compliance determination.",
+        "Dashed rings are isolation distances read from the rule set, not chosen for this figure.",
+        "Surface water from Delaware FirstMap (NHD), generalised on download. Projection UTM zone 18N.",
+        "Distance is measured from the geocoded address point, not from the disposal area,",
+        "so this is a screening prompt for the reviewer and not a compliance determination.",
     ]
-    fig.text(0.5, 0.018, "\n".join(caption_lines), ha="center", va="bottom",
-             fontsize=11.5, color="#333333")
+    fig.text(0.5, 0.012, "\n".join(caption_lines), ha="center", va="bottom",
+             fontsize=10.5, color="#333333")
 
-    fig.subplots_adjust(left=0.03, right=0.97, top=0.94, bottom=0.145)
+    fig.subplots_adjust(left=0.02, right=0.98, top=0.94, bottom=0.10)
 
     png = out_dir / f"permit_{permit}_map.png"
     svg = out_dir / f"permit_{permit}_map.svg"
