@@ -89,7 +89,7 @@ st.set_page_config(
 # means its height is declared rather than measured, so the pair is sized from
 # that number: the map itself, then the room its caption, coordinates and link
 # need under it. The screening card is given the same total in CSS.
-STREET_MAP_HEIGHT = 490
+STREET_MAP_HEIGHT = 420
 LOCATION_PAIR_HEIGHT = STREET_MAP_HEIGHT + 150
 
 STYLE_TEMPLATE = """
@@ -352,7 +352,7 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
 /* Sized so the measurements and the folded caveat below the figure both land
    inside the fixed height rather than being clipped by it. The figure is very
    nearly square, so this is what decides how big it draws. */
-.map-card.paired img { max-height:428px; }
+.map-card.paired img { max-height:360px; }
 .map-card.paired .map-card-dl { margin-top:$s_sm; }
 .map-card-caveat { margin-top:auto; }
 /* The browser's own disclosure triangle. A custom marker was drawn with a CSS
@@ -385,6 +385,34 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
   font-size:$t_caption; color:$c_unverified_fg; background:$c_unverified_bg;
   padding:$s_sm $s_md; border-radius:$r_sm; margin-top:$s_md;
   line-height:$lh_normal;
+}
+
+/* The reviewer assistant, under the packet in the right hand pane.
+
+   It is boxed on purpose. Everything else in this console is a rendering of the
+   rule set, and this is the one panel where a model is talking, so it is given
+   a visible edge and a labelled header rather than being allowed to run on from
+   the document above it. A reader should be able to see where the tool stops
+   and the assistant starts without reading a word. */
+.st-key-assistant_box {
+  border:$b_rule solid var(--line); border-radius:$r_lg;
+  background:$c_surface; margin-top:$s_lg; overflow:hidden;
+  padding:$s_xl; gap:$s_md;
+}
+/* The padding sits on the container itself. A key'd container IS the vertical
+   block rather than wrapping one, so a child selector for stVerticalBlock
+   matches nothing here and the box came out with everything against its edge.
+   The header pulls back out to the border so its rule spans the full width. */
+.st-key-assistant_box .assistant-head {
+  border-bottom:$b_hairline solid var(--line);
+  margin:-$s_xl -$s_xl 0; padding:0 $s_xl $s_md;
+}
+.st-key-assistant_box .assistant-title {
+  font-size:$t_subhead; font-weight:$w_bold; letter-spacing:-0.01em;
+  line-height:$lh_tight;
+}
+.st-key-assistant_box .assistant-note {
+  font-size:$t_caption; color:var(--muted); line-height:$lh_normal;
 }
 
 /* Empty state and drop zone */
@@ -591,13 +619,23 @@ def load_graph_once():
         return None
 
 
-@st.cache_data(show_spinner=False)
-def review_from_cache(pdf_path: str, doc_hash: str = "") -> dict | None:
+def run_review(pdf_path: str, doc_hash: str = "") -> dict | None:
     """Run the whole chain from the on-disk cache. No network, no credentials.
 
     Delegates to septic.review rather than repeating the chain here.
     Returns the composed payload, or None when there is no cached analysis, so the
     caller can explain instead of crashing.
+
+    Deliberately not memoised. This used to carry st.cache_data, so a packet that
+    had been reviewed once came back instantly on the next upload, and watching
+    that happen it is impossible to tell a fast pipeline from a stored answer.
+    The work is real and it is worth showing: every upload parses the blocks,
+    extracts the facts, evaluates the rule set, screens the location, draws the
+    map and composes the report again, and it takes the few seconds it takes.
+
+    What is still read from disk is the Textract output, keyed by the SHA256 of
+    the document. That is not a stored verdict, it is the OCR, and re-running it
+    would need AWS credentials and would put the console back on the network.
     """
     path = Path(pdf_path)
     client = TextractClient()
@@ -1290,7 +1328,7 @@ def render_location(payload: dict) -> None:
         st.markdown(map_html, unsafe_allow_html=True)
         return
 
-    from septic.report.googlemap import panel_html
+    from septic.report.streetmap import panel_html
 
     figure_col, street_col = st.columns([1, 1], gap="medium")
     with figure_col:
@@ -1421,13 +1459,15 @@ def _chatbot_section(payload: dict) -> None:
     if not chatbot_available():
         return
 
-    st.divider()
-    st.markdown("### Reviewer assistant")
-    st.caption(
-        "⚠️ This assistant helps you understand the review results. "
-        "It does not make the final decision and it cannot change a finding. "
-        "AI-generated explanations are labelled and separated from "
-        "deterministic rule results."
+    st.markdown(
+        "<div class='assistant-head'>"
+        "<span class='assistant-title'>Reviewer assistant</span>"
+        "</div>"
+        "<div class='assistant-note'>Answers questions about the review above. "
+        "It is given the finished report and nothing else, it cannot reach the "
+        "rule engine, and no answer it gives changes a finding or a "
+        "citation.</div>",
+        unsafe_allow_html=True,
     )
 
     # Session state for conversation
@@ -1562,10 +1602,22 @@ if uploaded is not None:
         # spinner is a small mark in a large empty page, which reads as frozen
         # on a projector. Hold the shape of the result instead, so the screen
         # shows the layout filling in rather than nothing happening.
-        skeleton = st.empty()
-        skeleton.markdown(loading_skeleton(uploaded.name), unsafe_allow_html=True)
-        payload = review_from_cache(str(target), doc_hash)
-        skeleton.empty()
+        # Streamlit reruns this whole script on every interaction: a chatbot
+        # question, an expander, the rules toggle. The review is only re-run
+        # when the upload itself is new, which file_id says and the document
+        # hash does not: uploading the same file a second time is a new upload
+        # event with a new id, so it runs the pipeline again, while clicking
+        # something on the page reuses the answer already on screen.
+        token = getattr(uploaded, "file_id", None) or doc_hash
+        if st.session_state.get("review_token") != token:
+            skeleton = st.empty()
+            skeleton.markdown(
+                loading_skeleton(uploaded.name), unsafe_allow_html=True
+            )
+            st.session_state["review_payload"] = run_review(str(target), doc_hash)
+            st.session_state["review_token"] = token
+            skeleton.empty()
+        payload = st.session_state.get("review_payload")
         elapsed = time.perf_counter() - started
         if payload:
             subject = payload.get("subject") or {}
@@ -1583,6 +1635,15 @@ if uploaded is not None:
                 # deficiency 684 pixels below the fold. It sits under the
                 # findings now, and full height in the Location tab beside them.
                 render_findings(payload)
+
+                # The screening figure and a street map, side by side under the
+                # findings. Ours carries the measurement, the setback ring, the
+                # scale bar and the provenance line, and it works with no
+                # network. The Google panel carries what a topographic sheet
+                # cannot show, which is what the parcel actually looks like. It
+                # is the only part of the page that needs a network, and it is
+                # beside our figure rather than instead of it for that reason.
+                render_location(payload)
 
 
                 # Download the printable HTML report
@@ -1629,21 +1690,8 @@ if uploaded is not None:
                         height=VIEWER_WITH_ASSISTANT if chatbot_available()
                         else VIEWER_ALONE,
                     )
-                    _chatbot_section(payload)
-
-            # The screening figure and a street map, side by side and full
-            # width. Ours carries the measurement, the setback ring, the scale
-            # bar and the provenance line, and it works with no network. The
-            # Google panel carries what a topographic sheet cannot show, which
-            # is what the parcel actually looks like. It is the only part of the
-            # page that needs a network, and it is beside our figure rather than
-            # instead of it for exactly that reason.
-            #
-            # Full width because inside half of the findings column the figure
-            # was bound by width, not height: about 290 pixels of picture next
-            # to a 420 pixel map, which read as the smaller of the two even
-            # though the panels matched.
-            render_location(payload)
+                    with st.container(key="assistant_box"):
+                        _chatbot_section(payload)
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"

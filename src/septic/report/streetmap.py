@@ -1,9 +1,9 @@
-"""The Google Maps panel that sits beside the screening figure.
+"""The street map panel that sits beside the screening figure.
 
 This is the one part of the console that needs a network. Everything else works
 with the wire pulled out: Textract output comes off the disk cache, the rules are
 a local YAML file, the hydrography is committed GeoJSON, and the basemap under
-the screening figure is a cached USGS tile. A Google map cannot be cached, so it
+the screening figure is a cached USGS tile. A street map cannot be cached, so it
 is drawn beside our own figure rather than instead of it, and the figure is the
 one that carries the measurement, the setback ring, the scale bar and the
 provenance line.
@@ -13,39 +13,65 @@ coordinates are printed under it and the link opens the same view in a real
 browser tab, so a dead venue wifi costs the demo a picture of a roof and no more
 than that.
 
-The address is built here and not in app.py because the console asserts that it
-references no remote resource, and that assertion is worth keeping true for the
-file that renders the review. What is remote lives in one named place.
+On which map is drawn. The default is the keyless Google embed, the
+maps.google.com address with output=embed. It answers 200 to a browser GET,
+redirects to www.google.com/maps/embed, and that response sets no framing
+header, so it frames. Worth knowing if it ever looks broken: a HEAD request to
+the same address answers 404 and the redirect carries x-frame-options
+SAMEORIGIN, so probing it with curl -I says it is dead when it is not.
+
+It is keyless, which means it is also unsupported, and Google can withdraw it
+without notice. Setting SEPTIC_MAPS_EMBED_KEY switches the panel to the
+documented Maps Embed API, which needs that API enabled on the project. Nothing
+else changes.
+
+The addresses are built here and not in app.py because the console asserts that
+it references no remote resource, and that assertion is worth keeping true for
+the file that renders the review. What is remote lives in one named place.
 """
 from __future__ import annotations
 
+import os
 from urllib.parse import urlencode
 
-# The keyless Google Maps embed. The Embed API proper wants an API key, which
-# would mean a credential in the deployment for a panel that shows a rooftop, so
-# the public embed form is used instead. It takes a query and a zoom and returns
-# the same map a person gets from the address bar.
-EMBED_BASE = "https://maps.google.com/maps"
+KEYLESS_EMBED = "https://maps.google.com/maps"
+EMBED_API = "https://www.google.com/maps/embed/v1/place"
 LINK_BASE = "https://www.google.com/maps/search/"
 
 # 17 is close enough to see the driveway and the outbuildings without losing the
 # road that names the parcel. The screening figure covers the wider view.
 DEFAULT_ZOOM = 17
 
+def api_key() -> str:
+    """The Google Maps Embed API key, or empty when none is configured."""
+    return os.environ.get("SEPTIC_MAPS_EMBED_KEY", "").strip()
+
+
+def provider() -> str:
+    """Which address the panel will use, decided by whether a key is present."""
+    return "embed-api" if api_key() else "keyless"
+
 
 def embed_url(lat: float, lon: float, zoom: int = DEFAULT_ZOOM) -> str:
     """The src for the embedded map at a point."""
-    query = urlencode({
+    key = api_key()
+    if key:
+        return f"{EMBED_API}?" + urlencode({
+            "key": key,
+            "q": f"{lat},{lon}",
+            "zoom": zoom,
+            "maptype": "satellite",
+        })
+    return f"{KEYLESS_EMBED}?" + urlencode({
         "q": f"{lat},{lon}",
         "z": zoom,
         "output": "embed",
     })
-    return f"{EMBED_BASE}?{query}"
 
 
 def link_url(lat: float, lon: float) -> str:
     """The address that opens the same point in a full Google Maps tab."""
-    return f"{LINK_BASE}?{urlencode({'api': 1, 'query': f'{lat},{lon}'})}"
+    return f"{LINK_BASE}?" + urlencode({"api": 1, "query": f"{lat},{lon}"})
 
 
 def panel_html(

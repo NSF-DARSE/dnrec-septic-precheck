@@ -894,7 +894,7 @@ class TestTheOnlyRemoteThing:
         )
 
     def test_the_panel_carries_the_point_it_was_given(self):
-        from septic.report.googlemap import embed_url, link_url, panel_html
+        from septic.report.streetmap import embed_url, link_url, panel_html
 
         lat, lon = 38.9126, -75.4279
         for address in (embed_url(lat, lon), link_url(lat, lon)):
@@ -906,7 +906,7 @@ class TestTheOnlyRemoteThing:
 
     def test_the_panel_says_what_it_is_not(self):
         """It is orientation. No measurement may appear to come off it."""
-        from septic.report.googlemap import panel_html
+        from septic.report.streetmap import panel_html
 
         html = panel_html(38.9126, -75.4279).lower()
         assert "orientation only" in html
@@ -914,7 +914,7 @@ class TestTheOnlyRemoteThing:
 
     def test_the_panel_survives_not_loading(self):
         """A message sits behind the frame, so a blank panel is not a mystery."""
-        from septic.report.googlemap import panel_html
+        from septic.report.streetmap import panel_html
 
         html = panel_html(38.9126, -75.4279)
         assert "needs a network" in html
@@ -927,14 +927,14 @@ class TestTheOnlyRemoteThing:
         from pathlib import Path as _Path
 
         root = _Path(__file__).resolve().parent.parent
-        allowed = {"googlemap.py"}
+        allowed = {"streetmap.py"}
         offenders = []
         for path in list((root / "src").rglob("*.py")) + [root / "app.py"]:
             if path.name in allowed:
                 continue
             if "google.com" in path.read_text(encoding="utf-8"):
                 offenders.append(path.name)
-        assert not offenders, f"google.com appears outside googlemap.py: {offenders}"
+        assert not offenders, f"google.com appears outside streetmap.py: {offenders}"
 
 
 class TestNoOperatorsOnAnySurface:
