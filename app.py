@@ -159,7 +159,7 @@ html, body { font-family:$f_sans; }
 }
 
 /* Findings table */
-.findings-table { border-collapse:collapse; width:100%; font-size:$t_body; }
+.findings-table { border-collapse:collapse; width:100%; font-size:$t_body; table-layout:fixed; }
 .findings-table th {
   text-align:left; font-size:$t_micro; text-transform:uppercase;
   letter-spacing:0.07em; color:var(--muted); padding:$s_sm $s_md;
@@ -716,7 +716,15 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
         )
 
     return (
-        f"<table class='{cls}'><tr>"
+        f"<table class='{cls}'>"
+        "<colgroup>"
+        "<col style='width:8%'>"
+        "<col style='width:46%'>"
+        "<col style='width:16%'>"
+        "<col style='width:16%'>"
+        "<col style='width:14%'>"
+        "</colgroup>"
+        "<tr>"
         "<th>RULE</th><th>REQUIREMENT</th><th class='right'>VALUE</th>"
         "<th>CITATION</th><th>STATUS</th></tr>"
         + "".join(rows)
@@ -937,7 +945,15 @@ def render_pdf_viewer(pdf_bytes: bytes, doc_hash: str, payload: dict) -> None:
     if page_key not in st.session_state:
         st.session_state[page_key] = 1
 
-    # Page navigation
+    current_page = st.session_state[page_key]
+
+    # Rasterise and render the page image first
+    page_uri = _rasterise_page(pdf_bytes, current_page, doc_hash)
+    viewer_html = _viewer_html(page_uri, current_page, total_pages)
+
+    components.html(viewer_html, height=860, scrolling=True)
+
+    # Page navigation directly beneath the rendered page
     nav_cols = st.columns([1, 3, 1])
     with nav_cols[0]:
         if st.button("Prev", key=f"prev_{doc_hash[:16]}",
@@ -957,14 +973,6 @@ def render_pdf_viewer(pdf_bytes: bytes, doc_hash: str, payload: dict) -> None:
                      disabled=(st.session_state[page_key] >= total_pages)):
             st.session_state[page_key] += 1
             st.rerun()
-
-    current_page = st.session_state[page_key]
-
-    # Rasterise and overlay
-    page_uri = _rasterise_page(pdf_bytes, current_page, doc_hash)
-    viewer_html = _viewer_html(page_uri, current_page, total_pages)
-
-    components.html(viewer_html, height=900, scrolling=True)
 
 
 def jump_to_page(doc_hash: str, page: int) -> None:
@@ -1064,7 +1072,7 @@ if uploaded is not None:
                 )
 
             # Split layout: findings left, PDF viewer right.
-            findings_col, viewer_col = st.columns([1, 1])
+            findings_col, viewer_col = st.columns([3, 2])
 
             with findings_col:
                 # Findings rendered natively
