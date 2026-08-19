@@ -31,7 +31,7 @@ permit is reviewed.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GOOGLE_CLOUD_PROJECT` | Yes | — | GCP project id |
+| `GOOGLE_CLOUD_PROJECT` | Yes | none | GCP project id |
 | `GOOGLE_CLOUD_LOCATION` | No | `global` | GCP location |
 | `GOOGLE_GENAI_USE_VERTEXAI` | Yes | `false` | Set to `true` for Vertex AI |
 | `SEPTIC_GEMINI_MODEL` | No | `gemini-2.5-flash` | Model name override |

@@ -16,11 +16,40 @@ reading the whole packet again from the start. Because the checking is manual, t
 reviewers can read the same requirement differently. The slow part is not the
 decision, it is finding the handful of things that are wrong.
 
+## What it does
+
+It reads the packet, checks it against the regulation, and hands back a worklist
+with the citation already attached to every line.
+
+- **Reads the submission.** Amazon Textract over the scanned PDF, forms and
+  tables, cached on disk under the SHA256 of the document so the same packet is
+  never sent twice and a review of a cached packet needs no network at all.
+- **Checks 15 requirements** taken from the 2014 regulation and confirmed against
+  the pages they cite. The rule set is a YAML file a person can read, and the
+  engine that evaluates it is the only thing that produces a finding.
+- **Cites everything.** Each finding carries the section, the page and the quoted
+  sentence it comes from, so the requirement can be checked against the
+  regulation rather than taken on trust.
+- **Says what it could not read.** A value missing from the packet returns
+  UNKNOWN, never a failure, and the report counts those separately from the
+  checks that ran and the ones that did not apply to this kind of system.
+- **Screens the location.** Distance from the geocoded point to mapped surface
+  water, against Delaware FirstMap hydrography, drawn on a map at the top of the
+  report. It is a prompt to check the site plan, not a measurement of the
+  disposal area.
+- **Drafts the correction letter.** Where requirements are not met, it writes the
+  itemised letter, each item with its value found, its threshold and its
+  citation, ready to be edited and signed.
+- **Puts it in a console.** `streamlit run app.py` gives an upload box, the
+  findings beside the packet they came from, and the full rule set with its
+  regulation text behind one toggle.
+
 ## What it does not do
 
-It does not approve or deny anything. It does not predict what DNREC will decide.
-When it cannot confirm a rule against the regulation, it says so and gives no
-answer. The reviewer decides.
+It does not approve or deny, and it does not predict what DNREC will decide.
+Rules out of the regulation produce every finding; no model determines, alters or
+suppresses one. Where a rule has not been confirmed against the page it cites,
+the tool returns no answer for it rather than a guess.
 
 ## The pipeline
 
@@ -118,12 +147,29 @@ and the engine returns UNKNOWN for it until someone repeats the check.
 
 ## Data provenance
 
-**Permit CSV.** data.delaware.gov, dataset mv7j-tx3u, exported 2026-08-17. 117,802
-rows, 112,643 unique detail pages, 112,613 permits. 45 MB, gitignored.
+Everything the tool reads comes from a public Delaware or federal source. Nothing
+was bought, scraped from behind a login, or generated.
 
-**Regulation PDF.** Delaware Regulations Governing On-Site Wastewater Treatment and
-Disposal Systems, January 11, 2014. 245 pages. Tracked here, because every
-threshold has to be traceable to it.
+| What | Where it comes from |
+|------|---------------------|
+| Permit records | [Permitted Septic Systems, dataset `mv7j-tx3u`](https://data.delaware.gov/d/mv7j-tx3u) on the Delaware Open Data Portal |
+| Permit detail pages | [DNREC Environmental Navigator](https://den.dnrec.delaware.gov/Detail/PermitDetail.aspx) |
+| Permit documents | `docs.dnrec.delaware.gov`, linked from each detail page |
+| Regulation | Delaware On-Site Septic System Regulations with Exhibits, January 11, 2014, tracked at `docs/regulations/` |
+| Hydrography | [Delaware FirstMap](https://enterprise.firstmap.delaware.gov/arcgis/rest/services), Hydrology/DE_Water |
+| Aerial imagery | [USGS National Map](https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer), public domain |
+
+**Permit CSV.** Exported 2026-08-17. 117,802 rows, 112,643 unique detail pages,
+112,613 permits. 45 MB, gitignored, so it is fetched from the portal rather than
+tracked here.
+
+**Regulation PDF.** 245 pages, tracked in this repository because every threshold
+has to be traceable to it. `docs/regulations/SOURCE.md` records the published
+title, the statutory authority, and how the file arrived.
+
+**Harvesting was polite.** One quarter of a second between requests, an
+identifying user agent, and only pages the portal already serves to the public.
+`src/septic/config.py` holds both settings.
 
 **Scope and harvest.** 2014 onward, because earlier permits fall under superseded
 law and a finding against them would cite a rule that no longer applies. 1226
@@ -150,6 +196,7 @@ src/septic/ingest/    Textract, block parsing, field extraction
 src/septic/rules/     rule schema, engine, rule set, regulation graph
 src/septic/retrieval/ embeddings and the local permit index
 src/septic/report/    report composition and rendering
+src/septic/chatbot/   the reviewer chatbot, optional, outside the pipeline
 src/septic/geo.py     coordinate parsing, projection, distance screening
 src/septic/maps.py    the figures
 app.py                the reviewer console
@@ -201,6 +248,20 @@ streamlit run app.py
 It serves the cached packets with no network and no credentials. Uploading a new
 PDF needs credentials to run Textract, and says so rather than hanging.
 
+The reviewer chatbot is optional and needs a Google Cloud project. Without one it
+is hidden and everything else works unchanged:
+
+```bash
+set GOOGLE_CLOUD_PROJECT=your-project
+set GOOGLE_CLOUD_LOCATION=global
+set GOOGLE_GENAI_USE_VERTEXAI=true
+gcloud auth application-default login
+```
+
+On Windows, `start_console.bat` does all of this in one double click. It reads
+those settings from a gitignored `.env.local` beside it, binds the server to the
+local network, and prints the address to hand out before opening the browser.
+
 Other things that work:
 
 ```bash
@@ -228,6 +289,23 @@ tells a reviewer what to check on the site plan. `src/septic/geo.py` records all
 four reasons it cannot be a compliance answer, and no rule cites it, because no
 provision of the regulation measures from an address point. A permit with no
 coordinates produces no fact and so reads as CANNOT VERIFY.
+
+## Reviewer chatbot
+
+After a review, the console offers a chat box that answers questions about the
+result: why a requirement failed, what the cited section says, what is still
+missing. It runs on Gemini through Vertex AI and it is the one part of the system
+that is a model talking.
+
+It sits outside the pipeline on purpose. It is handed the composed report, the
+same JSON the report renders, and nothing else. It never sees the OCR text, the
+owner name or the document hash, it cannot reach the rule engine, and it cannot
+change, add or remove a finding. The verdict on screen is the same verdict with
+the chatbot switched off, which is how it is switched off by default: no Google
+Cloud project configured means no chat box and no other difference.
+
+`docs/chatbot.md` covers the setup, the grounding, and what is stripped before
+anything is sent.
 
 ## Status
 
