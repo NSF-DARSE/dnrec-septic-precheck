@@ -37,9 +37,12 @@ Once a packet is uploaded:
 - If the packet carries a notice (the synthetic packet does), it renders in an
   amber banner directly under the metric row.
 - The screen splits into two columns. The left (wider) column carries the
-  findings table grouped by outcome: deficiencies, could not be evaluated,
-  checks that passed, does not apply. The right column renders the PDF page by
-  page with navigation controls beneath it.
+  findings grouped by outcome: deficiencies with FAIL pills and citations, could
+  not be evaluated (grouped by the missing value that blocked them, with the
+  blocked rules listed compactly beneath each cause), checks that passed, and
+  does not apply. Every requirement reads as a sentence, not a machine
+  expression. The right column shows the full scanned packet as a scrollable
+  document.
 - At the bottom: a download button for the printable HTML report, and a toggle
   to show all 15 rules with their thresholds and regulation quotes.
 
@@ -81,9 +84,11 @@ What it shows:
 - Coverage: 5 of 15 checks ran, 3 not applicable to this system, 7 could not be
   read
 - The findings table shows which rules passed and why each was excluded or
-  unreadable
-- The PDF viewer renders the scanned packet page by page
-- A location screening map with the nearest mapped surface water
+  unreadable, with the unreadable section grouped by cause
+- The full 13-page packet scrolls in the viewer beside the findings
+- A location screening map showing roads for orientation, the permit location,
+  nearby mapped surface water, isolation distance rings from the rule set, and
+  the measured distance to the nearest water feature
 
 ### 3. Permit 282133 (NO DEFICIENCIES FOUND, minimal coverage)
 
@@ -113,9 +118,12 @@ What it shows:
 2. Switch to **permit 281364**. This is a real packet. Point at the coverage: 5 of
    15 checks ran because most isolation distances are measurements on a scanned
    drawing that no OCR can take. Walk through the passes, the excluded rules, and
-   the seven that could not be read. Scroll the PDF viewer to the site plan page
-   and point: that is where the distances live, and that is why they cannot be
-   read.
+   the seven that could not be read (grouped: "6 checks could not run because X
+   was not machine readable"). Scroll through the packet in the viewer to the site
+   plan page and point: that is where the distances live, and that is why they
+   cannot be read. Scroll down to the location screening map: it shows roads for
+   orientation, the permit location, and the nearest mapped water with a measured
+   distance.
 
 3. Finish with **permit 282133**. The punch line: 1 of 15. This is what NO
    DEFICIENCIES FOUND looks like when coverage is nearly zero. The tool refuses to
@@ -148,7 +156,8 @@ If wifi fails:
 
 - The console serves cached Textract analyses by SHA256 hash.
 - The PDF viewer rasterises locally with pypdfium2.
-- The location screening map is drawn from committed GIS shapefiles in `data/gis/`.
+- The location screening map is drawn from committed GIS data in `data/gis/`
+  (water layers and road centrelines, about 9 MB total).
 - Bedrock (wording and embeddings) degrades gracefully: the report renders with
   original wording and no precedent list, which is a complete report.
 - The only thing that breaks is uploading a packet that has never been cached.
