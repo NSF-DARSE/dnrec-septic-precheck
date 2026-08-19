@@ -774,13 +774,39 @@ class TestUploadDegradation:
         found = client.cached_by_hash(document_hash(pdfs[0].read_bytes()))
         assert found is not None and found.ok
 
-    def test_app_explains_rather_than_calling_textract(self):
-        """The uncached branch must not call analyze_file."""
+    def test_a_cached_packet_never_reaches_the_network(self):
+        """The guarantee that survives, now that an unseen packet is read live.
+
+        The console used to refuse anything it had not seen. It reads it now,
+        which is what makes it a tool rather than a viewer for a fixed corpus,
+        and this test moved with that change rather than being deleted: the
+        cached path is the demo path, and it must still complete with the wire
+        pulled out. Only the branch that has nothing to serve is allowed near
+        the network.
+        """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
         assert "analyze_file" not in source, (
-            "the console must never start a Textract job, that is the CLI's job"
+            "the console must never start a Textract job itself, "
+            "septic.review owns that"
         )
-        assert "needs AWS credentials" in source
+
+        cached = source.split("def run_review(")[1].split("def run_review_live(")[0]
+        assert "allow_network=False" in cached, (
+            "the cached path is the one the demo runs on and it must not be "
+            "allowed to reach the network"
+        )
+        live = source.split("def run_review_live(")[1].split(chr(10) + "def ")[0]
+        assert "allow_network=True" in live, (
+            "the live path exists to read a packet nobody has seen before"
+        )
+
+    def test_a_failed_live_read_says_what_went_wrong(self):
+        """A blank page in front of an audience is the failure mode to avoid."""
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        assert "could not be read" in source
+        assert "review_error" in source, (
+            "the reason the live read failed is not carried to the screen"
+        )
 
 
 class TestPDFViewer:

@@ -1544,7 +1544,7 @@ def _drawing_pending_card(name: str) -> str:
     """What the Location tab says while the drawing is still being measured."""
     return (
         "<div class='map-card'>"
-        "<div class='map-card-caption'>Site plan &mdash; measuring</div>"
+        "<div class='map-card-caption'>Site plan, measuring</div>"
         "<div class='map-card-note'>"
         "Finding the site plan, locating the tank, the wells and the disposal "
         "area on it, and reading the scale bar. This runs beside the review "
@@ -1569,7 +1569,7 @@ def site_plan_card(result: dict) -> str:
 
     parts = ["<div class='map-card'>"]
     parts.append(
-        f"<div class='map-card-caption'>Site plan &mdash; page {result.get('page')}"
+        f"<div class='map-card-caption'>Site plan, page {result.get('page')}"
         "</div>"
     )
 
