@@ -60,6 +60,7 @@ from septic.report.render import VERDICT_COLOR, render_html  # noqa: E402
 from septic.report.wording import (  # noqa: E402
     NOT_APPLICABLE_BANNER,
     UNREAD_BANNER,
+    reason_sentence,
     unread_note,
 )
 from septic.rules import engine  # noqa: E402
@@ -178,11 +179,12 @@ html, body { font-family:$f_sans; background:$c_surface_sunken; }
 }
 .ft-value {
   font-family:$f_mono; font-size:$t_body; font-weight:$w_bold;
-  white-space:nowrap; font-variant-numeric:tabular-nums;
+  font-variant-numeric:tabular-nums;
+  overflow-wrap:anywhere; hyphens:none;
 }
 .ft-threshold {
   font-family:$f_mono; font-size:$t_caption; color:var(--muted);
-  white-space:nowrap;
+  overflow-wrap:anywhere;
 }
 .ft-citation-chip {
   display:inline-block; background:$c_surface_sunken; color:$c_citation_fg;
@@ -657,7 +659,7 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
             reason_html = ""
         else:
             req_text = html_lib.escape(_requirement_sentence(f))
-            reason = f.get("reason", "")
+            reason = reason_sentence(f)
             reason_html = (
                 f"<div class='ft-reason'>{html_lib.escape(reason)}</div>"
                 if reason else ""
@@ -742,9 +744,9 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
     return (
         f"<table class='{cls}'>"
         "<colgroup>"
-        "<col style='width:10%'>"
-        "<col style='width:38%'>"
-        "<col style='width:18%'>"
+        "<col style='width:11%'>"
+        "<col style='width:34%'>"
+        "<col style='width:21%'>"
         "<col style='width:20%'>"
         "<col style='width:14%'>"
         "</colgroup>"

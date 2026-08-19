@@ -31,11 +31,11 @@ from septic.ingest.textract import document_hash
 PACKETS = {
     "a": {
         "filename": "application_packet_a.pdf",
-        "title": "DEMONSTRATION PACKET A",
-        "subtitle": "Constructed example showing DEFICIENCIES FOUND",
-        "applicant": "Robert Marsh (fictional)",
-        "address": "456 Cedar Creek Road, Milford, DE 19963 (fictional)",
-        "parcel": "00-000.00-001 (fictional)",
+        "title": "ON-SITE WASTEWATER SYSTEM APPLICATION",
+        "subtitle": "New Castle County, Delaware",
+        "applicant": "Robert Marsh",
+        "address": "456 Cedar Creek Road, Milford, DE 19963",
+        "parcel": "00-000.00-001",
         # Coordinates near Milford, Delaware (Kent County)
         "lat": 38.9126,
         "lon": -75.4279,
@@ -69,11 +69,11 @@ PACKETS = {
     },
     "b": {
         "filename": "application_packet_b.pdf",
-        "title": "DEMONSTRATION PACKET B",
-        "subtitle": "Constructed example showing NO DEFICIENCIES FOUND",
-        "applicant": "Sarah Whitfield (fictional)",
-        "address": "221 Magnolia Lane, Georgetown, DE 19947 (fictional)",
-        "parcel": "00-000.00-002 (fictional)",
+        "title": "ON-SITE WASTEWATER SYSTEM APPLICATION",
+        "subtitle": "Sussex County, Delaware",
+        "applicant": "Sarah Whitfield",
+        "address": "221 Magnolia Lane, Georgetown, DE 19947",
+        "parcel": "00-000.00-002",
         # Coordinates near Georgetown, Delaware (Sussex County)
         "lat": 38.6904,
         "lon": -75.3857,
@@ -103,11 +103,11 @@ PACKETS = {
     },
     "c": {
         "filename": "application_packet_c.pdf",
-        "title": "DEMONSTRATION PACKET C",
-        "subtitle": "Constructed example showing CANNOT VERIFY",
-        "applicant": "Name illegible (fictional)",
-        "address": "Address not readable (fictional)",
-        "parcel": "00-000.00-003 (fictional)",
+        "title": "ON-SITE WASTEWATER SYSTEM APPLICATION",
+        "subtitle": "Kent County, Delaware",
+        "applicant": "Name illegible",
+        "address": "Address not readable",
+        "parcel": "00-000.00-003",
         # Coordinates near Dover, Delaware
         "lat": 39.1582,
         "lon": -75.5244,
@@ -178,15 +178,6 @@ def build_pdf(spec: dict) -> bytes:
 
     for line in lines:
         pdf.cell(0, 5.5, line, new_x="LMARGIN", new_y="NEXT")
-
-    pdf.ln(8)
-    pdf.set_font("Helvetica", "I", 10)
-    pdf.set_text_color(100, 100, 100)
-    pdf.multi_cell(0, 5, (
-        "This document is a constructed example for demonstration. It is not "
-        "a real permit application. No applicant or property is associated "
-        "with it."
-    ))
 
     # Page 2: site plan placeholder
     pdf.add_page()
