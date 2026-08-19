@@ -92,20 +92,27 @@ is actually recorded.
 
 ## The three outcomes
 
+Every review reports the verdict alongside a coverage figure that says how much
+of the rule set actually reached a decision: how many checks ran, how many did not
+apply to this kind of system, and how many could not be read. The verdict is only
+readable next to that number.
+
 **NO DEFICIENCIES FOUND.** Nothing was flagged among the checks that ran. This is
-not an approval.
+not an approval, and it is not a statement about the checks that did not run.
 
 **DEFICIENCIES FOUND.** One or more requirements are not met, each itemised with
 the section and page it comes from.
 
-**CANNOT VERIFY.** No answer. Either a value could not be read off the packet, or
-the rule needed has not been confirmed by a person.
+**CANNOT VERIFY.** No check reached a decision. Either every value the rules need
+could not be read off the packet, or no rule has been confirmed by a person.
 
 ## Why CANNOT VERIFY exists
 
 Showing a reviewer a wrong setback distance is worse than showing nothing, because
 a wrong number that looks official gets passed to an applicant. So a rule counts
-only once a person has read the cited page and confirmed it.
+only once a person has read the cited page and confirmed it. All 15 rules are now
+confirmed, but the interlock stays active: any rule added later starts unverified
+and the engine returns UNKNOWN for it until someone repeats the check.
 
 ## Data provenance
 
@@ -168,6 +175,16 @@ Build the regulation graph, then review a cached example offline:
 ```bash
 python -m septic graph build
 python -m septic review --pdf out/examples/permit_281364_60839580.pdf --offline
+```
+
+To see the DEFICIENCIES FOUND outcome, review the synthetic demonstration packet.
+This is a constructed example with values that violate two rules, not a real permit
+application. It exists so the demo can show the outcome that matters most without
+needing a real deficient packet:
+
+```bash
+python scripts/build_synthetic_packet.py
+python -m septic review --pdf out/examples/synthetic_demonstration_packet.pdf --offline
 ```
 
 The reviewer console, which is what a reviewer would actually be handed:
