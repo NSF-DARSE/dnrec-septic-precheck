@@ -169,13 +169,34 @@ def render_text(composed) -> str:
         for line in _wrap(UNREAD_INTRO):
             add(line)
         add("")
-        for f in unresolved:
-            add(f"  {f['rule_id']}")
-            # No separate citation line: the sentence already ends with it, and
-            # printing it twice reads as filler on a page a reviewer is scanning.
-            for line in _wrap(unread_note(f), indent="    "):
-                add(line)
-            add("")
+        groups = c.get("unresolved_groups") or []
+        if groups:
+            for group in groups:
+                blocked_by = group.get("blocked_by", "")
+                description = group.get("description", blocked_by)
+                location = group.get("location", "")
+                count = group.get("count", 0)
+                findings = group.get("findings", [])
+                if count > 1:
+                    header = (f"{count} checks could not run because "
+                              f"{description} was not machine readable.")
+                else:
+                    header = (f"1 check could not run because "
+                              f"{description} was not machine readable.")
+                if location:
+                    header += f" It is normally {location}."
+                for line in _wrap(header, indent="  "):
+                    add(line)
+                for f in findings:
+                    citation = f.get("citation", "")
+                    add(f"    {f['rule_id']}  [{citation}]")
+                add("")
+        else:
+            for f in unresolved:
+                add(f"  {f['rule_id']}")
+                for line in _wrap(unread_note(f), indent="    "):
+                    add(line)
+                add("")
 
     missing = c.get("missing_information") or []
     if missing:
@@ -645,15 +666,39 @@ def render_html(composed, embedded: bool = False) -> str:
     if unresolved:
         add(f"<h3>{_esc(UNREAD_HEADING)} ({len(unresolved)})</h3>")
         add(f"<p class='caveat'>{_esc(UNREAD_INTRO)}</p>")
-        # No separate citation column. Every branch of the wording ends with the
-        # citation, so a column beside it would print the same section twice.
-        add("<table><tr><th>rule</th>"
-            "<th>what has to be read, where it is, and what it is measured "
-            "against</th></tr>")
-        for f in unresolved:
-            add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
-                f"<td>{_esc(unread_note(f))}</td></tr>")
-        add("</table>")
+        groups = c.get("unresolved_groups") or []
+        if groups:
+            for group in groups:
+                blocked_by = group.get("blocked_by", "")
+                description = _esc(group.get("description", blocked_by))
+                location = group.get("location", "")
+                count = group.get("count", 0)
+                findings = group.get("findings", [])
+                if count > 1:
+                    header = (f"{count} checks could not run because "
+                              f"<b>{description}</b> was not machine readable.")
+                else:
+                    header = (f"1 check could not run because "
+                              f"<b>{description}</b> was not machine readable.")
+                if location:
+                    header += f" It is normally {_esc(location)}."
+                add(f"<div class='finding unknown'><p class='reason'>"
+                    f"{header}</p>")
+                add("<table><tr><th>rule</th><th>requirement</th>"
+                    "<th>citation</th></tr>")
+                for f in findings:
+                    add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
+                        f"<td>{_esc(f['requirement'])}</td>"
+                        f"<td>{_esc(f['citation'])}</td></tr>")
+                add("</table></div>")
+        else:
+            add("<table><tr><th>rule</th>"
+                "<th>what has to be read, where it is, and what it is measured "
+                "against</th></tr>")
+            for f in unresolved:
+                add(f"<tr><td><code>{_esc(f['rule_id'])}</code></td>"
+                    f"<td>{_esc(unread_note(f))}</td></tr>")
+            add("</table>")
 
     # The screening sits here, directly under the checks that could not run,
     # because most of those are isolation distances on a scanned drawing and this

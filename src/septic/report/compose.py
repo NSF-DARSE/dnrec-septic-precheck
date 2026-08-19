@@ -139,6 +139,11 @@ class Finding:
     # carried through so the viewer can highlight it on the rendered page.
     fact_box: dict | None = None
     fact_page: int | None = None
+    # The parameter that blocked this check from running. For an undetermined
+    # applicability check, this is the gate (excluded_by.parameter). For a check
+    # whose value could not be read, this is the parameter itself. Both surfaces
+    # group unresolved findings on this key without parsing the reason string.
+    blocked_by: str | None = None
 
     @property
     def citation(self) -> str:
@@ -170,6 +175,7 @@ class Finding:
             "definitions": self.definitions,
             "exceptions": self.exceptions,
             "caveats": self.caveats,
+            "blocked_by": self.blocked_by,
         }
 
 
@@ -190,6 +196,11 @@ class Composed:
     # "does not apply because system_type is 'pressure dosed'" is not a
     # requirement that was met, and a reviewer must never read it as one.
     not_applicable: list[Finding] = field(default_factory=list)
+    # Unresolved findings grouped by the parameter that blocked them. Each entry
+    # carries the blocked_by key, a human description of why, and the findings.
+    # Both the console and the printable report render from this rather than
+    # computing groups themselves.
+    unresolved_groups: list[dict] = field(default_factory=list)
     missing_information: list[dict] = field(default_factory=list)
     discarded_readings: list[dict] = field(default_factory=list)
     facts_read: list[dict] = field(default_factory=list)
@@ -209,6 +220,7 @@ class Composed:
             "coverage": self.coverage,
             "deficiencies": [f.to_json() for f in self.deficiencies],
             "unresolved": [f.to_json() for f in self.unresolved],
+            "unresolved_groups": self.unresolved_groups,
             "satisfied": [f.to_json() for f in self.satisfied],
             "not_applicable": [f.to_json() for f in self.not_applicable],
             "missing_information": self.missing_information,
@@ -315,6 +327,16 @@ def _finding_from(evaluation, graph, provenance: dict,
             "where": gating_fact.describe() if gating_fact else None,
         }
 
+    applicability_value = getattr(
+        getattr(evaluation, "applicability", None), "value", "applies"
+    )
+    if applicability_value == "undetermined" and gating:
+        blocked_by = gating
+    elif evaluation.outcome.value == "UNKNOWN":
+        blocked_by = rule.parameter
+    else:
+        blocked_by = None
+
     return Finding(
         rule_id=rule.id,
         outcome=evaluation.outcome.value,
@@ -337,10 +359,9 @@ def _finding_from(evaluation, graph, provenance: dict,
         definitions=ctx["definitions"],
         exceptions=ctx["exceptions"],
         caveats=caveats,
-        applicability=getattr(
-            getattr(evaluation, "applicability", None), "value", "applies"
-        ),
+        applicability=applicability_value,
         excluded_by=excluded_by,
+        blocked_by=blocked_by,
     )
 
 
@@ -457,6 +478,30 @@ def compose(
             screening.to_json() if hasattr(screening, "to_json") else screening
         )
 
+    # Group unresolved findings by blocked_by so both surfaces render them
+    # grouped by cause rather than as 14 separate rows repeating the same text.
+    from .wording import parameter_name, parameter_location
+    grouped_order: list[str] = []
+    grouped_map: dict[str, list[Finding]] = {}
+    for f in unresolved:
+        key = f.blocked_by or f.parameter or "unknown"
+        if key not in grouped_map:
+            grouped_order.append(key)
+            grouped_map[key] = []
+        grouped_map[key].append(f)
+    unresolved_groups = []
+    for key in grouped_order:
+        members = grouped_map[key]
+        name = parameter_name(key)
+        location = parameter_location(key)
+        unresolved_groups.append({
+            "blocked_by": key,
+            "description": name,
+            "location": location,
+            "count": len(members),
+            "findings": [f.to_json() for f in members],
+        })
+
     return Composed(
         verdict=verdict.value,
         headline=VERDICT_HEADLINE[verdict],
@@ -468,6 +513,7 @@ def compose(
         coverage=coverage,
         deficiencies=deficiencies,
         unresolved=unresolved,
+        unresolved_groups=unresolved_groups,
         satisfied=satisfied,
         not_applicable=not_applicable,
         missing_information=missing_information,

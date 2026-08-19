@@ -855,6 +855,73 @@ def rules_reference(rules) -> str:
     )
 
 
+def _grouped_unresolved_html(groups: list[dict]) -> str:
+    """Render unresolved findings grouped by the parameter that blocked them.
+
+    Instead of 14 rows each repeating the same paragraph, this leads with the
+    cause and lists the rules it blocks beneath it.
+    """
+    parts = []
+    for group in groups:
+        blocked_by = group.get("blocked_by", "")
+        description = html_lib.escape(group.get("description", blocked_by))
+        location = group.get("location", "")
+        count = group.get("count", 0)
+        findings = group.get("findings", [])
+
+        # Group header: the missing value and how many rules it blocks
+        if count > 1:
+            header = f"{count} checks could not run because <b>{description}</b> was not machine readable."
+        else:
+            header = f"1 check could not run because <b>{description}</b> was not machine readable."
+        if location:
+            header += f" It is normally {html_lib.escape(location)}."
+
+        parts.append(
+            f"<div style='margin-top:{TOKENS['space']['lg']}px;"
+            f"border-left:{TOKENS['border']['accent']}px solid "
+            f"{TOKENS['colour']['unverified_edge']};"
+            f"padding-left:{TOKENS['space']['lg']}px'>"
+            f"<div style='font-size:{TOKENS['type_scale']['body']}px;"
+            f"color:{TOKENS['colour']['ink']};margin-bottom:{TOKENS['space']['sm']}px'>"
+            f"{header}</div>"
+        )
+
+        # List the blocked rules with their citations
+        parts.append("<table class='findings-table' style='margin:0'>"
+                     "<colgroup>"
+                     "<col style='width:18%'>"
+                     "<col style='width:50%'>"
+                     "<col style='width:32%'>"
+                     "</colgroup>"
+                     "<tr><th>RULE</th><th>REQUIREMENT</th><th>CITATION</th></tr>")
+        for f in findings:
+            rule_id = f.get("rule_id", "")
+            short_id = _short_rule_id(rule_id)
+            section = html_lib.escape(f.get("section", ""))
+            page = f.get("page")
+            requirement = html_lib.escape(f.get("requirement", ""))
+            citation_parts = []
+            if section:
+                citation_parts.append(section)
+            if page:
+                citation_parts.append(f"p.{page}")
+            citation_html = (
+                f"<span class='ft-citation-chip'>"
+                f"{html_lib.escape(', '.join(citation_parts))}</span>"
+                if citation_parts else ""
+            )
+            parts.append(
+                f"<tr><td><span class='ft-rule-id'>{html_lib.escape(short_id)}</span>"
+                f"<div class='ft-section'>{section}</div></td>"
+                f"<td>{requirement}</td>"
+                f"<td>{citation_html}</td></tr>"
+            )
+        parts.append("</table></div>")
+
+    return "".join(parts)
+
+
 def render_findings(payload: dict) -> None:
     """Render all finding groups natively in the console."""
     deficiencies = payload.get("deficiencies") or []
@@ -876,7 +943,11 @@ def render_findings(payload: dict) -> None:
             f"<span class='findings-section-count'>({len(unresolved)})</span></div>",
             unsafe_allow_html=True,
         )
-        st.markdown(findings_table(unresolved, "unresolved"), unsafe_allow_html=True)
+        groups = payload.get("unresolved_groups") or []
+        if groups:
+            st.markdown(_grouped_unresolved_html(groups), unsafe_allow_html=True)
+        else:
+            st.markdown(findings_table(unresolved, "unresolved"), unsafe_allow_html=True)
 
     if satisfied:
         st.markdown(

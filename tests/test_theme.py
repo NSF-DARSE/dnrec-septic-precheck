@@ -338,16 +338,22 @@ class TestAnUnreadCheckNamesWhatToRead:
         html = render_html(payload)
         text = render_text(payload)
         for surface in (html, text):
-            assert parameter_name("dist_disposal_to_well") in surface
+            # The text renderer hard wraps at 78 columns, so search with
+            # normalized whitespace for the text surface.
+            normalized = " ".join(surface.split())
+            assert parameter_name("dist_disposal_to_well") in normalized
             assert "Exhibit C" in surface
-        assert note in html
+        # The grouped format carries the same information as the per-finding note
+        # but in a different shape (group header + rule table). Verify the key
+        # content is present rather than the exact unread_note string.
+        assert "not machine readable" in html
+        assert "Exhibit C" in html
         assert UNREAD_INTRO in html
         assert UNREAD_HEADING.lower() in html.lower()
         # The terminal report hard wraps at 78 columns, so it carries the same
         # words rather than the same bytes.
         flat = " ".join(text.split())
         assert " ".join(UNREAD_INTRO.split()) in flat
-        assert " ".join(note.split()) in flat
 
         # The console banner points at the list rather than reprinting it. Both
         # sentences come from this module, so the two surfaces still cannot word
