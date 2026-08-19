@@ -21,6 +21,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 PACKETS = [
     (ROOT / "out" / "examples" / "permit_281364_60839580.pdf", "281364"),
+    (ROOT / "out" / "examples" / "permit_282133_60843649.pdf", "282133"),
     (ROOT / "out" / "examples" / "synthetic_demonstration_packet.pdf", "synthetic"),
 ]
 WIDTHS = [1920, 1400]
