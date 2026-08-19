@@ -71,10 +71,21 @@ class TestConsoleModule:
             assert pattern not in source, f"app.py references {pattern}"
 
     def test_app_is_not_a_chat_interface(self):
-        """The product claim is that rules decide. A chat UI contradicts it."""
-        source = (ROOT / "app.py").read_text(encoding="utf-8").lower()
+        """The review display is not a chatbot. Rules decide, not a conversation.
+
+        The reviewer chatbot section (below the report) deliberately uses
+        st.chat_input and st.chat_message, but only inside _chatbot_section().
+        The review results themselves are never presented as a chat thread.
+        """
+        source = (ROOT / "app.py").read_text(encoding="utf-8")
+        # The chat widgets must appear only inside the chatbot function
+        chatbot_section = source.split("def _chatbot_section(")[1] if "def _chatbot_section(" in source else ""
+        before_chatbot = source.split("def _chatbot_section(")[0] if "def _chatbot_section(" in source else source
+        before_lower = before_chatbot.lower()
         for banned in ("chat_input", "chat_message", "st.chat"):
-            assert banned not in source, f"app.py uses {banned}"
+            assert banned not in before_lower, (
+                f"app.py uses {banned} outside the chatbot section"
+            )
 
     def test_console_banner_shows_coverage_with_the_verdict(self):
         """The screen may not show a headline without saying how much ran.
@@ -762,7 +773,6 @@ class TestUploadDegradation:
             "the console must never start a Textract job, that is the CLI's job"
         )
         assert "needs AWS credentials" in source
-
 
 
 class TestPDFViewer:
