@@ -100,48 +100,38 @@ html, body { font-family:$f_sans; }
   font-size:$t_caption; color:$c_on_band_muted; margin-top:$s_xs;
 }
 
-/* Metric cards row */
-.metric-row {
-  display:grid; grid-template-columns:1fr 1fr 1fr 2fr;
-  gap:$s_md; margin:$s_lg 0; align-items:start;
+/* Verdict strip - pinned under the brand band */
+.verdict-strip {
+  display:flex; align-items:center; gap:$s_xl; padding:$s_lg $s_xl;
+  background:$c_surface; border-bottom:$b_hairline solid var(--line);
+  position:sticky; top:0; z-index:100; flex-wrap:wrap;
 }
-@media (max-width:1100px) {
-  .metric-row { grid-template-columns:1fr 1fr; }
+.verdict-strip-headline {
+  font-size:clamp(22px, 2.5vw, $t_verdict); font-weight:$w_bold;
+  line-height:$lh_tight; letter-spacing:-0.02em; white-space:nowrap;
 }
-.metric-card {
-  border:$b_hairline solid var(--line); border-radius:$r_md;
-  padding:$s_lg $s_xl; background:$c_surface;
+.verdict-strip-bar {
+  flex:0 0 200px; display:flex; flex-direction:column; gap:$s_xs;
 }
-.metric-card-label {
-  font-size:$t_micro; text-transform:uppercase; letter-spacing:0.07em;
-  color:var(--muted); margin-bottom:$s_xs;
+.verdict-strip-counts {
+  font-size:$t_caption; color:var(--muted); white-space:nowrap;
 }
-.metric-card-value {
-  font-size:$t_verdict; font-weight:$w_bold; line-height:$lh_tight;
-  color:var(--ink);
+.verdict-strip-counts .dot {
+  display:inline-block; width:8px; height:8px; border-radius:50%;
+  margin-right:3px; vertical-align:middle;
 }
-.verdict-card { grid-column:span 1; }
-.verdict-card-headline {
-  font-size:$t_verdict; font-weight:$w_bold; line-height:$lh_tight;
-  letter-spacing:-0.02em;
+.verdict-strip-meta {
+  font-size:$t_caption; color:var(--muted); white-space:nowrap;
 }
-.verdict-card-coverage {
-  font-size:$t_caption; color:var(--muted); margin-top:$s_xs;
+.verdict-strip-actions {
+  margin-left:auto; display:flex; gap:$s_md; align-items:center;
 }
-/* Segmented bar */
+/* Segmented bar inside strip */
 .seg-bar {
   width:100%; height:${s_md}; border-radius:$r_sm; overflow:hidden;
-  display:flex; margin-top:$s_md; background:var(--line);
+  display:flex; background:var(--line);
 }
 .seg-bar-segment { height:100%; }
-.seg-legend {
-  display:flex; flex-wrap:wrap; gap:$s_lg; margin-top:$s_sm;
-  font-size:$t_micro; color:var(--muted);
-}
-.seg-legend-dot {
-  display:inline-block; width:10px; height:10px; border-radius:50%;
-  margin-right:$s_xs; vertical-align:middle;
-}
 
 /* Provenance line */
 .provenance {
@@ -485,8 +475,8 @@ def brand_band() -> str:
     )
 
 
-def metric_row(payload: dict) -> str:
-    """Four metric cards: checks ran, not applicable, could not be read, verdict."""
+def verdict_strip(payload: dict, doc_name: str = "") -> str:
+    """A compact horizontal strip: verdict, bar, counts, actions."""
     coverage = payload.get("coverage") or {}
     headline = payload.get("headline", "")
     evaluated = coverage.get("evaluated", 0)
@@ -498,7 +488,7 @@ def metric_row(payload: dict) -> str:
         headline, (TOKENS["colour"]["ink"], TOKENS["colour"]["surface_sunken"])
     )
 
-    # Segmented bar proportions
+    # Segmented bar
     seg_parts = []
     if total > 0:
         if evaluated:
@@ -522,44 +512,38 @@ def metric_row(payload: dict) -> str:
 
     seg_bar = f"<div class='seg-bar'>{''.join(seg_parts)}</div>"
 
-    legend = (
-        "<div class='seg-legend'>"
-        f"<span><span class='seg-legend-dot' style='background:"
-        f"{TOKENS['colour']['clear_edge']}'></span>Ran ({evaluated})</span>"
-        f"<span><span class='seg-legend-dot' style='background:"
-        f"{TOKENS['colour']['out_of_scope_edge']}'></span>"
-        f"Not applicable ({not_applicable})</span>"
-        f"<span><span class='seg-legend-dot' style='background:"
-        f"{TOKENS['colour']['unverified_edge']}'></span>"
-        f"Could not be read ({unreadable})</span>"
-        "</div>"
+    # Counts as inline text with coloured dots
+    count_parts = []
+    count_parts.append(
+        f"<span><span class='dot' style='background:"
+        f"{TOKENS['colour']['clear_edge']}' title='Ran'></span>"
+        f"{evaluated} ran</span>"
     )
+    if not_applicable:
+        count_parts.append(
+            f"<span><span class='dot' style='background:"
+            f"{TOKENS['colour']['out_of_scope_edge']}' title='Not applicable'>"
+            f"</span>{not_applicable} n/a</span>"
+        )
+    if unreadable:
+        count_parts.append(
+            f"<span><span class='dot' style='background:"
+            f"{TOKENS['colour']['unverified_edge']}' title='Could not be read'>"
+            f"</span>{unreadable} unread</span>"
+        )
 
-    coverage_text = coverage.get("text", "")
+    counts_html = " &middot; ".join(count_parts)
+
+    subject = payload.get("subject") or {}
+    pages = subject.get("pages", 0)
+    meta = f"{html_lib.escape(doc_name)} &middot; {pages} pages" if doc_name else ""
 
     return (
-        "<div class='metric-row'>"
-        # Card 1: Checks ran
-        "<div class='metric-card'>"
-        "<div class='metric-card-label'>CHECKS RAN</div>"
-        f"<div class='metric-card-value'>{evaluated}</div>"
-        "</div>"
-        # Card 2: Not applicable
-        "<div class='metric-card'>"
-        "<div class='metric-card-label'>NOT APPLICABLE</div>"
-        f"<div class='metric-card-value'>{not_applicable}</div>"
-        "</div>"
-        # Card 3: Could not be read
-        "<div class='metric-card'>"
-        "<div class='metric-card-label'>COULD NOT BE READ</div>"
-        f"<div class='metric-card-value'>{unreadable}</div>"
-        "</div>"
-        # Card 4: Verdict with bar
-        "<div class='metric-card verdict-card'>"
-        f"<div class='verdict-card-headline' style='color:{fg}'>{headline}</div>"
-        f"<div class='verdict-card-coverage'>{html_lib.escape(coverage_text)}</div>"
-        f"{seg_bar}{legend}"
-        "</div>"
+        "<div class='verdict-strip'>"
+        f"<div class='verdict-strip-headline' style='color:{fg}'>{headline}</div>"
+        f"<div class='verdict-strip-bar'>{seg_bar}</div>"
+        f"<div class='verdict-strip-counts'>{counts_html}</div>"
+        f"<div class='verdict-strip-meta'>{meta}</div>"
         "</div>"
     )
 
@@ -1157,8 +1141,11 @@ if uploaded is not None:
                 unsafe_allow_html=True,
             )
 
-            # Metric row with segmented bar
-            st.markdown(metric_row(payload), unsafe_allow_html=True)
+            # Verdict strip with segmented bar
+            st.markdown(
+                verdict_strip(payload, subject.get("document", "")),
+                unsafe_allow_html=True,
+            )
 
             # Notices from the payload, rendered above the findings so both the
             # console and the printable report show them from the same source.

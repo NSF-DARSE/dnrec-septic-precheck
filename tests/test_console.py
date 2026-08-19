@@ -81,18 +81,18 @@ class TestConsoleModule:
 
         The console is the surface a reviewer sees first and from furthest away.
         It reads both numbers out of the composed payload, so it cannot disagree
-        with the report body. The metric row now carries the verdict and
-        coverage in a card with a segmented bar.
+        with the report body. The verdict strip carries the verdict, the coverage
+        bar and the counts in one horizontal line.
         """
         source = (ROOT / "app.py").read_text(encoding="utf-8")
-        assert "def metric_row(payload: dict) -> str:" in source
-        assert "st.markdown(metric_row(payload), unsafe_allow_html=True)" in source
-        metric_body = source.split("def metric_row(payload: dict) -> str:")[1].split(
+        assert "def verdict_strip(payload: dict" in source
+        assert "verdict_strip(payload" in source
+        strip_body = source.split("def verdict_strip(payload: dict")[1].split(
             "\ndef "
         )[0]
-        assert 'payload.get("headline"' in metric_body
-        assert 'payload.get("coverage")' in metric_body
-        assert "verdict-card-coverage" in metric_body
+        assert 'payload.get("headline"' in strip_body
+        assert 'payload.get("coverage")' in strip_body
+        assert "verdict-strip-headline" in strip_body
 
     def test_console_banner_reads_the_same_coverage_the_report_shows(self):
         """One number, produced by the rules, positioned twice.
@@ -654,7 +654,7 @@ class TestAppRuns:
         assert len(expanders) <= 2, "unexpected extra expanders"
         assert len(app_test.get("file_uploader")) == 1, "the way in disappeared"
         text = " ".join(m.value or "" for m in app_test.markdown)
-        assert "verdict-card-headline" in text, "no verdict rendered for a loaded packet"
+        assert "verdict-strip-headline" in text, "no verdict rendered for a loaded packet"
 
     def test_the_screen_addresses_the_reviewer(self, app_test):
         """The audience is the reviewer assessing an application, not an applicant.
