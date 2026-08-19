@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from . import config
+from .ingest import ocr
 
 
 def cmd_preflight(argv: list[str]) -> int:
@@ -231,6 +232,11 @@ def cmd_review(argv: list[str]) -> int:
                     help="skip the similar prior permits lookup")
     ap.add_argument("--rephrase", action="store_true",
                     help="run the optional Bedrock plain language pass on remedies")
+    ap.add_argument("--ocr", choices=ocr.PROVIDERS,
+                    help=f"which OCR provider reads the document; defaults to "
+                         f"OCR_PROVIDER, currently {config.OCR_PROVIDER}. bedrock "
+                         f"returns no page coordinates and no calibrated confidence, "
+                         f"and cannot read --permit straight from the bucket")
     ap.add_argument("--out", type=Path, default=config.OUT_DIR,
                     help="directory for the report files")
     args = ap.parse_args(argv)
@@ -243,6 +249,7 @@ def cmd_review(argv: list[str]) -> int:
         allow_network=not args.offline,
         with_precedents=not args.no_precedents,
         rephrase=args.rephrase,
+        provider=args.ocr,
     )
 
     print(result.text)

@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from . import config
-from .ingest import layout
+from .ingest import layout, ocr
 from .ingest.extract import extract_facts
 from .ingest.textract import TextractClient, hash_file
 from .report import compose as compose_mod
@@ -93,11 +93,18 @@ def analyze(
     manifest: Path | None = None,
     allow_network: bool = True,
     client: TextractClient | None = None,
-):
-    """Get a read Document plus a description of where it came from.
+    provider: str | None = None,
+) -> tuple[ocr.OcrResult, dict[str, Any], bool]:
+    """Read a document and describe where it came from.
 
     Tries the offline cache before anything else, so the common demo path makes no
     network call and needs no credentials.
+
+    Returns an `ingest.ocr.OcrResult`, which carries the parsed Document together
+    with what may honestly be claimed about it: whether the provider supplied
+    geometry, and whether its confidence figures are calibrated. Going through
+    `ingest.ocr.read` rather than naming a provider here is what lets OCR_PROVIDER
+    select one without this module changing.
 
     subject describes the document and nothing else. It used to carry a source line
     naming the service and saying whether a cache was used, and for a harvested
@@ -109,9 +116,17 @@ def analyze(
     the findings and how long it is. The offline guarantee is still real and is
     still what makes the demo survive a failed network, it just does not need
     narrating on screen, and the rule count line already says it in the right register.
+
+    Which provider read the document is the same kind of fact, so it does not go in
+    subject either. What a provider cannot support does matter to a reviewer, and
+    that reaches them as a warning on the result instead.
+
+    `client` is still accepted so a caller can inject a Textract client, which the
+    S3 branch below uses. It is ignored on the local file branch, where the
+    provider is whatever OCR_PROVIDER names.
     """
-    client = client or TextractClient()
     subject: dict[str, Any] = {}
+    chosen = (provider or config.OCR_PROVIDER).lower()
 
     if permit and pdf is None:
         pdf = find_local_pdf(permit)
@@ -121,18 +136,17 @@ def analyze(
     if pdf is not None:
         pdf = Path(pdf)
         subject["document"] = pdf.name
-        doc_hash = hash_file(pdf)
-        subject["document_hash"] = doc_hash
-        analysis = client.cached_by_hash(doc_hash)
-        if analysis is not None:
-            return analysis, subject, True
-        if not allow_network:
-            raise RuntimeError(
-                f"no cached analysis for {pdf.name} and network use was declined. "
-                f"Run once with network access to populate the cache."
-            )
-        analysis = client.analyze_file(pdf)
-        return analysis, subject, False
+        subject["document_hash"] = hash_file(pdf)
+        try:
+            result = ocr.read(pdf, provider=chosen, offline=not allow_network)
+        except Exception as exc:  # noqa: BLE001
+            if not allow_network:
+                raise RuntimeError(
+                    f"no cached {chosen} read for {pdf.name} and network use was "
+                    f"declined. Run once with network access to populate the cache."
+                ) from exc
+            raise
+        return result, subject, result.from_cache
 
     if permit:
         key = s3_key_for_permit(permit, manifest)
@@ -141,20 +155,57 @@ def analyze(
                 f"permit {permit} has no harvested document. Only 218 of the 1226 "
                 f"approved permits carry one. Pass --pdf with a local file instead."
             )
+        # The S3 branch is Textract only. StartDocumentAnalysis reads straight out
+        # of the bucket, whereas a Converse document block needs the bytes in the
+        # request, so routing Bedrock through here would mean downloading the
+        # object first. Rather than do that silently under a provider the caller
+        # did not ask for, say so.
+        if chosen != "textract":
+            raise RuntimeError(
+                f"provider {chosen!r} cannot read s3://{key} yet; only textract "
+                f"reads directly from the bucket. Pass --pdf with a local copy, or "
+                f"set SEPTIC_OCR_PROVIDER=textract for permit lookups."
+            )
+        client = client or TextractClient()
         subject["permit_number"] = permit
         # The file name only. The bucket and the key stay out of subject, because
         # everything in subject is rendered, and a projected screen or a forwarded
         # report is the last place a storage path belongs.
         subject["document"] = key.rsplit("/", 1)[-1]
         cached = client.cached(key)
-        if cached is not None:
-            return cached, subject, True
-        if not allow_network:
-            raise RuntimeError(f"no cached analysis for {key} and network declined")
-        analysis = client.analyze(key)
-        return analysis, subject, False
+        if cached is None:
+            if not allow_network:
+                raise RuntimeError(f"no cached analysis for {key} and network declined")
+            cached = client.analyze(key)
+            from_cache = False
+        else:
+            from_cache = True
+        return _from_analysis(cached), subject, from_cache
 
     raise ValueError("pass either a pdf path or a permit number")
+
+
+def _from_analysis(analysis) -> ocr.OcrResult:
+    """Wrap a Textract Analysis as an OcrResult.
+
+    The S3 branch cannot go through ingest.ocr.read, which takes a local path,
+    so it produces the same result type here rather than returning a different
+    shape from one branch of the same function.
+    """
+    if not analysis.ok:
+        raise RuntimeError(
+            f"document analysis did not succeed: status {analysis.status} "
+            f"{analysis.message or ''}".strip()
+        )
+    return ocr.OcrResult(
+        document=layout.parse_blocks(analysis.blocks),
+        provider="textract",
+        document_hash="",
+        from_cache=analysis.from_cache,
+        geometry_available=True,
+        confidence_is_calibrated=True,
+        job_id=analysis.job_id,
+    )
 
 
 # The permit CSV is 45 MB and 117,802 rows. It was read and parsed on every call,
@@ -292,21 +343,39 @@ def review(
     with_map: bool = True,
     rephrase: bool = False,
     client: TextractClient | None = None,
+    provider: str | None = None,
 ) -> ReviewResult:
     """Run the whole chain and return the rendered report."""
     warnings: list[str] = []
 
-    analysis, subject, offline = analyze(
+    result, subject, offline = analyze(
         pdf=pdf, permit=permit, manifest=manifest,
-        allow_network=allow_network, client=client,
+        allow_network=allow_network, client=client, provider=provider,
     )
-    if not analysis.ok:
+    if not result.ok:
         raise RuntimeError(
-            f"document analysis did not succeed: status {analysis.status} "
-            f"{analysis.message or ''}".strip()
+            f"the {result.provider} read produced no text and no form fields for "
+            f"{subject.get('document', 'this document')}"
         )
 
-    document = layout.parse_blocks(analysis.blocks)
+    # Say what the read cannot support on the report itself, not only in a log. A
+    # reviewer is being asked to act on these values, and the two things a
+    # provider without geometry or a calibrated score cannot offer are the two a
+    # reviewer would otherwise assume: that a value can be pointed at on the page,
+    # and that a low confidence would have announced a bad read.
+    if not result.geometry_available:
+        warnings.append(
+            f"the {result.provider} read returns no page coordinates, so no value "
+            f"in this report can be pointed at a position on the page"
+        )
+    if not result.confidence_is_calibrated:
+        warnings.append(
+            f"the {result.provider} read reports its own confidence rather than a "
+            f"recogniser score, so a low figure is not evidence of a bad read"
+        )
+    warnings.extend(result.warnings)
+
+    document = result.document
     subject["pages"] = document.pages
 
     extraction = extract_facts(document)
