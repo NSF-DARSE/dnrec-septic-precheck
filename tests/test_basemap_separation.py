@@ -51,40 +51,48 @@ class TestBasemapLayerSeparation:
             )
 
     def test_screen_point_ignores_roads(self):
-        """The screening distance for permit 281364 must not change when
-        roads are present on disk.
+        """The screening distance for permit 281364 is measured to water only.
 
-        Permit 281364 screens at approximately 594 ft to the nearest water
-        feature. If roads entered the search, the distance would drop to a
-        few feet (the nearest road segment). This test pins the distance to
-        within 1 ft of the known value.
+        This is the assertion the whole basemap separation exists to protect.
+        Permit 281364 sits 470.6 ft from Wilson Run. A road runs closer, so if
+        roads ever entered the distance search the reviewer would be shown
+        348.9 ft instead, labelled as a water feature, which is a wrong setback
+        distance presented as a real one.
+
+        Pinning the number alone would not catch that, because a constant says
+        nothing about whether the exclusion is doing any work. So this measures
+        both ways and asserts they differ: the default answer must be the water
+        only answer, and including roads must change it.
         """
-        # Permit 281364 coordinates
-        lat, lon = 38.7377, -75.6193
-        try:
-            screening = geo.screen_point(lat, lon)
-        except geo.CoordinateError:
-            pytest.skip("coordinates outside Delaware in test environment")
+        lat, lon = 39.813601, -75.616268
 
-        if screening.nearest_water is None:
+        default = geo.screen_point(lat, lon)
+        if default.nearest_water is None:
             pytest.skip("no water layers present")
 
-        distance = screening.nearest_water.distance_feet
-        # The known distance is approximately 594 ft. If roads entered the
-        # measurement, this would be near zero.
-        assert distance > 100, (
-            f"screening distance is {distance:.1f} ft, which suggests a "
-            f"non-water feature (likely a road) entered the search"
+        water_only = geo.screen_point(lat, lon, layers=list(geo.WATER_LAYERS))
+        with_roads = geo.screen_point(
+            lat, lon, layers=list(geo.WATER_LAYERS) + list(geo.BASEMAP_LAYERS)
         )
-        # Pin to within 5 ft of the known value
-        assert abs(distance - 594) < 5, (
-            f"screening distance changed: expected ~594 ft, got {distance:.1f} ft"
+
+        assert abs(default.nearest_water.distance_feet - 470.6) < 1.0, (
+            f"permit 281364 should screen at 470.6 ft to Wilson Run, got "
+            f"{default.nearest_water.distance_feet:.1f} ft"
         )
-        # Verify the nearest feature is water, not a road
-        assert screening.nearest_water.layer in geo.WATER_LAYERS, (
-            f"nearest feature is from {screening.nearest_water.layer}, "
-            f"which is not a water layer"
-        )
+        assert default.nearest_water.label == "Wilson Run"
+        assert (
+            default.nearest_water.distance_feet
+            == water_only.nearest_water.distance_feet
+        ), "the default search included something that is not a water layer"
+
+        if geo.available_basemap_layers():
+            assert (
+                with_roads.nearest_water.distance_feet
+                < default.nearest_water.distance_feet - 10
+            ), (
+                "including roads did not change the answer, so this test is "
+                "no longer proving that excluding them matters"
+            )
 
     def test_screen_point_does_not_accept_basemap_layer_names(self):
         """Passing a basemap layer name explicitly to screen_point still works
