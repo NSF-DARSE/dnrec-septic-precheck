@@ -77,14 +77,43 @@ UNMEASURABLE: dict[str, str] = {
         "slope needs contour lines read off the drawing, not a distance",
 }
 
-# Feet of allowance on a measured distance, from the verified error above. The
-# tank to well reading was out by 17.5 ft on the one sheet with ground truth, so
-# this is that rounded up rather than a figure chosen to look tight.
-UNCERTAINTY_FEET = 20.0
+# Allowance on a measured distance, as a fraction of the image diagonal rather
+# than a number of feet.
+#
+# Feet was wrong and wrong in a way that hides. The detector's centre error is a
+# property of the image it looked at, not of the ground: vision_truth reports it as
+# 0.92 percent of the diagonal on dnrec_53, and locate.py sizes its own refinement
+# window with ERROR_ALLOWANCE_FRACTION because the error scales with the region
+# viewed. Feet only enters when the scale converts it.
+#
+# A fixed 20 ft was therefore only correct for sheets near 0.97 ft/px. On a 1 inch
+# to 30 feet sheet the real allowance is about 4 ft, so readings that could settle
+# a check would have been withheld. On a 1 inch to 400 feet sheet it is about 55 ft,
+# so readings that could not settle anything would have been asserted. The second
+# is the dangerous direction.
+MEAN_ERROR_FRACTION_OF_DIAGONAL = 0.0092
 
-# A measurement is refused outright below this, because two symbols this close
-# together are within each other's centre error and the separation is noise.
-MIN_TRUSTWORTHY_FEET = 25.0
+# A separation inherits the error of both endpoints. Two independent centre errors
+# combine to about sqrt(2) times one of them, which the one measured pair supports:
+# mean centre error 13.7 ft against a tank to well error of 17.5 ft is a ratio of
+# 1.28 where sqrt(2) is 1.41. Used as the multiplier rather than doubling, which
+# would be the worst case of both errors pointing along the line between them.
+PAIR_ERROR_MULTIPLIER = 1.414
+
+
+def uncertainty_feet(image_width: int, image_height: int,
+                     feet_per_pixel: float) -> float:
+    """Allowance on a distance measured between two symbols, in feet.
+
+    Derived from the image it was measured on and that sheet's own scale, so it
+    follows a change of render resolution or drawing scale instead of being
+    calibrated to the one sheet the figure came from. On dnrec_53 this returns
+    19.4 ft, which is the 20 ft the constant used to hardcode, so the sheet it was
+    fitted to still agrees with it.
+    """
+    diagonal = math.hypot(image_width, image_height)
+    error_px = MEAN_ERROR_FRACTION_OF_DIAGONAL * diagonal * PAIR_ERROR_MULTIPLIER
+    return error_px * feet_per_pixel
 
 
 @dataclass
@@ -98,7 +127,7 @@ class Measurement:
     pixels: float
     feet_per_pixel: float
     page: int
-    uncertainty_feet: float = UNCERTAINTY_FEET
+    uncertainty_feet: float = 0.0
     emitted: bool = True
     withheld_because: str | None = None
 
@@ -171,6 +200,15 @@ def measure(located, scale, page: int = 1, rules=None) -> SitePlanFacts:
     fpp = scale.feet_per_pixel
     out = SitePlanFacts(page=page, feet_per_pixel=fpp)
 
+    # Sized from this image and this sheet's scale, so a different render
+    # resolution or a different drawing scale carries its own allowance.
+    allowance = uncertainty_feet(
+        located.image_width, located.image_height, fpp
+    )
+    # Two symbols closer together than the allowance are inside each other's
+    # centre error, and their separation is noise rather than a short distance.
+    floor = allowance
+
     sited = [s for s in located.locations()] if hasattr(located, "locations") \
         else list(located.symbols)
     by_label: dict[str, list] = {}
@@ -203,14 +241,15 @@ def measure(located, scale, page: int = 1, rules=None) -> SitePlanFacts:
         m = Measurement(
             parameter=parameter, value_feet=feet, from_id=a.symbol_id,
             to_id=b.symbol_id, pixels=px, feet_per_pixel=fpp, page=page,
+            uncertainty_feet=round(allowance, 1),
         )
 
-        if feet < MIN_TRUSTWORTHY_FEET:
+        if feet < floor:
             m.emitted = False
             m.withheld_because = (
-                f"{feet:.0f} ft is inside the {MIN_TRUSTWORTHY_FEET:.0f} ft floor, "
-                f"where the separation is smaller than the centre error and the "
-                f"number would be noise"
+                f"{feet:.0f} ft is inside this sheet's {floor:.0f} ft allowance, so "
+                f"the two symbols are within each other's centre error and the "
+                f"separation is noise rather than a short distance"
             )
         else:
             threshold, rule_id = _threshold_for(parameter, rules)
@@ -291,5 +330,6 @@ def measure_pdf(pdf: Path, page: int, rules=None, offline: bool = True,
 
 __all__ = [
     "Measurement", "SitePlanFacts", "measure", "measure_pdf",
-    "MEASURABLE", "UNMEASURABLE", "UNCERTAINTY_FEET", "MIN_TRUSTWORTHY_FEET",
+    "MEASURABLE", "UNMEASURABLE", "uncertainty_feet",
+    "MEAN_ERROR_FRACTION_OF_DIAGONAL", "PAIR_ERROR_MULTIPLIER",
 ]
