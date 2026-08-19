@@ -740,6 +740,11 @@ def map_figure_card(payload: dict) -> str:
     if not screening.get("flags") and not screening.get("figure_png"):
         return ""
 
+    # If there is no point, do not render an empty card
+    point = screening.get("point") or {}
+    if not point:
+        return ""
+
     parts = ["<div class='map-card'>"]
     parts.append(
         "<div class='map-card-caption'>Location screening</div>"
@@ -757,7 +762,6 @@ def map_figure_card(payload: dict) -> str:
     # Measurements as definition list
     parts.append("<dl class='map-card-dl'>")
 
-    point = screening.get("point") or {}
     if point:
         lat = point.get("lat", "")
         lon = point.get("lon", "")
@@ -785,19 +789,21 @@ def map_figure_card(payload: dict) -> str:
             f"<dt>SCREENING RADIUS</dt><dd>{radius} ft</dd>"
         )
 
-    unavailable = screening.get("unavailable")
-    if unavailable:
-        parts.append(
-            f"<dt>UNAVAILABLE LAYERS</dt>"
-            f"<dd>{html_lib.escape(', '.join(unavailable) if isinstance(unavailable, list) else str(unavailable))}</dd>"
-        )
-
     parts.append("</dl>")
 
-    # Flags as screening caveat
+    # Screening caveat as a single amber note. This is the only place the caveat
+    # appears. The monospace UNAVAILABLE LAYERS block that used to duplicate it
+    # is removed.
     flags = screening.get("flags") or []
-    if flags:
-        caveat = " ".join(flags)
+    unavailable = screening.get("unavailable")
+    caveat_parts = list(flags)
+    if unavailable:
+        layers = ", ".join(unavailable) if isinstance(unavailable, list) else str(unavailable)
+        caveat_parts.append(
+            f"Layers not available for screening: {layers}."
+        )
+    if caveat_parts:
+        caveat = " ".join(caveat_parts)
         parts.append(
             f"<div class='map-card-note'>{html_lib.escape(caveat)}</div>"
         )
@@ -1151,13 +1157,13 @@ if uploaded is not None:
             findings_col, viewer_col = st.columns([58, 42], gap="medium")
 
             with findings_col:
-                # Findings rendered natively
-                render_findings(payload)
-
-                # Map figure card
+                # Map figure card at the top of the left pane
                 map_html = map_figure_card(payload)
                 if map_html:
                     st.markdown(map_html, unsafe_allow_html=True)
+
+                # Findings rendered natively
+                render_findings(payload)
 
                 # Download the printable HTML report
                 html_report = render_html(payload, embedded=False)
@@ -1191,7 +1197,15 @@ if uploaded is not None:
 
             with viewer_col:
                 with st.container(key="viewer_pane"):
-                    render_pdf_viewer(data, doc_hash, payload)
+                    packet_tab, location_tab = st.tabs(["Packet", "Location"])
+                    with packet_tab:
+                        render_pdf_viewer(data, doc_hash, payload)
+                    with location_tab:
+                        map_html_right = map_figure_card(payload)
+                        if map_html_right:
+                            st.markdown(map_html_right, unsafe_allow_html=True)
+                        else:
+                            st.caption("No coordinates available for this packet.")
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"
