@@ -101,7 +101,9 @@ readable next to that number.
 not an approval, and it is not a statement about the checks that did not run.
 
 **DEFICIENCIES FOUND.** One or more requirements are not met, each itemised with
-the section and page it comes from.
+the section and page it comes from. A draft correction letter is offered for the
+reviewer to edit and sign. It is a draft, not a determination, and says so on its
+face. The tool does not decide what to send.
 
 **CANNOT VERIFY.** No check reached a decision. Either every value the rules need
 could not be read off the packet, or no rule has been confirmed by a person.

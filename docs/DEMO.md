@@ -45,6 +45,11 @@ Once a packet is uploaded:
   document.
 - At the bottom: a download button for the printable HTML report, and a toggle
   to show all 15 rules with their thresholds and regulation quotes.
+- When the verdict is DEFICIENCIES FOUND, a closed expander labelled "Draft
+  correction letter (edit before sending)" appears below the report download.
+  It contains a plain text letter the reviewer can paste into their own template.
+  It is a draft for the reviewer to edit and sign, not a determination. The tool
+  does not decide what to send.
 
 ## The three packets and what they demonstrate
 
@@ -69,6 +74,9 @@ What it shows:
     (Section 5.2.4.2.5.7, page 52)
 - Five checks that pass, one that does not apply, seven that cannot be read
 - The notice banner states plainly that this is constructed
+- A draft correction letter (open the expander) itemising the deficiencies with
+  values, citations, regulation quotes, and remedies, plus the information the
+  applicant needs to provide
 
 ### 2. Permit 281364 (NO DEFICIENCIES FOUND, best coverage)
 
@@ -112,8 +120,10 @@ What it shows:
 
 1. Start with the **synthetic packet**. It is the outcome everyone comes to see.
    Walk through the two deficiencies, point at the citations, open the regulation
-   text disclosure. Say: this is a constructed example so we can show you what a
-   real deficiency looks like without exposing anyone's application.
+   text disclosure. Then open the draft correction letter expander: this is what
+   the tool produces for the reviewer to edit and send. Say: this is a
+   constructed example so we can show you what a real deficiency looks like
+   without exposing anyone's application.
 
 2. Switch to **permit 281364**. This is a real packet. Point at the coverage: 5 of
    15 checks ran because most isolation distances are measurements on a scanned
