@@ -151,11 +151,17 @@ def build_pdf(spec: dict) -> bytes:
         f"Applicant:               {spec['applicant']}",
         f"Property:                {spec['address']}",
         f"Parcel:                  {spec['parcel']}",
-        f"Latitude:                {spec['latitude']}",
-        f"Longitude:               {spec['longitude']}",
     ]
 
     facts = spec["facts"]
+    # The unreadable packet must not show a legible coordinate pair while every
+    # other field reads as illegible. The tool reports that it could read
+    # nothing, and the document has to agree with that.
+    if facts:
+        lines += [
+            f"Latitude:                {spec['latitude']}",
+            f"Longitude:               {spec['longitude']}",
+        ]
     if facts:
         lines += [
             f"System Type:             {facts.get('system_type', 'N/A').title()}",
