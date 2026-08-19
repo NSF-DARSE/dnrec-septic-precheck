@@ -894,6 +894,84 @@ def findings_table(findings: list[dict], group: str, deemphasised: bool = False)
     )
 
 
+def site_plan_card(payload: dict) -> str:
+    """The annotated site plan, with what was measured off it and what was not.
+
+    Sits above the screening map in the Location tab, and the order is the point.
+    The screening map is a geocoded point on the parcel and can never be a
+    compliance measurement; these are distances taken between the drawn features
+    the regulation actually names, and one of them settled a check. The thing that
+    can decide a rule goes first.
+
+    Reuses the map card's classes so the two read as one family rather than as a
+    bolted-on panel.
+    """
+    site_plan = payload.get("site_plan") or {}
+    if not site_plan:
+        return ""
+
+    measurements = site_plan.get("measurements") or []
+    figure = site_plan.get("annotated_png")
+    if not measurements and not figure:
+        return ""
+
+    page = site_plan.get("page")
+    parts = ["<div class='map-card'>"]
+    parts.append(
+        f"<div class='map-card-caption'>Site plan, page {page}</div>"
+    )
+
+    if figure:
+        uri = _data_uri(figure)
+        if uri:
+            parts.append(
+                f"<img src='{uri}' alt='Site plan with located symbols and the "
+                f"measured scale bar marked'>"
+            )
+
+    parts.append("<dl class='map-card-dl'>")
+
+    fpp = site_plan.get("feet_per_pixel")
+    if fpp:
+        parts.append(
+            f"<dt>SCALE</dt><dd>{1 / fpp:.2f} px per foot, measured off the "
+            f"graphic bar</dd>"
+        )
+
+    for m in measurements:
+        name = html_lib.escape(m.get("parameter", ""))
+        value = m.get("value_feet")
+        unc = m.get("uncertainty_feet")
+        pair = f"{html_lib.escape(str(m.get('from','')))} to {html_lib.escape(str(m.get('to','')))}"
+        if m.get("emitted"):
+            parts.append(
+                f"<dt>{name.replace('_', ' ').upper()}</dt>"
+                f"<dd>{value:.0f} ft &plusmn;{unc:.0f} ft, {pair}</dd>"
+            )
+        else:
+            parts.append(
+                f"<dt>{name.replace('_', ' ').upper()}</dt>"
+                f"<dd>{value:.0f} ft, not used &mdash; "
+                f"{html_lib.escape(str(m.get('withheld_because') or ''))}</dd>"
+            )
+
+    unmeasurable = site_plan.get("unmeasurable") or {}
+    if unmeasurable:
+        parts.append(
+            f"<dt>NOT MEASURED</dt><dd>{len(unmeasurable)} setback parameter(s) the "
+            f"drawing reader cannot supply, so their checks stay unresolved</dd>"
+        )
+
+    parts.append("</dl>")
+    parts.append(
+        "<div class='map-card-caption'>Symbol positions are estimated, not "
+        "surveyed. A distance within its own error of the threshold it would be "
+        "compared against is reported here and withheld from the checks.</div>"
+    )
+    parts.append("</div>")
+    return "".join(parts)
+
+
 def map_figure_card(payload: dict) -> str:
     """The location screening as a figure card with measurements as a definition list."""
     screening = payload.get("screening") or {}
@@ -1358,11 +1436,21 @@ if uploaded is not None:
                     with packet_tab:
                         render_pdf_viewer(data, doc_hash, payload)
                     with location_tab:
+                        # The annotated sheet first. It is the only thing on this
+                        # tab that can settle a check; the screening map cannot.
+                        sheet_html = site_plan_card(payload)
+                        if sheet_html:
+                            st.markdown(sheet_html, unsafe_allow_html=True)
+
                         map_html_right = map_figure_card(payload)
                         if map_html_right:
                             st.markdown(map_html_right, unsafe_allow_html=True)
-                        else:
-                            st.caption("No coordinates available for this packet.")
+
+                        if not sheet_html and not map_html_right:
+                            st.caption(
+                                "No coordinates and no measurable site plan for "
+                                "this packet."
+                            )
     else:
         st.info(
             f"**{uploaded.name} has not been analysed yet.**\n\n"

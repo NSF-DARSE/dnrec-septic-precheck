@@ -185,6 +185,44 @@ def analyze(
     raise ValueError("pass either a pdf path or a permit number")
 
 
+def measure_site_plan(pdf: Path, document, allow_network: bool = False):
+    """Find the site plan page and measure what the drawing supports.
+
+    Returns (SitePlanFacts, None) on success, or (None, reason) so the caller can
+    say why nothing was measured. Absence is the normal case and not an error: most
+    packets in this corpus are text, the demonstration packets carry a placeholder
+    page, and a sheet nobody has read yet has no cached symbols.
+
+    The rules are loaded to supply thresholds, because a reading within its own
+    error of the threshold it would be compared against is withheld rather than
+    asserted. That decision needs the number the rule uses.
+    """
+    from .vision.measure import measure_pdf
+    from .vision.sheet import find_site_plan
+
+    pick = find_site_plan(document)
+    if pick is None:
+        return None, None
+    if not pick.looks_drawn:
+        return None, (
+            f"page {pick.page} names itself a site plan but carries no graphic "
+            f"scale, no scale ratio and no dimension callouts, so there is no "
+            f"drawing on it to measure"
+        )
+    try:
+        rules = [r for r in engine.load_rules() if r.verified]
+    except Exception:  # noqa: BLE001
+        rules = []
+    try:
+        return measure_pdf(
+            pdf, pick.page, rules=rules, offline=not allow_network, annotate=True
+        ), None
+    except Exception as exc:  # noqa: BLE001
+        return None, (
+            f"the site plan on page {pick.page} was found but not measured: {exc}"
+        )
+
+
 def _from_analysis(analysis) -> ocr.OcrResult:
     """Wrap a Textract Analysis as an OcrResult.
 
@@ -341,6 +379,7 @@ def review(
     with_precedents: bool = True,
     with_screening: bool = True,
     with_map: bool = True,
+    with_site_plan: bool = True,
     rephrase: bool = False,
     client: TextractClient | None = None,
     provider: str | None = None,
@@ -379,6 +418,26 @@ def review(
     subject["pages"] = document.pages
 
     extraction = extract_facts(document)
+
+    # Measurement off the site plan. The extractor reads printed text, and ten of
+    # the fifteen rules want a distance dimensioned between drawn features that no
+    # document service returns. The drawing reader measures those, and the values
+    # merge into the same fact mapping so a rule sees them like any other value.
+    #
+    # Which page is the drawing is decided from the OCR text rather than passed in,
+    # and a measurement too close to its own threshold to settle is withheld rather
+    # than asserted. See septic/vision/measure.py for why.
+    site_plan = None
+    if with_site_plan and pdf is not None:
+        site_plan, note = measure_site_plan(
+            Path(pdf), document, allow_network=allow_network,
+        )
+        if site_plan is not None:
+            extraction.facts.update(site_plan.facts)
+            extraction.provenance.update(site_plan.provenance)
+            warnings.extend(site_plan.warnings)
+        elif note:
+            warnings.append(note)
 
     # Geospatial screening. The distance to mapped surface water is a measured
     # fact the engine can consume alongside anything read off the packet. It is
@@ -425,6 +484,7 @@ def review(
         graph=_load_graph_quietly(),
         precedents=precedents,
         screening=screening,
+        site_plan=site_plan,
         subject=subject,
     )
 

@@ -205,6 +205,13 @@ class Composed:
     discarded_readings: list[dict] = field(default_factory=list)
     facts_read: list[dict] = field(default_factory=list)
     screening: dict[str, Any] = field(default_factory=dict)
+    # What was measured off the site plan drawing, and what could not be. Kept
+    # beside screening rather than folded into it: screening is a geocoded point
+    # on the parcel and is explicitly not a compliance measurement, whereas these
+    # are distances taken between the drawn features the regulation names. They
+    # belong on the same surface because both are spatial, and apart in the
+    # payload because only one of them can settle a rule.
+    site_plan: dict[str, Any] = field(default_factory=dict)
     precedents: dict[str, Any] = field(default_factory=dict)
     notices: list[str] = field(default_factory=list)
     generated_at: str = ""
@@ -227,6 +234,7 @@ class Composed:
             "discarded_readings": self.discarded_readings,
             "facts_read": self.facts_read,
             "screening": self.screening,
+            "site_plan": self.site_plan,
             "precedents": self.precedents,
             "notices": self.notices,
             "generated_at": self.generated_at,
@@ -371,6 +379,7 @@ def compose(
     graph=None,
     precedents=None,
     screening=None,
+    site_plan=None,
     subject: dict[str, Any] | None = None,
 ) -> Composed:
     """Turn a rule Report into report content.
@@ -472,6 +481,12 @@ def compose(
                 "shown for completeness only."
             )
 
+    site_plan_payload = {}
+    if site_plan is not None:
+        site_plan_payload = (
+            site_plan.to_json() if hasattr(site_plan, "to_json") else site_plan
+        )
+
     screening_payload = {}
     if screening is not None:
         screening_payload = (
@@ -520,6 +535,7 @@ def compose(
         discarded_readings=list(getattr(extraction, "rejected", []) or []),
         facts_read=facts_read,
         screening=screening_payload,
+        site_plan=site_plan_payload,
         precedents=precedent_payload,
         notices=notices,
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ"),
