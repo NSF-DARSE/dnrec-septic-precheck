@@ -614,11 +614,11 @@ def _requirement_sentence(finding: dict) -> str:
 def _status_pill(finding: dict) -> str:
     """A small coloured pill showing the outcome."""
     outcome = finding.get("outcome", "")
-    if outcome == "fail":
+    if outcome == "FAIL":
         fg = TOKENS["colour"]["deficiency_fg"]
         bg = TOKENS["colour"]["deficiency_bg"]
         label = "FAIL"
-    elif outcome == "pass":
+    elif outcome == "PASS":
         if finding.get("applicability") == "not_applicable":
             fg = TOKENS["colour"]["out_of_scope_edge"]
             bg = TOKENS["colour"]["surface_sunken"]
