@@ -159,6 +159,12 @@ class Measurement:
     uncertainty_feet: float = 0.0
     emitted: bool = True
     withheld_because: str | None = None
+    # The distance the regulation requires, so the overlay can draw it. Carried on
+    # the measurement rather than looked up again at drawing time: the ring and the
+    # withholding decision have to come from the same threshold, or the sheet would
+    # show a ring the number was never judged against.
+    threshold_feet: float | None = None
+    rule_id: str | None = None
     # The two points the distance was actually taken between, so the overlay draws
     # the line that was measured rather than one between two centres.
     from_point: tuple[float, float] | None = None
@@ -179,6 +185,8 @@ class Measurement:
             "page": self.page,
             "emitted": self.emitted,
             "withheld_because": self.withheld_because,
+            "threshold_feet": self.threshold_feet,
+            "rule_id": self.rule_id,
             "from_point": list(self.from_point) if self.from_point else None,
             "to_point": list(self.to_point) if self.to_point else None,
             "corridor": self.corridor,
@@ -321,6 +329,9 @@ def measure(located, scale, page: int = 1, rules=None,
                 label_a in CORRIDOR_CLASSES or label_b in CORRIDOR_CLASSES
             ),
         )
+        # Recorded whether or not it ends up deciding anything, because the ring on
+        # the drawing is worth seeing even when the number beside it was withheld.
+        m.threshold_feet, m.rule_id = _threshold_for(parameter, rules)
 
         unvalidated = [
             l for l in (label_a, label_b)
@@ -353,7 +364,7 @@ def measure(located, scale, page: int = 1, rules=None,
                 f"separation is noise rather than a short distance"
             )
         else:
-            threshold, rule_id = _threshold_for(parameter, rules)
+            threshold, rule_id = m.threshold_feet, m.rule_id
             if threshold is not None and abs(feet - threshold) <= m.uncertainty_feet:
                 m.emitted = False
                 m.withheld_because = (

@@ -241,6 +241,39 @@ def annotate(
             draw.text((pad, y), line, fill=(20, 20, 20), font=small)
             y += h
 
+    # -- the required setback, as a ring ----------------------------------
+    #
+    # Drawn before the distance lines so the lines sit on top of it rather than
+    # under it. The ring is the minimum the regulation asks for, centred on the
+    # point the distance was measured from and swept at the required radius, so
+    # whether the sheet complies is a thing you can see: the far feature sits
+    # outside the ring or it does not. The number already says so, but a number
+    # has to be trusted and a ring can be checked against the drawing.
+    #
+    # Light, and thin, on purpose. This is the only mark on the sheet that is not
+    # a measurement of something drawn, and it must not read as ink the engineer
+    # put there.
+    for m in measurements or []:
+        a = getattr(m, "from_point", None)
+        threshold = getattr(m, "threshold_feet", None)
+        fpp = getattr(m, "feet_per_pixel", 0.0)
+        if not a or not threshold or not fpp:
+            continue
+        radius = (threshold / fpp) * k
+        # A ring bigger than the sheet is not telling anyone anything, and on a
+        # small scale drawing a 100 ft setback can exceed the page.
+        if radius <= 0 or radius > max(im.width, im.height) * 1.5:
+            continue
+        cx_, cy_ = a[0] * k, a[1] * k
+        draw.ellipse(
+            [cx_ - radius, cy_ - radius, cx_ + radius, cy_ + radius],
+            outline=(150, 190, 235), width=max(1, stroke - 1),
+        )
+        _label(
+            draw, cx_ + radius * 0.7071, cy_ - radius * 0.7071,
+            f"{threshold:.0f} ft required", (110, 160, 215), small,
+        )
+
     # -- the measured distances -------------------------------------------
     for m in measurements or []:
         a = getattr(m, "from_point", None)
